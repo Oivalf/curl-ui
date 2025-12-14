@@ -1,0 +1,61 @@
+{
+  "id": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+  "name": "My Collection",
+  "projectName": "Default Project",
+  "requests": [
+    {
+      "id": "1",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "Get Todos",
+      "method": "GET",
+      "url": "https://jsonplaceholder.{{gvar}}.com/todos/1",
+      "headers": {},
+      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "body": ""
+    }
+  ],
+  "folders": [
+    {
+      "id": "c21c8f33-8b91-4839-99e1-f9d25a1c7c73",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "New Folder",
+      "parentId": null,
+      "collapsed": false,
+      "headers": {},
+      "variables": {
+        "gino": "pino"
+      }
+    },
+    {
+      "id": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "New Folder",
+      "parentId": "c21c8f33-8b91-4839-99e1-f9d25a1c7c73",
+      "collapsed": false,
+      "headers": {},
+      "variables": {
+        "ciao": "bello"
+      }
+    }
+  ],
+  "environments": [
+    {
+      "name": "Global",
+      "variables": [
+        {
+          "key": "gvar",
+          "value": "lob"
+        }
+      ]
+    },
+    {
+      "name": "Local",
+      "variables": [
+        {
+          "key": "gvar",
+          "value": "local"
+        }
+      ]
+    }
+  ]
+}

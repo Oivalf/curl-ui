@@ -1,0 +1,50 @@
+import { Modal } from './Modal';
+import { isAboutOpen } from '../store';
+import { getVersion } from '@tauri-apps/api/app';
+import { useSignal, useSignalEffect } from '@preact/signals';
+
+export function AboutModal() {
+    const appVersion = useSignal('Loading...');
+    const tauriVersion = useSignal('Loading...');
+
+    useSignalEffect(() => {
+        if (isAboutOpen.value) {
+            getVersion().then(v => appVersion.value = v).catch(() => appVersion.value = 'Unknown');
+            import('@tauri-apps/api/app').then(api => {
+                api.getTauriVersion().then(v => tauriVersion.value = v).catch(() => tauriVersion.value = 'Unknown');
+            }).catch(() => tauriVersion.value = 'Unknown');
+        }
+    });
+
+    return (
+        <Modal
+            isOpen={isAboutOpen.value}
+            onClose={() => isAboutOpen.value = false}
+            title="About Curl UI"
+        >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', padding: '16px' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                    Curl UI
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                    A modern HTTP client built with Tauri.
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 16px', marginTop: '16px', fontSize: '0.9rem' }}>
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>App Version:</div>
+                    <div>{appVersion}</div>
+
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>Tauri Version:</div>
+                    <div>{tauriVersion}</div>
+
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>License:</div>
+                    <div>MIT</div>
+                </div>
+
+                <div style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    © 2025 Oivalf
+                </div>
+            </div>
+        </Modal>
+    );
+}

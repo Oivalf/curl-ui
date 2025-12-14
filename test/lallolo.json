@@ -1,0 +1,48 @@
+{
+  "id": "c030889c-5cfa-4dd0-8b63-03ce8affcea4",
+  "name": "lallolo",
+  "projectName": "Default Project",
+  "requests": [
+    {
+      "id": "8ee96621-0286-436c-a37b-720b88fc67ab",
+      "collectionId": "c030889c-5cfa-4dd0-8b63-03ce8affcea4",
+      "name": "Mammolo",
+      "method": "GET",
+      "url": "https://settenani/{name}",
+      "headers": {},
+      "parentId": null,
+      "body": ""
+    },
+    {
+      "id": "3615f04b-b26f-47f4-965a-259b1c035d21",
+      "collectionId": "c030889c-5cfa-4dd0-8b63-03ce8affcea4",
+      "name": "pisolo",
+      "method": "GET",
+      "url": "https://settenani/{name}",
+      "headers": {},
+      "parentId": null,
+      "body": ""
+    }
+  ],
+  "folders": [],
+  "environments": [
+    {
+      "name": "Global",
+      "variables": [
+        {
+          "key": "ma",
+          "value": "trigna"
+        }
+      ]
+    },
+    {
+      "name": "Dev",
+      "variables": [
+        {
+          "key": "bianca",
+          "value": "neve"
+        }
+      ]
+    }
+  ]
+}
