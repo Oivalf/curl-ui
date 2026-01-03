@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown } from 'lucide-preact';
-import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments } from '../store';
+import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from './Modal';
@@ -34,7 +34,7 @@ export function Sidebar() {
         const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
         const label = `project-${crypto.randomUUID()}`;
         const webview = new WebviewWindow(label, {
-            url: '/',
+            url: `/?projectName=${encodeURIComponent(projectName)}`,
             title: `Curl UI - ${projectName}`
         });
         webview.once('tauri://created', function () {
@@ -64,7 +64,7 @@ export function Sidebar() {
             collections.value = [...collections.value, {
                 id: newId,
                 name: name,
-                projectName: "Default Project", // Default project for now
+                projectName: activeProjectName.value,
                 path: undefined // Not saved yet
             }];
 

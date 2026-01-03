@@ -1,6 +1,6 @@
 import { ComponentChildren } from 'preact';
 import { Sidebar } from './Sidebar';
-import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections } from '../store';
+import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject } from '../store';
 import { useSignalEffect } from '@preact/signals';
 import { Modal } from './Modal';
 import { EnvironmentManager } from './EnvironmentManager';
@@ -29,6 +29,10 @@ export function MainLayout({ children }: LayoutProps) {
             await saveAllCollections();
         });
 
+        const unlistenSwitchProject = listen<string>('switch-project', async (event) => {
+            await openProject(event.payload);
+        });
+
         // Global Keydown Listener
         const handleKeyDown = async (e: KeyboardEvent) => {
             if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
@@ -54,6 +58,7 @@ export function MainLayout({ children }: LayoutProps) {
             unlisten.then(f => f());
             unlistenSave.then(f => f());
             unlistenSaveAll.then(f => f());
+            unlistenSwitchProject.then(f => f());
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, []);

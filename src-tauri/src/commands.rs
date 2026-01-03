@@ -206,3 +206,94 @@ pub async fn load_workspace(path: String) -> Result<String, String> {
     let data = fs::read_to_string(&path).await.map_err(|e| e.to_string())?;
     Ok(data)
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProjectManifest {
+    pub name: String,
+    pub collections: Vec<String>,
+}
+
+#[command]
+pub async fn sync_project_manifest(
+    app_handle: tauri::AppHandle,
+    name: String,
+    collection_paths: Vec<String>,
+) -> Result<(), String> {
+    use tauri::Manager;
+
+    let home_dir = app_handle.path().home_dir().map_err(|e| e.to_string())?;
+    let config_dir = home_dir.join(".curl-ui");
+
+    // Ensure config dir exists (it should from startup, but safety first)
+    if !config_dir.exists() {
+        std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    }
+
+    let manifest_path = config_dir.join(format!("{}.json", name));
+    let manifest = ProjectManifest {
+        name,
+        collections: collection_paths,
+    };
+
+    let data = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
+    fs::write(manifest_path, data)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[command]
+pub async fn list_projects(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+    use tauri::Manager;
+
+    let home_dir = app_handle.path().home_dir().map_err(|e| e.to_string())?;
+    let config_dir = home_dir.join(".curl-ui");
+
+    if !config_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut entries = Vec::new();
+    if let Ok(rd_entries) = std::fs::read_dir(config_dir) {
+        for entry in rd_entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
+                if let Ok(metadata) = entry.metadata() {
+                    if let Ok(modified) = metadata.modified() {
+                        if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                            entries.push((name.to_string(), modified));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort by modification time (newest first)
+    entries.sort_by(|a, b| b.1.cmp(&a.1));
+
+    Ok(entries.into_iter().map(|(name, _)| name).collect())
+}
+
+#[command]
+pub async fn get_project_manifest(
+    app_handle: tauri::AppHandle,
+    name: String,
+) -> Result<ProjectManifest, String> {
+    use tauri::Manager;
+
+    let home_dir = app_handle.path().home_dir().map_err(|e| e.to_string())?;
+    let manifest_path = home_dir.join(".curl-ui").join(format!("{}.json", name));
+
+    if !manifest_path.exists() {
+        return Err(format!("Manifest for project {} not found", name));
+    }
+
+    let data = fs::read_to_string(manifest_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    let manifest: ProjectManifest = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+
+    Ok(manifest)
+}
