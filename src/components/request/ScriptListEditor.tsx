@@ -53,7 +53,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false }: S
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{title}</span>
                 <button
@@ -68,7 +68,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false }: S
                 </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {scripts.value.length === 0 && (
                     <div style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '8px' }}>
                         No scripts defined.

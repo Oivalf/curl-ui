@@ -8,7 +8,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "Get Todos",
       "method": "GET",
-      "url": "https://jsonplaceholder.{{gvar}}.com/todos/9",
+      "url": "https://jsonplaceholder.{{gvar}}.com/todos/10",
       "headers": {},
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "body": "",
@@ -177,8 +177,12 @@
       "name": "Local",
       "variables": [
         {
-          "key": "gvar",
+          "key": "bianca",
           "value": "local"
+        },
+        {
+          "key": "ma",
+          "value": "rea"
         }
       ]
     },
@@ -188,10 +192,24 @@
         {
           "key": "bianca",
           "value": "neve"
-        },
+        }
+      ]
+    },
+    {
+      "name": "Test",
+      "variables": [
         {
-          "key": "strega",
-          "value": ""
+          "key": "bianca",
+          "value": "nera"
+        }
+      ]
+    },
+    {
+      "name": "Prod",
+      "variables": [
+        {
+          "key": "bianca",
+          "value": "luce"
         }
       ]
     }

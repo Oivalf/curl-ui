@@ -654,7 +654,7 @@ export function RequestEditor() {
             </div>
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
                     <RequestPanel
                         method={method}
                         headers={headers}
@@ -689,7 +689,7 @@ export function RequestEditor() {
                     }}
                 />
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', minHeight: 0 }}>
                     <ResponsePanel />
                 </div>
             </div>

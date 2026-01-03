@@ -47,6 +47,12 @@ export function FolderEditor() {
         const currentEnv = environments.value.find(e => e.name === activeEnvironmentName.value);
         const map = new Map<string, { value: string, source: string, sourceId?: string }>();
 
+        // 0. Global Environment Fallback (Lowest Priority)
+        const globalEnv = environments.value.find(e => e.name === 'Global');
+        if (globalEnv) {
+            globalEnv.variables.forEach(v => map.set(v.key, { value: v.value, source: 'Global', sourceId: 'env:Global' }));
+        }
+
         // 1. Environment
         if (currentEnv) {
             currentEnv.variables.forEach(v => map.set(v.key, { value: v.value, source: `Env: ${currentEnv.name}`, sourceId: `env:${currentEnv.name}` }));
@@ -160,7 +166,7 @@ export function FolderEditor() {
     };
 
     return (
-        <div style={{ padding: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)', height: '100%', overflow: 'auto' }}>
+        <div style={{ padding: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)', height: '100%', overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>
                 <FolderIcon size={32} color="var(--accent-primary)" />
                 <div style={{ flex: 1 }}>

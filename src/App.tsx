@@ -15,7 +15,7 @@ function App() {
       <TabBar />
 
       {/* Content Area */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
         {activeTab ? (
           activeTab.type === 'request' ? (
             <RequestEditor key={activeTab.id} />

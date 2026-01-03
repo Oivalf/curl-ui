@@ -48,7 +48,7 @@ export function RequestPanel({
     const activeRequestTab = useSignal<'params' | 'body' | 'headers' | 'auth' | 'pre-script' | 'post-script' | 'raw' | 'curl'>('params');
 
     return (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, minHeight: 0 }}>
             <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--text-muted)' }}>REQUEST</span>
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeRequestTab.value === 'params' ? 1 : 0.5, borderBottom: activeRequestTab.value === 'params' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeRequestTab.value = 'params'}>Params</h3>
@@ -61,39 +61,41 @@ export function RequestPanel({
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeRequestTab.value === 'curl' ? 1 : 0.5, borderBottom: activeRequestTab.value === 'curl' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeRequestTab.value = 'curl'}>Curl</h3>
             </div>
 
-            <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {activeRequestTab.value === 'params' ? (
-                    <RequestParamsEditor
-                        queryParams={queryParams}
-                        pathParams={pathParams}
-                        detectedPathKeys={detectedPathKeys}
-                        updateUrlFromParams={updateUrlFromParams}
-                    />
-                ) : activeRequestTab.value === 'body' ? (
-                    <RequestBodyEditor
-                        bodyType={bodyType}
-                        body={body}
-                        formData={formData}
-                    />
-                ) : activeRequestTab.value === 'headers' ? (
-                    <RequestHeadersEditor headers={headers} inheritedHeaders={inheritedHeaders} />
-                ) : activeRequestTab.value === 'auth' ? (
-                    <AuthEditor auth={auth!} onChange={(newAuth) => auth!.value = newAuth} inheritedAuth={inheritedAuth} />
-                ) : activeRequestTab.value === 'pre-script' ? (
-                    <ScriptListEditor scripts={preScripts} title="Pre-request Scripts" />
-                ) : activeRequestTab.value === 'post-script' ? (
-                    <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} />
-                ) : activeRequestTab.value === 'raw' ? (
-                    <RequestRawView
-                        method={method}
-                        url={getFinalUrl()}
-                        headers={headers}
-                        bodyType={bodyType}
-                        body={body}
-                    />
-                ) : (
-                    <RequestCurlView curlCommand={generateCurl()} />
-                )}
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {activeRequestTab.value === 'params' ? (
+                        <RequestParamsEditor
+                            queryParams={queryParams}
+                            pathParams={pathParams}
+                            detectedPathKeys={detectedPathKeys}
+                            updateUrlFromParams={updateUrlFromParams}
+                        />
+                    ) : activeRequestTab.value === 'body' ? (
+                        <RequestBodyEditor
+                            bodyType={bodyType}
+                            body={body}
+                            formData={formData}
+                        />
+                    ) : activeRequestTab.value === 'headers' ? (
+                        <RequestHeadersEditor headers={headers} inheritedHeaders={inheritedHeaders} />
+                    ) : activeRequestTab.value === 'auth' ? (
+                        <AuthEditor auth={auth!} onChange={(newAuth) => auth!.value = newAuth} inheritedAuth={inheritedAuth} />
+                    ) : activeRequestTab.value === 'pre-script' ? (
+                        <ScriptListEditor scripts={preScripts} title="Pre-request Scripts" />
+                    ) : activeRequestTab.value === 'post-script' ? (
+                        <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} />
+                    ) : activeRequestTab.value === 'raw' ? (
+                        <RequestRawView
+                            method={method}
+                            url={getFinalUrl()}
+                            headers={headers}
+                            bodyType={bodyType}
+                            body={body}
+                        />
+                    ) : (
+                        <RequestCurlView curlCommand={generateCurl()} />
+                    )}
+                </div>
             </div>
         </div>
     );
