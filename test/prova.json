@@ -8,33 +8,154 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "Get Todos",
       "method": "GET",
-      "url": "https://jsonplaceholder.{{gvar}}.com/todos/1",
+      "url": "https://jsonplaceholder.{{gvar}}.com/todos/9",
       "headers": {},
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
-      "body": ""
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [
+        {
+          "id": "e02eb967-27d7-4f0f-a3af-b709d67b699f",
+          "name": "Ndue",
+          "content": "console.log('pre-Script ndue');",
+          "enabled": true
+        },
+        {
+          "id": "466ff4b5-41f0-4a81-aec6-d36bef4c2afa",
+          "name": "uno",
+          "content": "console.log('pre-Script uno');",
+          "enabled": false
+        }
+      ],
+      "postScripts": [
+        {
+          "id": "8eacbabf-f01c-483b-a0a5-03b9857e0bcb",
+          "name": "p2",
+          "content": "console.log('Script');",
+          "enabled": true,
+          "executeOnStatusCodes": "2xx"
+        },
+        {
+          "id": "7c5b0c39-11f5-4a21-b25f-69bb77d798b1",
+          "name": "p1",
+          "content": "console.log('post-Script p1');",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "c8af9e83-8989-4829-b72c-d7e0dd074f40",
+      "name": "post req",
+      "method": "POST",
+      "url": "http://pippolo.com/?fff=p&ggg=h",
+      "headers": {},
+      "parentId": "c31426ba-c706-460b-94e5-2db4ae38fdfb",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "3e12cbb6-26ee-4129-b2f5-7a881fcfad29",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "gogole",
+      "method": "GET",
+      "url": "https://google.com",
+      "headers": {},
+      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": [
+        {
+          "id": "39107573-d9ba-48c1-8624-75e89691949a",
+          "name": "ps-2",
+          "content": "console.log('post-Script 2');",
+          "enabled": true,
+          "executeOnStatusCodes": "2xx"
+        },
+        {
+          "id": "8ae335e1-b568-473e-805d-9c8c0ec2f5e6",
+          "name": "ps-1",
+          "content": "console.log('post Script 1');",
+          "enabled": true,
+          "executeOnStatusCodes": ""
+        }
+      ]
     }
   ],
   "folders": [
     {
       "id": "c21c8f33-8b91-4839-99e1-f9d25a1c7c73",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "New Folder",
-      "parentId": null,
+      "name": "f_lvl1",
+      "parentId": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
       "collapsed": false,
-      "headers": {},
+      "headers": {
+        "head": "lvl1"
+      },
       "variables": {
         "gino": "pino"
+      },
+      "auth": {
+        "type": "basic",
+        "basic": {
+          "username": "gino",
+          "password": "pino"
+        }
       }
     },
     {
       "id": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "New Folder",
+      "name": "f_lvl2",
       "parentId": "c21c8f33-8b91-4839-99e1-f9d25a1c7c73",
       "collapsed": false,
       "headers": {},
       "variables": {
-        "ciao": "bello"
+        "ciao": "secco !"
+      },
+      "auth": {
+        "type": "inherit",
+        "basic": {
+          "username": "pippo",
+          "password": "pluto"
+        }
+      }
+    },
+    {
+      "id": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "base",
+      "parentId": null,
+      "collapsed": false,
+      "headers": {},
+      "variables": {},
+      "auth": {
+        "type": "basic",
+        "basic": {
+          "username": "bas",
+          "password": "ic"
+        }
+      }
+    },
+    {
+      "id": "c31426ba-c706-460b-94e5-2db4ae38fdfb",
+      "name": "fpippo",
+      "parentId": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "collapsed": false,
+      "headers": {},
+      "variables": {},
+      "auth": {
+        "type": "inherit"
       }
     }
   ],
@@ -45,6 +166,10 @@
         {
           "key": "gvar",
           "value": "lob"
+        },
+        {
+          "key": "ma",
+          "value": "trigna"
         }
       ]
     },
@@ -54,6 +179,19 @@
         {
           "key": "gvar",
           "value": "local"
+        }
+      ]
+    },
+    {
+      "name": "Dev",
+      "variables": [
+        {
+          "key": "bianca",
+          "value": "neve"
+        },
+        {
+          "key": "strega",
+          "value": ""
         }
       ]
     }

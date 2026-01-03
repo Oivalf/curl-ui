@@ -1,4 +1,4 @@
-import { openTabs, activeTabId, requests, folders, activeRequestId, activeFolderId, Tab } from "../store";
+import { openTabs, activeTabId, requests, folders, activeRequestId, activeFolderId, Tab, unsavedItemIds } from "../store";
 import { X, FileJson, Folder, ChevronDown } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
@@ -114,6 +114,9 @@ export function TabBar() {
                             {tab.type === 'request' ? <FileJson size={14} /> : <Folder size={14} />}
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, fontSize: '0.9rem' }}>
                                 {freshName}
+                                {unsavedItemIds.value.has(tab.id) && (
+                                    <span style={{ color: 'var(--accent-primary)', marginLeft: '4px', fontSize: '1.2rem', lineHeight: 0 }}>•</span>
+                                )}
                             </span>
                             <div
                                 onClick={(e) => closeTab(tab.id, e)}

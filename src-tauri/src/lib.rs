@@ -13,6 +13,14 @@ pub fn run() {
             // Create Menu Items
             let new_project_i =
                 MenuItem::with_id(handle, "new_project", "New Project", true, None::<&str>)?;
+            let save_i = MenuItem::with_id(handle, "save", "Save", true, Some("CmdOrCtrl+S"))?;
+            let save_all_i = MenuItem::with_id(
+                handle,
+                "save_all",
+                "Save All",
+                true,
+                Some("CmdOrCtrl+Shift+S"),
+            )?;
             let quit_i = MenuItem::with_id(handle, "quit", "Quit", true, None::<&str>)?;
             let about_i = MenuItem::with_id(handle, "about", "About", true, None::<&str>)?;
 
@@ -22,7 +30,13 @@ pub fn run() {
                 handle,
                 "File",
                 true,
-                &[&new_project_i, &recent_projects_menu, &quit_i],
+                &[
+                    &new_project_i,
+                    &save_i,
+                    &save_all_i,
+                    &recent_projects_menu,
+                    &quit_i,
+                ],
             )?;
             let help_menu = Submenu::with_items(handle, "?", true, &[&about_i])?;
 
@@ -51,6 +65,14 @@ pub fn run() {
             if event.id() == "new_project" {
                 use tauri::Emitter;
                 let _ = app.emit("open-new-project", ());
+            }
+            if event.id() == "save" {
+                use tauri::Emitter;
+                let _ = app.emit("trigger-save", ());
+            }
+            if event.id() == "save_all" {
+                use tauri::Emitter;
+                let _ = app.emit("trigger-save-all", ());
             }
             if event.id() == "about" {
                 use tauri::Emitter;

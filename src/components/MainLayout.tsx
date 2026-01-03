@@ -1,11 +1,11 @@
 import { ComponentChildren } from 'preact';
 import { Sidebar } from './Sidebar';
-import { confirmationState, environments, activeEnvironmentName, isAboutOpen } from '../store';
+import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections } from '../store';
 import { Modal } from './Modal';
 import { EnvironmentManager } from './EnvironmentManager';
+import { ConsolePanel } from './ConsolePanel';
 import { AboutModal } from './AboutModal';
-import { Settings } from 'lucide-preact';
-import { useSignal } from '@preact/signals';
+import { Settings, Terminal } from 'lucide-preact';
 import { useEffect } from 'preact/hooks';
 import { listen } from '@tauri-apps/api/event';
 
@@ -14,14 +14,38 @@ interface LayoutProps {
 }
 
 export function MainLayout({ children }: LayoutProps) {
-    const isEnvManagerOpen = useSignal(false);
+    // isEnvManagerOpen is imported from store
 
     useEffect(() => {
         const unlisten = listen('open-about', () => {
             isAboutOpen.value = true;
         });
+
+        const unlistenSave = listen('trigger-save', async () => {
+            await saveActiveItemCollection();
+        });
+        const unlistenSaveAll = listen('trigger-save-all', async () => {
+            await saveAllCollections();
+        });
+
+        // Global Keydown Listener
+        const handleKeyDown = async (e: KeyboardEvent) => {
+            if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                await saveActiveItemCollection();
+            } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                await saveAllCollections();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
         return () => {
             unlisten.then(f => f());
+            unlistenSave.then(f => f());
+            unlistenSaveAll.then(f => f());
+            window.removeEventListener('keydown', handleKeyDown);
         };
     }, []);
 
@@ -29,16 +53,39 @@ export function MainLayout({ children }: LayoutProps) {
         <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: 'var(--bg-base)' }}>
             <Sidebar />
             <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    {children}
+                </div>
+
+                <ConsolePanel />
+
                 <div style={{
-                    height: '40px',
-                    borderBottom: '1px solid var(--border-color)',
+                    height: '32px',
+                    borderTop: '1px solid var(--border-color)',
                     backgroundColor: 'var(--bg-sidebar)',
                     display: 'flex',
-                    justifyContent: 'flex-end',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '0 16px'
                 }}>
-                    {/* Environment Selector */}
+                    {/* Left: Console Toggle */}
+                    <button
+                        onClick={() => isConsoleOpen.value = !isConsoleOpen.value}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: isConsoleOpen.value ? 'var(--accent-primary)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        <Terminal size={14} /> Console
+                    </button>
+
+                    {/* Right: Environment Selector */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Env:</div>
                         <select
@@ -50,7 +97,8 @@ export function MainLayout({ children }: LayoutProps) {
                                 color: 'var(--accent-primary)',
                                 fontWeight: 'bold',
                                 cursor: 'pointer',
-                                outline: 'none'
+                                outline: 'none',
+                                fontSize: '0.8rem'
                             }}
                         >
                             <option value="" disabled>No Environment</option>
@@ -70,12 +118,10 @@ export function MainLayout({ children }: LayoutProps) {
                             }}
                             title="Manage Environments"
                         >
-                            <Settings size={16} />
+                            <Settings size={14} />
                         </button>
                     </div>
                 </div>
-
-                {children}
             </main>
 
             {/* Global Confirmation Modal */}

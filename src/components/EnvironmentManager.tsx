@@ -1,6 +1,5 @@
-import { useSignal } from "@preact/signals";
 import { Plus, Trash2 } from 'lucide-preact';
-import { environments, activeEnvironmentName, Environment } from '../store';
+import { environments, activeEnvironmentName, Environment, selectedEnvironmentInManager } from '../store';
 import { Modal } from './Modal';
 
 
@@ -10,7 +9,14 @@ interface EnvironmentManagerProps {
 }
 
 export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps) {
-    const selectedEnvName = useSignal<string | null>(environments.value[0]?.name || null);
+    // If no environment is selected, select the first one or create one?
+    // We can use a side effect to ensure selection
+    if (isOpen && !selectedEnvironmentInManager.value && environments.value.length > 0) {
+        selectedEnvironmentInManager.value = environments.value[0].name;
+    }
+
+    // Alias for easier refactoring, though valid to use signal directly
+    const selectedEnvName = selectedEnvironmentInManager;
 
     const createEnvironment = () => {
         const baseName = 'New Environment';

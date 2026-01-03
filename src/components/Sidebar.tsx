@@ -57,6 +57,21 @@ export function Sidebar() {
     }, []);
 
 
+    const createNewCollection = () => {
+        const name = prompt("New Collection Name:", "New Collection");
+        if (name) {
+            const newId = crypto.randomUUID();
+            collections.value = [...collections.value, {
+                id: newId,
+                name: name,
+                projectName: "Default Project", // Default project for now
+                path: undefined // Not saved yet
+            }];
+            // Auto expand the new collection
+            setExpandedCollections(prev => ({ ...prev, [newId]: true }));
+        }
+    };
+
     return (
         <aside style={{
             width: '250px',
@@ -86,7 +101,13 @@ export function Sidebar() {
                 >
                     <FolderOpen size={14} /> Load
                 </button>
-
+                <button
+                    onClick={createNewCollection}
+                    title="New Collection"
+                    style={{ flex: 1, padding: '6px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
+                >
+                    <Plus size={14} /> New
+                </button>
             </div>
 
             <nav

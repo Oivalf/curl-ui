@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Folder as FolderIcon, FolderOpen, FileJson, ChevronRight, ChevronDown, Trash2 } from 'lucide-preact';
-import { activeRequestId, activeFolderId, folders, requests, RequestItem, Folder, contextMenu, openTabs, activeTabId } from '../store';
+import { activeRequestId, activeFolderId, folders, requests, RequestItem, Folder, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
 
 interface SidebarItemProps {
     item: RequestItem | Folder;
@@ -293,6 +293,15 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
                     }}>
                         {item.name}
                     </span>
+                    {unsavedItemIds.value.has(item.id) && (
+                        <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--accent-primary)',
+                            marginLeft: '4px'
+                        }} />
+                    )}
                 </div>
 
                 {/* Actions */}

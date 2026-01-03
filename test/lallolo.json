@@ -19,7 +19,9 @@
       "name": "pisolo",
       "method": "GET",
       "url": "https://settenani/{name}",
-      "headers": {},
+      "headers": {
+        "pp": "cc"
+      },
       "parentId": null,
       "body": ""
     }
@@ -30,8 +32,21 @@
       "name": "Global",
       "variables": [
         {
+          "key": "gvar",
+          "value": "lob"
+        },
+        {
           "key": "ma",
           "value": "trigna"
+        }
+      ]
+    },
+    {
+      "name": "Local",
+      "variables": [
+        {
+          "key": "gvar",
+          "value": "local"
         }
       ]
     },
@@ -41,6 +56,10 @@
         {
           "key": "bianca",
           "value": "neve"
+        },
+        {
+          "key": "strega",
+          "value": ""
         }
       ]
     }

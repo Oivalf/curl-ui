@@ -1,6 +1,7 @@
-import { useSignal, useSignalEffect } from "@preact/signals";
-import { activeFolderId, folders, environments, activeEnvironmentName, type Folder } from "../store";
+import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
+import { activeFolderId, folders, environments, activeEnvironmentName, type Folder, unsavedItemIds, AuthConfig, navigateToItem, resolveHeaders } from "../store";
 import { Folder as FolderIcon } from "lucide-preact";
+import { AuthEditor } from "./AuthEditor";
 
 export function FolderEditor() {
     const currentFolder = folders.value.find(f => f.id === activeFolderId.value);
@@ -15,18 +16,40 @@ export function FolderEditor() {
     const variables = useSignal<{ key: string, value: string }[]>(
         Object.entries(currentFolder.variables || {}).map(([k, v]) => ({ key: k, value: v }))
     );
+    const auth = useSignal<AuthConfig>(currentFolder.auth || { type: 'inherit' });
 
     // Compute inherited variables
-    const inheritedVariables = useSignal<{ key: string, value: string, source: string }[]>([]);
+    const inheritedVariables = useSignal<{ key: string, value: string, source: string, sourceId?: string }[]>([]);
+
+    // Compute inherited Headers
+    const inheritedHeaders = useComputed(() => {
+        let parentId = currentFolder?.parentId;
+        if (!parentId) return [];
+        return resolveHeaders(parentId);
+    });
+
+    // Compute inherited Auth
+    const inheritedAuth = useComputed(() => {
+        let parentId = currentFolder?.parentId;
+        while (parentId) {
+            const parent = folders.value.find(f => f.id === parentId);
+            if (!parent) break;
+            if (parent.auth && parent.auth.type !== 'inherit') {
+                return { config: parent.auth, source: `Folder: ${parent.name}`, sourceId: parent.id };
+            }
+            parentId = parent.parentId;
+        }
+        return undefined;
+    });
 
     useSignalEffect(() => {
         const folderId = activeFolderId.value;
         const currentEnv = environments.value.find(e => e.name === activeEnvironmentName.value);
-        const map = new Map<string, { value: string, source: string }>();
+        const map = new Map<string, { value: string, source: string, sourceId?: string }>();
 
         // 1. Environment
         if (currentEnv) {
-            currentEnv.variables.forEach(v => map.set(v.key, { value: v.value, source: `Env: ${currentEnv.name}` }));
+            currentEnv.variables.forEach(v => map.set(v.key, { value: v.value, source: `Env: ${currentEnv.name}`, sourceId: `env:${currentEnv.name}` }));
         }
 
         // 2. Parent Folders (Root -> Parent)
@@ -50,7 +73,7 @@ export function FolderEditor() {
                 if (f.variables) {
                     Object.entries(f.variables).forEach(([k, v]) => {
                         if (typeof v === 'string') {
-                            map.set(k, { value: v, source: `Folder: ${f.name}` });
+                            map.set(k, { value: v, source: `Folder: ${f.name}`, sourceId: f.id });
                         }
                     });
                 }
@@ -58,15 +81,16 @@ export function FolderEditor() {
         }
 
         inheritedVariables.value = Array.from(map.entries())
-            .map(([k, v]) => ({ key: k, value: v.value, source: v.source }))
+            .map(([k, v]) => ({ key: k, value: v.value, source: v.source, sourceId: v.sourceId }))
             .sort((a, b) => a.key.localeCompare(b.key));
     });
 
-    // Sync back to store
+    // ... (Sync back to store)
     useSignalEffect(() => {
         const currentName = name.value;
         const currentHeaders = headers.value;
         const currentVars = variables.value;
+        const currentAuth = auth.value;
         const folderId = activeFolderId.value;
 
         if (!folderId) return;
@@ -86,16 +110,23 @@ export function FolderEditor() {
 
             const headersChanged = JSON.stringify(folder.headers || {}) !== JSON.stringify(headersObj);
             const varsChanged = JSON.stringify(folder.variables || {}) !== JSON.stringify(varsObj);
+            const authChanged = JSON.stringify(folder.auth) !== JSON.stringify(currentAuth);
 
-            if (folder.name !== currentName || headersChanged || varsChanged) {
+            if (folder.name !== currentName || headersChanged || varsChanged || authChanged) {
                 const newFolders = [...allFolders];
                 newFolders[idx] = {
                     ...folder,
                     name: currentName,
                     headers: headersObj,
-                    variables: varsObj
+                    variables: varsObj,
+                    auth: currentAuth
                 };
                 folders.value = newFolders;
+
+                // Mark as dirty
+                const newUnsaved = new Set(unsavedItemIds.peek());
+                newUnsaved.add(folderId);
+                unsavedItemIds.value = newUnsaved;
             }
         }
     });
@@ -142,7 +173,7 @@ export function FolderEditor() {
                 </div>
             </div>
 
-            {/* Shared Headers Section */}
+            {/* Shared Headers Section (unchanged) */}
             <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem' }}>Shared Headers</h3>
@@ -174,6 +205,36 @@ export function FolderEditor() {
                     ))}
                 </div>
             </div>
+
+            {/* Inherited Headers */}
+            {inheritedHeaders.value.length > 0 && (
+                <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-color)' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Inherited Headers</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Key</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Value</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Source</div>
+
+                        {inheritedHeaders.value.map((h, i) => (
+                            <div key={i} style={{ display: 'contents' }}>
+                                <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{h.key}</div>
+                                <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.value}>{h.value}</div>
+                                <div
+                                    style={{
+                                        color: h.sourceId ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                        fontStyle: 'italic',
+                                        cursor: h.sourceId ? 'pointer' : 'default',
+                                        textDecoration: h.sourceId ? 'underline' : 'none'
+                                    }}
+                                    onClick={() => h.sourceId && navigateToItem(h.sourceId)}
+                                >
+                                    {h.source}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Variables Section */}
             <div>
@@ -224,12 +285,32 @@ export function FolderEditor() {
                                 <>
                                     <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{v.key}</div>
                                     <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }} title={v.value}>{v.value}</div>
-                                    <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>{v.source}</div>
+                                    <div
+                                        style={{
+                                            color: v.sourceId ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                            fontStyle: 'italic',
+                                            cursor: v.sourceId ? 'pointer' : 'default',
+                                            textDecoration: v.sourceId ? 'underline' : 'none'
+                                        }}
+                                        onClick={() => v.sourceId && navigateToItem(v.sourceId)}
+                                    >
+                                        {v.source}
+                                    </div>
                                 </>
                             ))}
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Authentication Section */}
+            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
+                    <h3 style={{ margin: 0, fontSize: '1rem' }}>Authentication</h3>
+                </div>
+                <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                    <AuthEditor auth={auth} onChange={(newAuth) => auth.value = newAuth} inheritedAuth={inheritedAuth.value} />
+                </div>
             </div>
         </div>
     );
