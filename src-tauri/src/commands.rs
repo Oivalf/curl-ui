@@ -2,7 +2,6 @@ use git2::{IndexAddOption, Repository, Signature, StatusOptions};
 use reqwest::{multipart, Method};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path;
 use std::str::FromStr;
 use tauri::command;
 use tokio::fs;

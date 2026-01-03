@@ -146,13 +146,15 @@ export const unsavedItemIds = signal<Set<string>>(new Set());
 // Initialize with empty state (user request)
 collections.value = [];
 
-// Environments: Global always exists? Or maybe empty?
-// Application usually assumes at least one environment or handles empty.
-// Let's keep Global for now as it is "Workspace" level.
+// Environments: Global always exists, others are defaults for new projects
 environments.value = [
-    { name: 'Global', variables: [] }
+    { name: 'Global', variables: [] },
+    { name: 'Local', variables: [] },
+    { name: 'Dev', variables: [] },
+    { name: 'Test', variables: [] },
+    { name: 'Prod', variables: [] }
 ];
-activeEnvironmentName.value = 'Global';
+activeEnvironmentName.value = null; // Default to "No Environment"
 
 requests.value = [];
 folders.value = [];

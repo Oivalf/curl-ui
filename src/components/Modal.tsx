@@ -6,9 +6,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: ComponentChildren;
+    zIndex?: number;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, zIndex = 1100 }: ModalProps) {
     if (!isOpen) return null;
 
     return (
@@ -22,7 +23,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: zIndex,
             backdropFilter: 'blur(2px)'
         }}>
             <div style={{

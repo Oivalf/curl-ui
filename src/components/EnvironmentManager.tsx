@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from 'lucide-preact';
-import { environments, activeEnvironmentName, Environment, selectedEnvironmentInManager } from '../store';
+import { environments, activeEnvironmentName, Environment, selectedEnvironmentInManager, confirmationState } from '../store';
 import { Modal } from './Modal';
 
 
@@ -36,15 +36,20 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
 
     const deleteEnvironment = (name: string, e: MouseEvent) => {
         e.stopPropagation();
-        if (confirm('Delete this environment?')) {
-            environments.value = environments.value.filter(e => e.name !== name);
-            if (selectedEnvName.value === name) {
-                selectedEnvName.value = environments.value[0]?.name || null;
+        confirmationState.value = {
+            isOpen: true,
+            title: 'Delete Environment',
+            message: `Are you sure you want to delete the environment "${name}"?`,
+            onConfirm: () => {
+                environments.value = environments.value.filter(e => e.name !== name);
+                if (selectedEnvName.value === name) {
+                    selectedEnvName.value = environments.value[0]?.name || null;
+                }
+                if (activeEnvironmentName.value === name) {
+                    activeEnvironmentName.value = null;
+                }
             }
-            if (activeEnvironmentName.value === name) {
-                activeEnvironmentName.value = null;
-            }
-        }
+        };
     };
 
     const updateEnvName = (oldName: string, newName: string) => {

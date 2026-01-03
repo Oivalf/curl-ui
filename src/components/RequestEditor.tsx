@@ -234,6 +234,15 @@ export function RequestEditor() {
                 if (envVar) value = envVar.value;
             }
 
+            // 3. Check Global Environment Fallback
+            if (value === null) {
+                const globalEnv = environments.value.find(e => e.name === 'Global');
+                if (globalEnv) {
+                    const globalVar = globalEnv.variables.find(v => v.key === key);
+                    if (globalVar) value = globalVar.value;
+                }
+            }
+
             if (value !== null) {
                 result = result.split(placeholder).join(value);
             }
@@ -292,17 +301,21 @@ export function RequestEditor() {
                 },
                 env: {
                     get: (key: string) => {
-                        return activeEnv?.variables.find(v => v.key === key)?.value;
+                        const fromActive = activeEnv?.variables.find(v => v.key === key)?.value;
+                        if (fromActive !== undefined) return fromActive;
+                        const globalEnv = environments.peek().find(e => e.name === 'Global');
+                        return globalEnv?.variables.find(v => v.key === key)?.value;
                     },
                     set: (key: string, value: string) => {
-                        if (!activeEnv) return;
-                        const existing = activeEnv.variables.find(v => v.key === key);
+                        const targetEnv = activeEnv || environments.peek().find(e => e.name === 'Global');
+                        if (!targetEnv) return;
+
+                        const existing = targetEnv.variables.find(v => v.key === key);
                         if (existing) {
                             existing.value = value;
                         } else {
-                            activeEnv.variables.push({ key, value });
+                            targetEnv.variables.push({ key, value });
                         }
-                        // Trigger reactivity (brute force for deep nested changes if needed, but array mutation might be enough for preact signals if reference changes or if we force update. Preact signals on array methods usually trigger. If not, we re-assign.)
                         environments.value = [...environments.peek()];
                     }
                 }

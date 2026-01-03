@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown } from 'lucide-preact';
-import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk } from '../store';
+import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from './Modal';
@@ -67,6 +67,19 @@ export function Sidebar() {
                 projectName: "Default Project", // Default project for now
                 path: undefined // Not saved yet
             }];
+
+            // Ensure default environments exist if it's a fresh start
+            const currentEnvs = environments.peek();
+            if (currentEnvs.length === 1 && currentEnvs[0].name === 'Global') {
+                environments.value = [
+                    { name: 'Global', variables: [] },
+                    { name: 'Local', variables: [] },
+                    { name: 'Dev', variables: [] },
+                    { name: 'Test', variables: [] },
+                    { name: 'Prod', variables: [] }
+                ];
+            }
+
             // Auto expand the new collection
             setExpandedCollections(prev => ({ ...prev, [newId]: true }));
         }

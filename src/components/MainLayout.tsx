@@ -1,6 +1,7 @@
 import { ComponentChildren } from 'preact';
 import { Sidebar } from './Sidebar';
 import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections } from '../store';
+import { useSignalEffect } from '@preact/signals';
 import { Modal } from './Modal';
 import { EnvironmentManager } from './EnvironmentManager';
 import { ConsolePanel } from './ConsolePanel';
@@ -39,6 +40,14 @@ export function MainLayout({ children }: LayoutProps) {
             }
         };
 
+        // Check for active environment validity
+        useSignalEffect(() => {
+            const selectable = environments.value.filter(e => e.name !== 'Global');
+            if (activeEnvironmentName.value && !selectable.some(e => e.name === activeEnvironmentName.value)) {
+                activeEnvironmentName.value = null;
+            }
+        });
+
         window.addEventListener('keydown', handleKeyDown);
 
         return () => {
@@ -53,39 +62,16 @@ export function MainLayout({ children }: LayoutProps) {
         <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: 'var(--bg-base)' }}>
             <Sidebar />
             <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                    {children}
-                </div>
-
-                <ConsolePanel />
-
                 <div style={{
-                    height: '32px',
-                    borderTop: '1px solid var(--border-color)',
+                    height: '40px',
+                    borderBottom: '1px solid var(--border-color)',
                     backgroundColor: 'var(--bg-sidebar)',
                     display: 'flex',
-                    justifyContent: 'space-between',
+                    justifyContent: 'flex-end',
                     alignItems: 'center',
                     padding: '0 16px'
                 }}>
-                    {/* Left: Console Toggle */}
-                    <button
-                        onClick={() => isConsoleOpen.value = !isConsoleOpen.value}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: isConsoleOpen.value ? 'var(--accent-primary)' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '0.8rem'
-                        }}
-                    >
-                        <Terminal size={14} /> Console
-                    </button>
-
-                    {/* Right: Environment Selector */}
+                    {/* Environment Selector */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Env:</div>
                         <select
@@ -101,10 +87,12 @@ export function MainLayout({ children }: LayoutProps) {
                                 fontSize: '0.8rem'
                             }}
                         >
-                            <option value="" disabled>No Environment</option>
-                            {environments.value.map(env => (
-                                <option key={env.name} value={env.name}>{env.name}</option>
-                            ))}
+                            <option value="">No Environment</option>
+                            {environments.value
+                                .filter(env => env.name !== 'Global')
+                                .map(env => (
+                                    <option key={env.name} value={env.name}>{env.name}</option>
+                                ))}
                         </select>
                         <button
                             onClick={() => isEnvManagerOpen.value = true}
@@ -122,13 +110,53 @@ export function MainLayout({ children }: LayoutProps) {
                         </button>
                     </div>
                 </div>
+
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    {children}
+                </div>
+
+                <ConsolePanel />
+
+                <div style={{
+                    height: '32px',
+                    borderTop: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-sidebar)',
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                    alignItems: 'center',
+                    padding: '0 16px'
+                }}>
+                    {/* Console Toggle */}
+                    <button
+                        onClick={() => isConsoleOpen.value = !isConsoleOpen.value}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: isConsoleOpen.value ? 'var(--accent-primary)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.8rem'
+                        }}
+                    >
+                        <Terminal size={14} /> Console
+                    </button>
+                </div>
             </main>
 
-            {/* Global Confirmation Modal */}
+            <EnvironmentManager
+                isOpen={isEnvManagerOpen.value}
+                onClose={() => isEnvManagerOpen.value = false}
+            />
+            <AboutModal />
+
+            {/* Global Confirmation Modal - Rendered last with higher z-index to overlay other modals */}
             <Modal
                 isOpen={confirmationState.value.isOpen}
                 onClose={() => confirmationState.value = { ...confirmationState.value, isOpen: false }}
                 title={confirmationState.value.title}
+                zIndex={1300}
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                     <p style={{ margin: 0, color: 'var(--text-primary)' }}>{confirmationState.value.message}</p>
@@ -166,12 +194,6 @@ export function MainLayout({ children }: LayoutProps) {
                     </div>
                 </div>
             </Modal>
-
-            <EnvironmentManager
-                isOpen={isEnvManagerOpen.value}
-                onClose={() => isEnvManagerOpen.value = false}
-            />
-            <AboutModal />
         </div>
     );
 }
