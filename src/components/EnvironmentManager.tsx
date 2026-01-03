@@ -287,7 +287,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                                                 height: '14px',
                                                                 borderRadius: '50%',
                                                                 backgroundColor: 'var(--accent-primary)',
-                                                                color: 'white',
+                                                                color: '#000',
                                                                 fontSize: '9px',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
