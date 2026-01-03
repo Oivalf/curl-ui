@@ -1,0 +1,55 @@
+{
+  "id": "7e45ccd9-142a-4359-987a-8f803fd31ec1",
+  "name": "ciao col",
+  "projectName": "Default Project",
+  "requests": [
+    {
+      "id": "aff8575a-a317-47d8-812a-d560423efef2",
+      "collectionId": "7e45ccd9-142a-4359-987a-8f803fd31ec1",
+      "name": "cio req",
+      "method": "GET",
+      "url": "https://example.com",
+      "headers": {},
+      "parentId": null,
+      "body": ""
+    }
+  ],
+  "folders": [],
+  "environments": [
+    {
+      "name": "Global",
+      "variables": [
+        {
+          "key": "gvar",
+          "value": "lob"
+        },
+        {
+          "key": "ma",
+          "value": "trigna"
+        }
+      ]
+    },
+    {
+      "name": "Local",
+      "variables": [
+        {
+          "key": "gvar",
+          "value": "local"
+        }
+      ]
+    },
+    {
+      "name": "Dev",
+      "variables": [
+        {
+          "key": "bianca",
+          "value": "neve"
+        },
+        {
+          "key": "strega",
+          "value": ""
+        }
+      ]
+    }
+  ]
+}
