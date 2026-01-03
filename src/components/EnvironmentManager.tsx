@@ -69,16 +69,43 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
     };
 
     const addVariable = (envName: string) => {
-        environments.value = environments.value.map(e =>
-            e.name === envName ? { ...e, variables: [...e.variables, { key: '', value: '' }] } : e
-        );
+        if (envName === 'Global') {
+            environments.value = environments.value.map(e =>
+                e.name === 'Global' ? { ...e, variables: [...e.variables, { key: '', value: '' }] } : e
+            );
+            return;
+        }
+
+        // Add to all non-Global environments
+        environments.value = environments.value.map(e => {
+            if (e.name !== 'Global') {
+                return { ...e, variables: [...e.variables, { key: '', value: '' }] };
+            }
+            return e;
+        });
     };
 
     const updateVariable = (envName: string, index: number, field: 'key' | 'value', val: string) => {
+        if (envName === 'Global' || field === 'value') {
+            // Update only the current environment
+            environments.value = environments.value.map(e => {
+                if (e.name === envName) {
+                    const newVars = [...e.variables];
+                    newVars[index] = { ...newVars[index], [field]: val };
+                    return { ...e, variables: newVars };
+                }
+                return e;
+            });
+            return;
+        }
+
+        // Field is 'key' and NOT Global: update across all non-Global environments
         environments.value = environments.value.map(e => {
-            if (e.name === envName) {
+            if (e.name !== 'Global') {
                 const newVars = [...e.variables];
-                newVars[index] = { ...newVars[index], [field]: val };
+                if (newVars[index]) {
+                    newVars[index] = { ...newVars[index], key: val };
+                }
                 return { ...e, variables: newVars };
             }
             return e;
@@ -86,8 +113,20 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
     };
 
     const removeVariable = (envName: string, index: number) => {
+        if (envName === 'Global') {
+            environments.value = environments.value.map(e => {
+                if (e.name === 'Global') {
+                    const newVars = e.variables.filter((_, i) => i !== index);
+                    return { ...e, variables: newVars };
+                }
+                return e;
+            });
+            return;
+        }
+
+        // Remove from all non-Global environments
         environments.value = environments.value.map(e => {
-            if (e.name === envName) {
+            if (e.name !== 'Global') {
                 const newVars = e.variables.filter((_, i) => i !== index);
                 return { ...e, variables: newVars };
             }
@@ -95,7 +134,19 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
         });
     };
 
+    const overrideGlobalVariable = (key: string, value: string) => {
+        if (!selectedEnvName.value || selectedEnvName.value === 'Global') return;
+
+        environments.value = environments.value.map(e => {
+            if (e.name === selectedEnvName.value) {
+                return { ...e, variables: [...e.variables, { key, value }] };
+            }
+            return e;
+        });
+    };
+
     const currentEnv = environments.value.find(e => e.name === selectedEnvName.value);
+    const globalEnv = environments.value.find(e => e.name === 'Global');
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Manage Environments">
@@ -175,37 +226,96 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                     <h4 style={{ margin: 0 }}>Variables</h4>
-                                    <button
-                                        onClick={() => addVariable(currentEnv.name)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                    >
-                                        <Plus size={14} /> Add
-                                    </button>
                                 </div>
 
-                                <div style={{ flex: 1, overflowY: 'auto' }}>
-                                    {currentEnv.variables.map((v, idx) => (
-                                        <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                            <input
-                                                placeholder="Key"
-                                                value={v.key}
-                                                onInput={(e) => updateVariable(currentEnv.name, idx, 'key', e.currentTarget.value)}
-                                                style={{ flex: 1, padding: '4px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
-                                            />
-                                            <input
-                                                placeholder="Value"
-                                                value={v.value}
-                                                onInput={(e) => updateVariable(currentEnv.name, idx, 'value', e.currentTarget.value)}
-                                                style={{ flex: 1, padding: '4px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
-                                            />
-                                            <button
-                                                onClick={() => removeVariable(currentEnv.name, idx)}
-                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                                    {/* Global Inherited Variables */}
+                                    {currentEnv.name !== 'Global' && globalEnv && globalEnv.variables.length > 0 && (
+                                        <div style={{ marginBottom: '16px', padding: '8px', backgroundColor: 'var(--bg-base)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', opacity: 0.8 }}>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>
+                                                Inherited from Global
+                                            </div>
+                                            {globalEnv.variables
+                                                .filter(gv => !currentEnv.variables.some(lv => lv.key === gv.key))
+                                                .map((v, idx) => (
+                                                    <div key={`global-${idx}`} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                                                        <div style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.6 }}>
+                                                            {v.key || <span style={{ fontStyle: 'italic' }}>(empty key)</span>}
+                                                        </div>
+                                                        <input
+                                                            placeholder="Override Value"
+                                                            value={v.value}
+                                                            onInput={(e) => overrideGlobalVariable(v.key, e.currentTarget.value)}
+                                                            style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.9rem' }}
+                                                        />
+                                                        <div style={{ width: '14px' }} />
+                                                    </div>
+                                                ))}
                                         </div>
-                                    ))}
+                                    )}
+
+                                    {/* Add Button - specifically after Global box if it exists */}
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                                        <button
+                                            onClick={() => addVariable(currentEnv.name)}
+                                            style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                                        >
+                                            <Plus size={14} /> Add Variable
+                                        </button>
+                                    </div>
+
+                                    {/* Local Variables */}
+                                    {currentEnv.variables.map((v, idx) => {
+                                        const isOverride = currentEnv.name !== 'Global' && globalEnv?.variables.some(gv => gv.key === v.key && v.key !== '');
+                                        return (
+                                            <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                                <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                                                    <input
+                                                        placeholder="Key"
+                                                        value={v.key}
+                                                        onInput={(e) => updateVariable(currentEnv.name, idx, 'key', e.currentTarget.value)}
+                                                        disabled={isOverride}
+                                                        style={{ width: '100%', padding: '4px', paddingRight: isOverride ? '24px' : '4px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', opacity: isOverride ? 0.7 : 1 }}
+                                                    />
+                                                    {isOverride && (
+                                                        <div
+                                                            title="Overrides Global variable"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                right: '6px',
+                                                                width: '14px',
+                                                                height: '14px',
+                                                                borderRadius: '50%',
+                                                                backgroundColor: 'var(--accent-primary)',
+                                                                color: 'white',
+                                                                fontSize: '9px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontWeight: 'bold',
+                                                                cursor: 'help',
+                                                                boxShadow: '0 0 4px rgba(0,0,0,0.3)'
+                                                            }}
+                                                        >
+                                                            G
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <input
+                                                    placeholder="Value"
+                                                    value={v.value}
+                                                    onInput={(e) => updateVariable(currentEnv.name, idx, 'value', e.currentTarget.value)}
+                                                    style={{ flex: 1, padding: '4px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
+                                                />
+                                                <button
+                                                    onClick={() => removeVariable(currentEnv.name, idx)}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </>
