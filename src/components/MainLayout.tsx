@@ -14,12 +14,18 @@ interface LayoutProps {
     children: ComponentChildren;
 }
 
+import { openUserGuideWindow } from '../utils/window';
+
 export function MainLayout({ children }: LayoutProps) {
     // isEnvManagerOpen is imported from store
 
     useEffect(() => {
         const unlisten = listen('open-about', () => {
             isAboutOpen.value = true;
+        });
+
+        const unlistenUserGuide = listen('open-user-guide', () => {
+            openUserGuideWindow();
         });
 
         const unlistenSave = listen('trigger-save', async () => {
@@ -56,6 +62,7 @@ export function MainLayout({ children }: LayoutProps) {
 
         return () => {
             unlisten.then(f => f());
+            unlistenUserGuide.then(f => f());
             unlistenSave.then(f => f());
             unlistenSaveAll.then(f => f());
             unlistenSwitchProject.then(f => f());

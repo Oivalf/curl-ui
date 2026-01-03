@@ -1,6 +1,7 @@
-import { signal } from "@preact/signals";
+import { signal, effect } from "@preact/signals";
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 // --- Interfaces ---
 
@@ -114,10 +115,19 @@ export const loadKnownProjects = async () => {
         const projects = await invoke<string[]>('list_projects');
         knownProjects.value = projects;
 
-        // Auto-load last modified project if no project is specified in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        if (!urlParams.has('projectName') && projects.length > 0) {
+        if (pName) {
+            // Project provided in URL (e.g. from Sidebar new window)
+            await openProject(pName);
+        } else if (projects.length > 0) {
+            // Auto-load last modified project
             await openProject(projects[0]);
+        } else {
+            // First time launch, no projects yet, but we want the menu active for "About" etc.
+            try {
+                await invoke('enable_window_menu');
+            } catch (err) {
+                console.error('Failed to enable menu on fresh launch:', err);
+            }
         }
     } catch (err) {
         console.error('Failed to list projects:', err);
@@ -125,6 +135,22 @@ export const loadKnownProjects = async () => {
         isInitializing.value = false;
     }
 };
+
+export const updateWindowTitle = async (name: string) => {
+    try {
+        const title = (name && name !== "Default Project") ? `Curl UI - ${name}` : 'Curl UI';
+        document.title = title;
+        const window = getCurrentWindow();
+        await window.setTitle(title);
+    } catch (err) {
+        console.error('Failed to set window title:', err);
+    }
+};
+
+// Keep title in sync reactively
+effect(() => {
+    updateWindowTitle(activeProjectName.value);
+});
 
 // Initial load
 loadKnownProjects();
@@ -221,6 +247,13 @@ export const openProject = async (name: string) => {
 
         for (const path of manifest.collections) {
             await loadCollectionFromPath(path);
+        }
+
+        // Enable the native menu for this window
+        try {
+            await invoke('enable_window_menu');
+        } catch (err) {
+            console.error('Failed to enable menu for project:', name, err);
         }
     } catch (err) {
         console.error('Failed to open project:', err);

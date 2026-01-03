@@ -48,9 +48,20 @@
 ---
 
 ## 🎨 Design Aesthetics
-- **Premium UI**: Built with a sleek dark-mode aesthetic.
-- **Dynamic Interactions**: Smooth micro-animations and responsive hover states.
+- **Premium UI**: Vibrant colors, dark mode, glassmorphism, and dynamic micro-animations.
+- **Cross-Platform**: Built with Tauri for a lightweight, native experience on Linux, macOS, and Windows.
 - **Safe Workflows**: Integrated confirmation modals for destructive actions (e.g., deletes), with intelligent layering to ensure they always appear on top.
+
+## 📖 User Guide
+
+Explore the detailed documentation to master Curl UI:
+
+- **[Introduction & Overview](docs/user-guide/index.md)**
+- **[Project Management](docs/user-guide/projects.md)**
+- **[Collections & Folders](docs/user-guide/collections.md)**
+- **[Building Requests](docs/user-guide/requests.md)**
+- **[Environments & Variables](docs/user-guide/environments.md)**
+- **[Scripting (Pre/Post)](docs/user-guide/scripting.md)**
 
 ---
 

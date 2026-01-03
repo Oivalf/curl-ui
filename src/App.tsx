@@ -4,8 +4,17 @@ import { FolderEditor } from "./components/FolderEditor";
 import { TabBar } from "./components/TabBar";
 import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing } from "./store";
 import { WelcomeScreen } from "./components/WelcomeScreen";
+import { UserGuideView } from "./components/UserGuideView";
 
 function App() {
+  // Simple "Routing" for separate windows
+  const url = new URL(window.location.href);
+  const view = url.searchParams.get('view');
+
+  if (view === 'user-guide') {
+    return <UserGuideView />;
+  }
+
   if (isInitializing.value) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-base)', color: 'var(--accent-primary)' }}>

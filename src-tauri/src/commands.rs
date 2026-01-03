@@ -3,7 +3,7 @@ use reqwest::{multipart, Method};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
-use tauri::command;
+use tauri::{command, path::BaseDirectory, Manager};
 use tokio::fs;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -296,4 +296,26 @@ pub async fn get_project_manifest(
     let manifest: ProjectManifest = serde_json::from_str(&data).map_err(|e| e.to_string())?;
 
     Ok(manifest)
+}
+
+#[tauri::command]
+pub async fn get_user_guide_content(
+    app_handle: tauri::AppHandle,
+    page: String,
+) -> Result<String, String> {
+    let path = app_handle
+        .path()
+        .resolve(
+            format!("docs/user-guide/{}.md", page),
+            BaseDirectory::Resource,
+        )
+        .map_err(|e| format!("Failed to resolve resource path: {}", e))?;
+
+    if !path.exists() {
+        return Err(format!("Guide file not found at: {}", path.display()));
+    }
+
+    fs::read_to_string(&path)
+        .await
+        .map_err(|e| format!("Failed to read guide ({}): {}", path.display(), e))
 }

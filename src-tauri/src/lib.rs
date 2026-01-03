@@ -58,6 +58,8 @@ pub fn run() {
                 let _ = app.emit("trigger-save-all", ());
             } else if id == "about" {
                 let _ = app.emit("open-about", ());
+            } else if id == "user_guide" {
+                let _ = app.emit("open-user-guide", ());
             } else if id.starts_with("project:") {
                 let project_name = &id[8..];
                 let _ = app.emit("switch-project", project_name);
@@ -76,6 +78,7 @@ pub fn run() {
             commands::sync_project_manifest,
             commands::list_projects,
             commands::get_project_manifest,
+            commands::get_user_guide_content,
             refresh_projects_menu,
             enable_window_menu
         ])
@@ -97,6 +100,7 @@ fn create_app_menu<R: tauri::Runtime>(handle: &AppHandle<R>) -> tauri::Result<Me
     )?;
     let quit_i = MenuItem::with_id(handle, "quit", "Quit", true, None::<&str>)?;
     let about_i = MenuItem::with_id(handle, "about", "About", true, None::<&str>)?;
+    let user_guide_i = MenuItem::with_id(handle, "user_guide", "User Guide", true, None::<&str>)?;
 
     // Create Submenus
     let recent_projects_menu =
@@ -113,7 +117,7 @@ fn create_app_menu<R: tauri::Runtime>(handle: &AppHandle<R>) -> tauri::Result<Me
             &quit_i,
         ],
     )?;
-    let help_menu = Submenu::with_items(handle, "?", true, &[&about_i])?;
+    let help_menu = Submenu::with_items(handle, "?", true, &[&user_guide_i, &about_i])?;
 
     // Create and Set Menu
     Menu::with_items(handle, &[&file_menu, &help_menu])
