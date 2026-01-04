@@ -1,0 +1,39 @@
+{
+  "id": "26d7f3aa-1a75-45f2-aade-947bdb32b3a1",
+  "name": "pluto",
+  "projectName": "pippo",
+  "requests": [
+    {
+      "id": "a8463737-d8d2-4628-ab00-79e9477d3942",
+      "collectionId": "26d7f3aa-1a75-45f2-aade-947bdb32b3a1",
+      "name": "paperino",
+      "method": "GET",
+      "url": "https://example.com",
+      "headers": {},
+      "parentId": null
+    }
+  ],
+  "folders": [],
+  "environments": [
+    {
+      "name": "Global",
+      "variables": []
+    },
+    {
+      "name": "Local",
+      "variables": []
+    },
+    {
+      "name": "Dev",
+      "variables": []
+    },
+    {
+      "name": "Test",
+      "variables": []
+    },
+    {
+      "name": "Prod",
+      "variables": []
+    }
+  ]
+}

@@ -56,12 +56,7 @@
 
 Explore the detailed documentation to master Curl UI:
 
-- **[Introduction & Overview](docs/user-guide/index.md)**
-- **[Project Management](docs/user-guide/projects.md)**
-- **[Collections & Folders](docs/user-guide/collections.md)**
-- **[Building Requests](docs/user-guide/requests.md)**
-- **[Environments & Variables](docs/user-guide/environments.md)**
-- **[Scripting (Pre/Post)](docs/user-guide/scripting.md)**
+- **[Introduction & Overview](src-tauri/docs/user-guide/index.md)**
 
 ---
 

@@ -1,0 +1,29 @@
+{
+  "id": "51c081e1-a615-41da-8c2b-071725f7766b",
+  "name": "test collection",
+  "projectName": "Default Project",
+  "requests": [],
+  "folders": [],
+  "environments": [
+    {
+      "name": "Global",
+      "variables": []
+    },
+    {
+      "name": "Local",
+      "variables": []
+    },
+    {
+      "name": "Dev",
+      "variables": []
+    },
+    {
+      "name": "Test",
+      "variables": []
+    },
+    {
+      "name": "Prod",
+      "variables": []
+    }
+  ]
+}
