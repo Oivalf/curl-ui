@@ -117,17 +117,23 @@ export const loadKnownProjects = async () => {
 
         if (pName) {
             // Project provided in URL (e.g. from Sidebar new window)
-            await openProject(pName);
+            // Check if this project already exists
+            if (projects.includes(pName)) {
+                await openProject(pName);
+            } else {
+                // New project - just set the name and enable menu
+                activeProjectName.value = pName;
+                try {
+                    await invoke('enable_window_menu');
+                } catch (err) {
+                    console.error('Failed to enable menu for new project:', err);
+                }
+            }
         } else if (projects.length > 0) {
             // Auto-load last modified project
             await openProject(projects[0]);
         } else {
-            // First time launch, no projects yet, but we want the menu active for "About" etc.
-            try {
-                await invoke('enable_window_menu');
-            } catch (err) {
-                console.error('Failed to enable menu on fresh launch:', err);
-            }
+            // First time launch, no projects yet - show WelcomeScreen without menu
         }
     } catch (err) {
         console.error('Failed to list projects:', err);
@@ -138,7 +144,7 @@ export const loadKnownProjects = async () => {
 
 export const updateWindowTitle = async (name: string) => {
     try {
-        const title = (name && name !== "Default Project") ? `Curl UI - ${name}` : 'Curl UI';
+        const title = (name && name !== "Default Project") ? `cURL-UI - ${name}` : 'cURL-UI';
         document.title = title;
         const window = getCurrentWindow();
         await window.setTitle(title);
@@ -271,7 +277,7 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
             path = await save({
                 defaultPath: collection.path || `${collection.name}.json`,
                 filters: [{
-                    name: 'Curl UI Collection',
+                    name: 'cURL-UI Collection',
                     extensions: ['json']
                 }]
             });
@@ -392,7 +398,7 @@ export const loadCollectionFromDisk = async () => {
             multiple: false,
             directory: false,
             filters: [{
-                name: 'Curl UI Collection',
+                name: 'cURL-UI Collection',
                 extensions: ['json']
             }]
         });

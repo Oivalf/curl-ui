@@ -1,6 +1,6 @@
-# Curl UI User Guide
+# cURL-UI User Guide
 
-Welcome to the **Curl UI** User Guide! This documentation is designed to help you get the most out of Curl UI, a modern, high-performance HTTP client built with Tauri and React.
+Welcome to the **cURL-UI** User Guide! This documentation is designed to help you get the most out of cURL-UI, a modern, high-performance HTTP client built with Tauri and React.
 
 Whether you're a developer testing APIs or a QA engineer automating requests, this guide will walk you through everything from project management to advanced scripting.
 

@@ -20,11 +20,11 @@ export function AboutModal() {
         <Modal
             isOpen={isAboutOpen.value}
             onClose={() => isAboutOpen.value = false}
-            title="About Curl UI"
+            title="About cURL-UI"
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', padding: '16px' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
-                    Curl UI
+                    cURL-UI
                 </div>
                 <div style={{ color: 'var(--text-secondary)' }}>
                     A modern HTTP client built with Tauri.

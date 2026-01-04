@@ -1,6 +1,6 @@
 # Building Requests
 
-The Request Editor is the heart of Curl UI. It allows you to craft complex HTTP requests with ease.
+The Request Editor is the heart of cURL-UI. It allows you to craft complex HTTP requests with ease.
 
 ## Request Basics
 

@@ -18,7 +18,7 @@ function App() {
   if (isInitializing.value) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-base)', color: 'var(--accent-primary)' }}>
-        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Loading Curl UI...</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Loading cURL-UI...</div>
       </div>
     )
   }

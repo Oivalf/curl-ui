@@ -167,7 +167,7 @@ pub fn git_commit(args: GitCommitArgs) -> Result<String, String> {
     let tree_id = index.write_tree().map_err(|e| e.to_string())?;
     let tree = repo.find_tree(tree_id).map_err(|e| e.to_string())?;
 
-    let signature = Signature::now("Curl UI", "curl-ui@local").map_err(|e| e.to_string())?;
+    let signature = Signature::now("cURL-UI", "curl-ui@local").map_err(|e| e.to_string())?;
 
     let parent_commit = match repo.head() {
         Ok(head) => {
@@ -318,4 +318,18 @@ pub async fn get_user_guide_content(
     fs::read_to_string(&path)
         .await
         .map_err(|e| format!("Failed to read guide ({}): {}", path.display(), e))
+}
+
+#[command]
+pub async fn delete_project(app_handle: tauri::AppHandle, name: String) -> Result<(), String> {
+    use tauri::Manager;
+
+    let home_dir = app_handle.path().home_dir().map_err(|e| e.to_string())?;
+    let manifest_path = home_dir.join(".curl-ui").join(format!("{}.json", name));
+
+    if manifest_path.exists() {
+        std::fs::remove_file(manifest_path).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }

@@ -1,4 +1,4 @@
-# curl-ui 🚀
+# cURL-UI 🚀
 
 **curl-ui** is a modern, premium, and powerful API client built with **Tauri** and **Preact**. It's designed to provide a sleek and efficient developer experience for testing, organizing, and executing HTTP requests with the speed of rust and the flexibility of a modern UI.
 
@@ -54,7 +54,7 @@
 
 ## 📖 User Guide
 
-Explore the detailed documentation to master Curl UI:
+Explore the detailed documentation to master cURL-UI:
 
 - **[Introduction & Overview](src-tauri/docs/user-guide/index.md)**
 
@@ -90,4 +90,4 @@ Explore the detailed documentation to master Curl UI:
 
 ## 📄 License
 
-Made with ❤️ by the **curl-ui** team.
+Made with ❤️ by the **cURL-UI** team.

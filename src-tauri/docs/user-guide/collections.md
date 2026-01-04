@@ -1,10 +1,10 @@
 # Collections & Folders
 
-Organization is key to efficient API testing. Curl UI provides a hierarchical structure to manage your requests.
+Organization is key to efficient API testing. cURL-UI provides a hierarchical structure to manage your requests.
 
 ## Collections
 
-A **Collection** is the top-level container for your requests. In Curl UI, collections are stored as JSON files on your disk.
+A **Collection** is the top-level container for your requests. In cURL-UI, collections are stored as JSON files on your disk.
 
 - **Creating a Collection**: Click the **New** button in the sidebar. You'll be prompted for a name.
 - **Importing**: You can load existing JSON collections from your disk.

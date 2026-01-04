@@ -13,7 +13,7 @@ The **Global** environment is special. It acts as a base layer for *all* other e
 
 ### 2. Custom Environments
 Create environments like "Prod" or "Test" to override Global values or add environment-specific keys.
-- **Syncing Keys**: When you add or remove a variable key in one environment, Curl UI automatically synchronizes that key across all your non-Global environments to keep them consistent.
+- **Syncing Keys**: When you add or remove a variable key in one environment, cURL-UI automatically synchronizes that key across all your non-Global environments to keep them consistent.
 
 ## Variable Overrides
 

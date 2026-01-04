@@ -1,6 +1,6 @@
 # Scripting (Pre/Post)
 
-Curl UI features a powerful JavaScript-based scripting engine that allows you to automate your API workflows.
+cURL-UI features a powerful JavaScript-based scripting engine that allows you to automate your API workflows.
 
 ## The `env` Object
 

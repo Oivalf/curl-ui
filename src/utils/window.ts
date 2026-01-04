@@ -12,7 +12,7 @@ export async function openUserGuideWindow() {
 
     const webview = new WebviewWindow(label, {
         url: '/?view=user-guide',
-        title: 'Curl UI - User Guide',
+        title: 'cURL-UI - User Guide',
         width: 1000,
         height: 800,
         resizable: true,

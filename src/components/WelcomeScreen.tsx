@@ -1,9 +1,15 @@
-import { Plus, Layout, BookOpen } from 'lucide-preact';
-import { activeProjectName } from '../store';
+import { Plus, Layout, BookOpen, FolderOpen } from 'lucide-preact';
+import { activeProjectName, knownProjects, openProject } from '../store';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'preact/hooks';
 import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
 import { openUserGuideWindow } from '../utils/window';
+
+// Cast icons to any to avoid Preact/React type conflicts
+const PlusIcon = Plus as any;
+const LayoutIcon = Layout as any;
+const BookIcon = BookOpen as any;
+const FolderIcon = FolderOpen as any;
 
 export function WelcomeScreen() {
     const [appVersion, setAppVersion] = useState('Loading...');
@@ -40,7 +46,8 @@ export function WelcomeScreen() {
             backgroundColor: 'var(--bg-base)',
             color: 'var(--text-primary)',
             padding: '2rem',
-            textAlign: 'center'
+            textAlign: 'center',
+            overflowY: 'auto'
         }}>
             <div style={{
                 backgroundColor: 'rgba(0, 255, 255, 0.05)',
@@ -52,7 +59,7 @@ export function WelcomeScreen() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '1.5rem',
-                maxWidth: '500px',
+                maxWidth: '600px',
                 width: '100%',
                 boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
             }}>
@@ -67,72 +74,116 @@ export function WelcomeScreen() {
                     marginBottom: '1rem',
                     boxShadow: '0 0 30px var(--accent-primary)'
                 }}>
-                    <Layout size={40} color="#000" />
+                    <LayoutIcon size={40} color="#000" />
                 </div>
 
-                <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>Welcome to Curl UI</h1>
-                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
-                    It looks like you don't have any projects yet.<br />
-                    Start by creating your first project to organize your collections.
-                </p>
+                <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>Welcome to cURL-UI</h1>
 
-                <button
-                    onClick={openNewProjectWindow}
-                    style={{
-                        backgroundColor: 'var(--accent-primary)',
-                        color: '#000',
-                        border: 'none',
-                        padding: '1rem 2rem',
-                        borderRadius: '12px',
-                        fontSize: '1.1rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        marginTop: '1rem',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 0 20px var(--accent-primary)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}
-                >
-                    <Plus size={24} />
-                    Create New Project
-                </button>
+                {knownProjects.value.length > 0 ? (
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left' }}>
+                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <FolderIcon size={18} /> Recent Projects
+                        </h3>
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            padding: '4px',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(0,0,0,0.1)'
+                        }}>
+                            {knownProjects.value.map(project => (
+                                <div
+                                    key={project}
+                                    onClick={() => openProject(project)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        padding: '10px 16px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        backgroundColor: 'var(--bg-sidebar)',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 255, 255, 0.1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-sidebar)'}
+                                >
+                                    <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{project}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                        It looks like you don't have any projects yet.<br />
+                        Start by creating your first project to organize your collections.
+                    </p>
+                )}
 
-                <button
-                    onClick={() => openUserGuideWindow()}
-                    style={{
-                        backgroundColor: 'transparent',
-                        color: 'var(--accent-primary)',
-                        border: '1px solid var(--accent-primary)',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '12px',
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        marginTop: '0.5rem',
-                        transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(0, 255, 255, 0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                >
-                    <BookOpen size={20} />
-                    View User Guide
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '1rem' }}>
+                    <button
+                        onClick={openNewProjectWindow}
+                        style={{
+                            flex: 1,
+                            backgroundColor: 'var(--accent-primary)',
+                            color: '#000',
+                            border: 'none',
+                            padding: '1rem',
+                            borderRadius: '12px',
+                            fontSize: '1.1rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '12px',
+                            transition: 'transform 0.2s, box-shadow 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 5px 15px var(--accent-primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                    >
+                        <PlusIcon size={24} />
+                        New Project
+                    </button>
+
+                    <button
+                        onClick={() => openUserGuideWindow()}
+                        style={{
+                            flex: 1,
+                            backgroundColor: 'transparent',
+                            color: 'var(--accent-primary)',
+                            border: '1px solid var(--accent-primary)',
+                            padding: '0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '12px',
+                            transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 255, 255, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                    >
+                        <BookIcon size={20} />
+                        User Guide
+                    </button>
+                </div>
 
                 {/* About Section */}
                 <div style={{

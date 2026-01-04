@@ -79,9 +79,23 @@ pub fn run() {
             commands::list_projects,
             commands::get_project_manifest,
             commands::get_user_guide_content,
+            commands::delete_project,
             refresh_projects_menu,
             enable_window_menu
         ])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                let app = window.app_handle();
+                let windows = app.webview_windows();
+
+                // If the only remaining window is the user-guide, close it
+                if windows.len() == 1 {
+                    if let Some(guide_window) = windows.get("user-guide") {
+                        let _ = guide_window.close();
+                    }
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

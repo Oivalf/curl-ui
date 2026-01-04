@@ -1,10 +1,10 @@
 # Project Management
 
-Curl UI uses a project-based approach to keep your workspaces organized. Each project is independent, with its own set of collections, environments, and settings.
+cURL-UI uses a project-based approach to keep your workspaces organized. Each project is independent, with its own set of collections, environments, and settings.
 
 ## The Welcome Screen
 
-If you launch Curl UI and no projects are found in your configuration directory (`~/.curl-ui`), you'll be greeted by the **Welcome Screen**.
+If you launch cURL-UI and no projects are found in your configuration directory (`~/.curl-ui`), you'll be greeted by the **Welcome Screen**.
 
 - **Create New Project**: Click this button to start a fresh workspace.
 - **Onboarding Info**: The Welcome Screen also displays current application versions and license info.
@@ -29,4 +29,4 @@ All your project data is stored locally on your machine:
 
 ## Auto-Load
 
-Curl UI is smart! When you start the application, it automatically identifies and loads the **most recently modified project**, so you can pick up exactly where you left off.
+cURL-UI is smart! When you start the application, it automatically identifies and loads the **most recently modified project**, so you can pick up exactly where you left off.

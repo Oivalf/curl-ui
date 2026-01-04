@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown } from 'lucide-preact';
+import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2 } from 'lucide-preact';
 import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from './Modal';
 import { GitPanel } from './GitPanel';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import '../styles/global.css';
+
+// Cast icons to any to avoid Preact/React type conflicts
+const LayoutIcon = Layout as any;
+const GitBranchIcon = GitBranch as any;
+const PlusIcon = Plus as any;
+const SettingsIcon = Settings as any;
+const FolderPlusIcon = FolderPlus as any;
+const SaveIcon = Save as any;
+const FolderOpenIcon = FolderOpen as any;
+const ChevronRightIcon = ChevronRight as any;
+const ChevronDownIcon = ChevronDown as any;
+const TrashIcon = Trash2 as any;
 
 export function Sidebar() {
     const [isGitOpen, setGitOpen] = useState(false);
@@ -35,7 +48,7 @@ export function Sidebar() {
         const label = `project-${crypto.randomUUID()}`;
         const webview = new WebviewWindow(label, {
             url: `/?projectName=${encodeURIComponent(projectName)}`,
-            title: `Curl UI - ${projectName}`
+            title: `cURL-UI - ${projectName}`
         });
         webview.once('tauri://created', function () {
             // webview window successfully created
@@ -85,6 +98,29 @@ export function Sidebar() {
         }
     };
 
+    const handleDeleteProject = async () => {
+        const projectName = activeProjectName.value;
+
+        const performDeleteProject = async () => {
+            await invoke('delete_project', { name: projectName });
+            // Close the current window
+            const { getCurrentWindow } = await import('@tauri-apps/api/window');
+            const currentWindow = getCurrentWindow();
+            await currentWindow.close();
+        };
+
+        // Trigger Modal
+        import('../store').then(({ confirmationState }) => {
+            confirmationState.value = {
+                isOpen: true,
+                title: `Delete project ${projectName}?`,
+                message: `Are you sure you want to delete project "${projectName}"? This will delete the manifest file and close this window.`,
+                onConfirm: performDeleteProject
+            };
+        });
+
+    };
+
     return (
         <aside style={{
             width: '250px',
@@ -95,9 +131,31 @@ export function Sidebar() {
             height: '100vh',
             padding: 'var(--spacing-md)'
         }}>
-            <div style={{ marginBottom: 'var(--spacing-lg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Layout color="var(--accent-primary)" />
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)' }}>Curl UI</h2>
+            <div style={{ marginBottom: 'var(--spacing-lg)', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                    <LayoutIcon color="var(--accent-primary)" />
+                    <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeProjectName.value}</h2>
+                </div>
+                {activeProjectName.value !== "Default Project" && (
+                    <button
+                        onClick={handleDeleteProject}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            transition: 'color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'var(--error)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                        title="Delete Project"
+                    >
+                        <TrashIcon size={16} />
+                    </button>
+                )}
             </div>
 
             {/* Action Bar: New Request, New Folder - These now need a target collection. 
@@ -112,14 +170,14 @@ export function Sidebar() {
                     title="Load Collection"
                     style={{ flex: 1, padding: '6px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
                 >
-                    <FolderOpen size={14} /> Load
+                    <FolderOpenIcon size={14} /> Load
                 </button>
                 <button
                     onClick={createNewCollection}
                     title="New Collection"
                     style={{ flex: 1, padding: '6px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
                 >
-                    <Plus size={14} /> New
+                    <PlusIcon size={14} /> New
                 </button>
             </div>
 
@@ -136,7 +194,7 @@ export function Sidebar() {
                                 onClick={() => toggleCollection(collection.id)}
                                 style={{ display: 'flex', alignItems: 'center' }}
                             >
-                                {isCollectionExpanded(collection.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                {isCollectionExpanded(collection.id) ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                             </div>
                             <div onClick={() => toggleCollection(collection.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                 <span>{collection.name}</span>
@@ -149,7 +207,7 @@ export function Sidebar() {
                                 title="Save Collection"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
                             >
-                                <Save size={14} />
+                                <SaveIcon size={14} />
                             </button>
                             <button
                                 onClick={(e) => {
@@ -172,7 +230,7 @@ export function Sidebar() {
                                 title="Add Request"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
                             >
-                                <Plus size={14} />
+                                <PlusIcon size={14} />
                             </button>
                             <button
                                 onClick={(e) => {
@@ -192,7 +250,7 @@ export function Sidebar() {
                                 title="Add Folder"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
                             >
-                                <FolderPlus size={14} />
+                                <FolderPlusIcon size={14} />
                             </button>
                         </div>
 
@@ -229,11 +287,11 @@ export function Sidebar() {
                     onClick={() => setGitOpen(true)}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px' }}
                 >
-                    <GitBranch size={16} />
+                    <GitBranchIcon size={16} />
                     <span>Git Status</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px' }}>
-                    <Settings size={16} />
+                    <SettingsIcon size={16} />
                     <span>Settings</span>
                 </div>
             </div>

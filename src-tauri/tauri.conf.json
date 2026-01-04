@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "curl-ui",
+  "productName": "cURL-UI",
   "version": "0.1.0",
   "identifier": "it.oivalf.curl-ui",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "curl-ui",
+        "title": "cURL-UI",
         "width": 800,
         "height": 600,
         "center": true
