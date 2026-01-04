@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { contextMenu, requests, folders, activeRequestId } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus } from 'lucide-preact';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy } from 'lucide-preact';
 
 export function SidebarContextMenu() {
     const menuRef = useRef<HTMLDivElement>(null);
@@ -14,6 +14,62 @@ export function SidebarContextMenu() {
     }, []);
 
     if (!menu) return null;
+
+    const handleDuplicate = () => {
+        if (menu.type === 'folder') {
+            const folderToDup = folders.value.find(f => f.id === menu.itemId);
+            if (!folderToDup) return;
+
+            const idMap = new Map<string, string>();
+            const newFolders = [...folders.value];
+            const newRequests = [...requests.value];
+
+            const duplicateFolderRecursive = (folderId: string, newParentId: string | null | undefined) => {
+                const folder = folders.value.find(f => f.id === folderId);
+                if (!folder) return;
+
+                const newId = crypto.randomUUID();
+                idMap.set(folderId, newId);
+
+                newFolders.push({
+                    ...folder,
+                    id: newId,
+                    name: folderId === menu.itemId ? `${folder.name} (copy)` : folder.name,
+                    parentId: newParentId
+                });
+
+                // Duplicate sub-folders
+                folders.value.filter(f => f.parentId === folderId).forEach(subFolder => {
+                    duplicateFolderRecursive(subFolder.id, newId);
+                });
+
+                // Duplicate sub-requests
+                requests.value.filter(r => r.parentId === folderId).forEach(subReq => {
+                    newRequests.push({
+                        ...subReq,
+                        id: crypto.randomUUID(),
+                        parentId: newId
+                    });
+                });
+            };
+
+            duplicateFolderRecursive(menu.itemId, folderToDup.parentId);
+            folders.value = newFolders;
+            requests.value = newRequests;
+        } else {
+            const reqToDup = requests.value.find(r => r.id === menu.itemId);
+            if (!reqToDup) return;
+
+            const newId = crypto.randomUUID();
+            requests.value = [...requests.value, {
+                ...reqToDup,
+                id: newId,
+                name: `${reqToDup.name} (copy)`
+            }];
+            activeRequestId.value = newId;
+        }
+        contextMenu.value = null;
+    };
 
     const handleRename = () => {
         const item = menu.type === 'folder'
@@ -126,6 +182,14 @@ export function SidebarContextMenu() {
                 style={itemStyle}
             >
                 <Edit2 size={14} /> Rename
+            </div>
+
+            <div
+                className="context-menu-item"
+                onClick={handleDuplicate}
+                style={itemStyle}
+            >
+                <Copy size={14} /> Duplicate
             </div>
 
             <div

@@ -1,6 +1,13 @@
 import { useSignal, useSignalEffect } from '@preact/signals';
 import { invoke } from '@tauri-apps/api/core';
 import { Book, ChevronRight } from 'lucide-preact';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+// Cast to any to avoid Preact/React type conflicts
+const Markdown = ReactMarkdown as any;
+const BookIcon = Book as any;
+const ChevronIcon = ChevronRight as any;
 
 export function UserGuideView() {
     const content = useSignal('');
@@ -20,69 +27,63 @@ export function UserGuideView() {
             });
     });
 
-    const renderMarkdown = (text: string) => {
-        const lines = text.split('\n');
-        return lines.map((line, i) => {
-            if (line.startsWith('# ')) return <h1 key={i} style={{ color: 'var(--accent-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginTop: '24px' }}>{line.slice(2)}</h1>;
-            if (line.startsWith('## ')) return <h2 key={i} style={{ marginTop: '20px', fontSize: '1.4rem' }}>{line.slice(3)}</h2>;
-            if (line.startsWith('### ')) return <h3 key={i} style={{ marginTop: '16px', fontSize: '1.1rem' }}>{line.slice(4)}</h3>;
-            if (line.startsWith('- ')) return <li key={i} style={{ marginLeft: '20px', marginBottom: '4px' }}>{processInlines(line.slice(2))}</li>;
-
-            if (line.includes('|') && line.trim().startsWith('|')) {
-                const cells = line.split('|').filter(c => c.trim().length > 0);
-                if (line.includes('---')) return null;
+    const MarkdownComponents: any = {
+        h1: ({ children }: any) => (
+            <h1 style={{ color: 'var(--accent-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginTop: '24px' }}>
+                {children}
+            </h1>
+        ),
+        h2: ({ children }: any) => (
+            <h2 style={{ marginTop: '20px', fontSize: '1.4rem' }}>{children}</h2>
+        ),
+        h3: ({ children }: any) => (
+            <h3 style={{ marginTop: '16px', fontSize: '1.1rem' }}>{children}</h3>
+        ),
+        p: ({ children }: any) => (
+            <p style={{ marginBottom: '12px', lineHeight: '1.6' }}>{children}</p>
+        ),
+        li: ({ children }: any) => (
+            <li style={{ marginLeft: '20px', marginBottom: '4px' }}>{children}</li>
+        ),
+        a: ({ href, children }: any) => {
+            if (href && href.endsWith('.md')) {
+                const target = href.replace('.md', '');
                 return (
-                    <div key={i} style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', padding: '8px 0' }}>
-                        {cells.map((cell, ci) => (
-                            <div key={ci} style={{ flex: 1, padding: '0 8px' }}>{processInlines(cell.trim())}</div>
-                        ))}
-                    </div>
-                );
-            }
-
-            if (line.trim().length === 0) return <br key={i} />;
-            return <p key={i} style={{ marginBottom: '12px', lineHeight: '1.6' }}>{processInlines(line)}</p>;
-        });
-    };
-
-    const processInlines = (text: string) => {
-        const parts = [];
-        let currentPos = 0;
-        const regex = /\[([^\]]+)\]\(([^)]+)\.md\)|(\*\*([^*]+)\*\*)/g;
-        let match;
-
-        while ((match = regex.exec(text)) !== null) {
-            if (match.index > currentPos) {
-                parts.push(text.slice(currentPos, match.index));
-            }
-
-            if (match[1]) {
-                const label = match[1];
-                const target = match[2];
-                parts.push(
                     <a
                         href="#"
                         onClick={(e) => { e.preventDefault(); currentPage.value = target; }}
                         style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 'bold' }}
                     >
-                        {label}
+                        {children}
                     </a>
                 );
-            } else if (match[3]) {
-                parts.push(<strong key={match.index}>{match[4]}</strong>);
             }
-            currentPos = regex.lastIndex;
-        }
-
-        if (currentPos < text.length) {
-            parts.push(text.slice(currentPos));
-        }
-
-        return parts.length > 0 ? parts : text;
+            return (
+                <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)' }}>
+                    {children}
+                </a>
+            );
+        },
+        table: ({ children }: any) => (
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+                {children}
+            </table>
+        ),
+        thead: ({ children }: any) => (
+            <thead style={{ borderBottom: '2px solid var(--border-color)' }}>
+                {children}
+            </thead>
+        ),
+        th: ({ children }: any) => (
+            <th style={{ padding: '8px', textAlign: 'left', fontWeight: 'bold' }}>{children}</th>
+        ),
+        td: ({ children }: any) => (
+            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-color)' }}>{children}</td>
+        ),
     };
 
     const navItems = [
-        { id: 'index', label: 'Introduction', icon: <Book size={16} /> },
+        { id: 'index', label: 'Introduction', icon: <BookIcon size={16} /> },
         { id: 'projects', label: 'Projects' },
         { id: 'collections', label: 'Collections' },
         { id: 'requests', label: 'Requests' },
@@ -103,7 +104,7 @@ export function UserGuideView() {
                 gap: '8px',
             }}>
                 <div style={{ padding: '0 12px 16px', fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Book size={24} /> Guide
+                    <BookIcon size={24} /> Guide
                 </div>
                 {navItems.map(item => (
                     <div
@@ -123,7 +124,7 @@ export function UserGuideView() {
                             fontWeight: currentPage.value === item.id ? '600' : '400'
                         }}
                     >
-                        {currentPage.value === item.id && <ChevronRight size={14} />}
+                        {currentPage.value === item.id && <ChevronIcon size={14} />}
                         {item.label}
                     </div>
                 ))}
@@ -143,7 +144,9 @@ export function UserGuideView() {
                         </div>
                     ) : (
                         <div style={{ textAlign: 'left' }}>
-                            {renderMarkdown(content.value)}
+                            <Markdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                                {content.value}
+                            </Markdown>
                         </div>
                     )}
                 </div>
