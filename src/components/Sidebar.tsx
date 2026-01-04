@@ -113,8 +113,8 @@ export function Sidebar() {
         import('../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
-                title: `Delete project ${projectName}?`,
-                message: `Are you sure you want to delete project "${projectName}"? This will delete the manifest file and close this window.`,
+                title: `Delete project "${projectName}"?`,
+                message: `Are you sure you want to delete project "${projectName}"? This will delete the manifest file and close this window. Collections files will still be kept in the folders they are located in.`,
                 onConfirm: performDeleteProject
             };
         });
