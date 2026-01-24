@@ -80,6 +80,7 @@ pub fn run() {
             commands::get_project_manifest,
             commands::get_user_guide_content,
             commands::delete_project,
+            commands::is_git_repo,
             refresh_projects_menu,
             enable_window_menu
         ])

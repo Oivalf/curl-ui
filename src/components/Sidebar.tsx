@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2 } from 'lucide-preact';
+import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X } from 'lucide-preact';
 import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -20,13 +20,38 @@ const FolderOpenIcon = FolderOpen as any;
 const ChevronRightIcon = ChevronRight as any;
 const ChevronDownIcon = ChevronDown as any;
 const TrashIcon = Trash2 as any;
+const XIcon = X as any;
 
-export function Sidebar() {
+interface SidebarProps {
+    width?: number; // Optional to prevent breaking updates if parent renders without it temporarily
+}
+
+export function Sidebar({ width = 250 }: SidebarProps) {
     const [isGitOpen, setGitOpen] = useState(false);
 
     // Simple local state to track expanded collections. 
     // In a larger app, this might go into store or a persistent local state.
     const [expandedCollections, setExpandedCollections] = useState<Record<string, boolean>>({});
+
+    const [collectionGitStatus, setCollectionGitStatus] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        const checkGitStatus = async () => {
+            const statuses: Record<string, boolean> = {};
+            for (const collection of collections.value) {
+                if (collection.path) {
+                    try {
+                        const isRepo = await invoke<boolean>('is_git_repo', { path: collection.path });
+                        statuses[collection.id] = isRepo;
+                    } catch (e) {
+                        console.error("Failed to check git status", e);
+                    }
+                }
+            }
+            setCollectionGitStatus(statuses);
+        };
+        checkGitStatus();
+    }, [collections.value]);
 
     const toggleCollection = (id: string) => {
         setExpandedCollections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -123,7 +148,7 @@ export function Sidebar() {
 
     return (
         <aside style={{
-            width: '250px',
+            width: `${width}px`,
             backgroundColor: 'var(--bg-sidebar)',
             borderRight: '1px solid var(--border-color)',
             display: 'flex',
@@ -196,9 +221,28 @@ export function Sidebar() {
                             >
                                 {isCollectionExpanded(collection.id) ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                             </div>
-                            <div onClick={() => toggleCollection(collection.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <span>{collection.name}</span>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>{collection.projectName}</span>
+                            <div onClick={() => toggleCollection(collection.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{collection.name}</span>
+                                    {collectionGitStatus[collection.id] && (
+                                        <GitBranchIcon size={12} color="var(--text-muted)" title="In Git Repository" />
+                                    )}
+                                </div>
+                                <span
+                                    title={collection.path || "Not saved"}
+                                    style={{
+                                        fontSize: '0.7rem',
+                                        color: 'var(--text-muted)',
+                                        fontWeight: 'normal',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                        direction: 'rtl',
+                                        textAlign: 'left'
+                                    }}
+                                >
+                                    <span style={{ direction: 'ltr', unicodeBidi: 'embed' }}>{collection.path || "Not saved"}</span>
+                                </span>
                             </div>
 
                             {/* Collection Actions: Save, Add Folder/Request */}
@@ -251,6 +295,33 @@ export function Sidebar() {
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
                             >
                                 <FolderPlusIcon size={14} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+
+                                    const performRemove = () => {
+                                        collections.value = collections.value.filter(c => c.id !== collection.id);
+                                        // Sync manifest to persist removal
+                                        import('../store').then(({ syncProjectManifest, activeProjectName }) => {
+                                            syncProjectManifest(activeProjectName.peek());
+                                        });
+                                    };
+
+                                    // Trigger Modal using the store's confirmationState
+                                    import('../store').then(({ confirmationState }) => {
+                                        confirmationState.value = {
+                                            isOpen: true,
+                                            title: `Remove collection "${collection.name}"?`,
+                                            message: `Are you sure you want to remove collection "${collection.name}" from the project? The file will not be deleted from disk.`,
+                                            onConfirm: performRemove
+                                        };
+                                    });
+                                }}
+                                title="Remove Collection"
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                            >
+                                <XIcon size={14} />
                             </button>
                         </div>
 

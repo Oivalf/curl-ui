@@ -148,6 +148,14 @@ pub fn git_status(path: String) -> Result<Vec<FileStatus>, String> {
 }
 
 #[command]
+pub fn is_git_repo(path: String) -> Result<bool, String> {
+    match Repository::discover(&path) {
+        Ok(_) => Ok(true),
+        Err(_) => Ok(false),
+    }
+}
+
+#[command]
 pub fn git_add_all(path: String) -> Result<(), String> {
     let repo = Repository::open(&path).map_err(|e| e.to_string())?;
     let mut index = repo.index().map_err(|e| e.to_string())?;

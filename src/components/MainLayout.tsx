@@ -1,7 +1,7 @@
 import { ComponentChildren } from 'preact';
 import { Sidebar } from './Sidebar';
 import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject } from '../store';
-import { useSignalEffect } from '@preact/signals';
+import { useSignalEffect, useSignal } from '@preact/signals';
 import { Modal } from './Modal';
 import { EnvironmentManager } from './EnvironmentManager';
 import { ConsolePanel } from './ConsolePanel';
@@ -16,10 +16,35 @@ interface LayoutProps {
 
 import { openUserGuideWindow } from '../utils/window';
 
+
+
 export function MainLayout({ children }: LayoutProps) {
     // isEnvManagerOpen is imported from store
+    const sidebarWidth = useSignal(250);
+    const isResizingSidebar = useSignal(false);
+
+    const startResizingSidebar = () => {
+        isResizingSidebar.value = true;
+    };
+
+    const stopResizingSidebar = () => {
+        isResizingSidebar.value = false;
+    };
+
+    const resizeSidebar = (e: MouseEvent) => {
+        if (isResizingSidebar.value) {
+            let newWidth = e.clientX;
+            // Clamping
+            if (newWidth < 150) newWidth = 150;
+            if (newWidth > 600) newWidth = 600;
+            sidebarWidth.value = newWidth;
+        }
+    };
 
     useEffect(() => {
+        window.addEventListener('mousemove', resizeSidebar);
+        window.addEventListener('mouseup', stopResizingSidebar);
+
         const unlisten = listen('open-about', () => {
             isAboutOpen.value = true;
         });
@@ -51,16 +76,13 @@ export function MainLayout({ children }: LayoutProps) {
         };
 
         // Check for active environment validity
-        useSignalEffect(() => {
-            const selectable = environments.value.filter(e => e.name !== 'Global');
-            if (activeEnvironmentName.value && !selectable.some(e => e.name === activeEnvironmentName.value)) {
-                activeEnvironmentName.value = null;
-            }
-        });
+        // ... useSignalEffect handled separately if using hooks, but here useSignalEffect is fine inside component if correctly imported
 
         window.addEventListener('keydown', handleKeyDown);
 
         return () => {
+            window.removeEventListener('mousemove', resizeSidebar);
+            window.removeEventListener('mouseup', stopResizingSidebar);
             unlisten.then(f => f());
             unlistenUserGuide.then(f => f());
             unlistenSave.then(f => f());
@@ -70,9 +92,35 @@ export function MainLayout({ children }: LayoutProps) {
         };
     }, []);
 
+    // Helper for reactive env check - keeping original logic
+    useSignalEffect(() => {
+        const selectable = environments.value.filter(e => e.name !== 'Global');
+        if (activeEnvironmentName.value && !selectable.some(e => e.name === activeEnvironmentName.value)) {
+            activeEnvironmentName.value = null;
+        }
+    });
+
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: 'var(--bg-base)' }}>
-            <Sidebar />
+            <Sidebar width={sidebarWidth.value} />
+
+            {/* Resize Handle */}
+            <div
+                onMouseDown={startResizingSidebar}
+                style={{
+                    width: '4px',
+                    cursor: 'col-resize',
+                    backgroundColor: isResizingSidebar.value ? 'var(--accent-primary)' : 'transparent',
+                    borderLeft: '1px solid var(--border-color)',
+                    transition: 'background-color 0.2s',
+                    zIndex: 10
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-primary)'}
+                onMouseLeave={(e) => {
+                    if (!isResizingSidebar.value) e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+            />
+
             <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{
                     height: '40px',
