@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, activeRequestId } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X } from 'lucide-preact';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId } from '../store';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play } from 'lucide-preact';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
+const PlayIcon = Play as any;
 
 export function SidebarContextMenu() {
     const menuRef = useRef<HTMLDivElement>(null);
@@ -162,6 +163,91 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
+    const handleAddExecution = () => {
+        const name = prompt("Enter execution name:", "New Execution");
+        if (name === null) return;
+
+        const parentRequest = requests.value.find(r => r.id === menu.itemId);
+        if (!parentRequest) return;
+
+        const newId = crypto.randomUUID();
+        executions.value = [...executions.value, {
+            id: newId,
+            requestId: parentRequest.id,
+            collectionId: parentRequest.collectionId,
+            name: name || "New Execution"
+            // All other fields undefined = inherit from parent request
+        }];
+
+        // Open the new execution in a tab
+        openTabs.value = [...openTabs.value, {
+            id: newId,
+            type: 'execution',
+            name: name || "New Execution"
+        }];
+        activeTabId.value = newId;
+        activeExecutionId.value = newId;
+        activeRequestId.value = null;
+        activeFolderId.value = null;
+
+        contextMenu.value = null;
+    };
+
+    const handleRenameExecution = () => {
+        const execution = executions.value.find(e => e.id === menu.itemId);
+        if (!execution) return;
+
+        const newName = prompt("Rename to:", execution.name);
+        if (newName && newName !== execution.name) {
+            executions.value = executions.value.map(e =>
+                e.id === menu.itemId ? { ...e, name: newName } : e
+            );
+            // Update tab name if open
+            openTabs.value = openTabs.value.map(t =>
+                t.id === menu.itemId ? { ...t, name: newName } : t
+            );
+        }
+        contextMenu.value = null;
+    };
+
+    const handleDeleteExecution = () => {
+        const execution = executions.value.find(e => e.id === menu.itemId);
+        if (!execution) return;
+
+        import('../store').then(({ confirmationState }) => {
+            confirmationState.value = {
+                isOpen: true,
+                title: 'Delete execution?',
+                message: `Are you sure you want to delete "${execution.name}"?`,
+                onConfirm: () => {
+                    executions.value = executions.value.filter(e => e.id !== menu.itemId);
+
+                    // Close tab if open
+                    if (openTabs.value.find(t => t.id === menu.itemId)) {
+                        const newTabs = openTabs.value.filter(t => t.id !== menu.itemId);
+                        openTabs.value = newTabs;
+
+                        if (activeTabId.value === menu.itemId) {
+                            if (newTabs.length > 0) {
+                                const lastTab = newTabs[newTabs.length - 1];
+                                activeTabId.value = lastTab.id;
+                                activeExecutionId.value = lastTab.type === 'execution' ? lastTab.id : null;
+                                activeRequestId.value = lastTab.type === 'request' ? lastTab.id : null;
+                                activeFolderId.value = lastTab.type === 'folder' ? lastTab.id : null;
+                            } else {
+                                activeTabId.value = null;
+                                activeExecutionId.value = null;
+                                activeRequestId.value = null;
+                                activeFolderId.value = null;
+                            }
+                        }
+                    }
+                }
+            };
+        });
+        contextMenu.value = null;
+    };
+
     return (
         <div
             ref={menuRef}
@@ -305,6 +391,38 @@ export function SidebarContextMenu() {
                                 style={itemStyle}
                             >
                                 <FolderPlus size={14} /> Add Folder
+                            </div>
+                        </>
+                    )}
+
+                    {menu.type === 'request' && (
+                        <>
+                            <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+                            <div
+                                className="context-menu-item"
+                                onClick={handleAddExecution}
+                                style={itemStyle}
+                            >
+                                <PlayIcon size={14} /> New Execution
+                            </div>
+                        </>
+                    )}
+
+                    {menu.type === 'execution' && (
+                        <>
+                            <div
+                                className="context-menu-item"
+                                onClick={handleRenameExecution}
+                                style={itemStyle}
+                            >
+                                <Edit2 size={14} /> Rename
+                            </div>
+                            <div
+                                className="context-menu-item"
+                                onClick={handleDeleteExecution}
+                                style={{ ...itemStyle, color: 'var(--error)' }}
+                            >
+                                <Trash2 size={14} /> Delete
                             </div>
                         </>
                     )}

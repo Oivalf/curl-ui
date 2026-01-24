@@ -53,6 +53,21 @@ export interface Folder {
     auth?: AuthConfig;
 }
 
+export interface ExecutionItem {
+    id: string;
+    requestId: string;        // Parent request ID
+    collectionId: string;
+    name: string;
+    // Override fields (if undefined, inherit from parent request)
+    method?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    auth?: AuthConfig;
+    preScripts?: ScriptItem[];
+    postScripts?: ScriptItem[];
+}
+
 export interface Environment {
     name: string;
     variables: { key: string, value: string }[];
@@ -60,7 +75,7 @@ export interface Environment {
 
 export interface Tab {
     id: string;
-    type: 'request' | 'folder';
+    type: 'request' | 'folder' | 'execution';
     name: string;
 }
 
@@ -68,7 +83,7 @@ export interface ContextMenuState {
     x: number;
     y: number;
     itemId: string;
-    type: 'request' | 'folder' | 'collection';
+    type: 'request' | 'folder' | 'collection' | 'execution';
     collectionId: string;
 }
 
@@ -78,6 +93,7 @@ export interface CollectionData {
     projectName: string;
     requests: RequestItem[];
     folders: Folder[];
+    executions: ExecutionItem[];
     environments: Environment[];
 }
 
@@ -93,10 +109,12 @@ export interface ConfirmationState {
 export const collections = signal<Collection[]>([]);
 export const requests = signal<RequestItem[]>([]);
 export const folders = signal<Folder[]>([]);
+export const executions = signal<ExecutionItem[]>([]);
 export const environments = signal<Environment[]>([]);
 
 export const activeRequestId = signal<string | null>(null);
 export const activeFolderId = signal<string | null>(null);
+export const activeExecutionId = signal<string | null>(null);
 export const activeEnvironmentName = signal<string | null>(null);
 export const activeTabId = signal<string | null>(null);
 export const activeProjectName = signal<string>("Default Project");
@@ -290,6 +308,7 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
 
             const collectionRequests = requests.value.filter(r => r.collectionId === collectionId);
             const collectionFolders = folders.value.filter(f => f.collectionId === collectionId);
+            const collectionExecutions = executions.value.filter(e => e.collectionId === collectionId);
 
             const data: CollectionData = {
                 id: collection.id,
@@ -297,6 +316,7 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
                 projectName: collection.projectName,
                 requests: collectionRequests,
                 folders: collectionFolders,
+                executions: collectionExecutions,
                 environments: environments.value
             };
 
@@ -305,6 +325,7 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
             const newUnsaved = new Set(unsavedItemIds.peek());
             collectionRequests.forEach(r => newUnsaved.delete(r.id));
             collectionFolders.forEach(f => newUnsaved.delete(f.id));
+            collectionExecutions.forEach(e => newUnsaved.delete(e.id));
             unsavedItemIds.value = newUnsaved;
 
             // Sync manifest
@@ -343,6 +364,7 @@ export const loadCollectionFromPath = async (path: string) => {
 
         requests.value = requests.value.filter(r => r.collectionId !== data.id);
         folders.value = folders.value.filter(f => f.collectionId !== data.id);
+        executions.value = executions.value.filter(e => e.collectionId !== data.id);
     } else {
         collections.value = [...collections.value, {
             id: data.id,
@@ -354,6 +376,7 @@ export const loadCollectionFromPath = async (path: string) => {
 
     requests.value = [...requests.value, ...data.requests];
     folders.value = [...folders.value, ...data.folders];
+    executions.value = [...executions.value, ...(data.executions || [])];
 
     if (data.environments) {
         const loadedEnvs = data.environments;
@@ -382,7 +405,8 @@ export const loadCollectionFromPath = async (path: string) => {
 
     const loadedItemIds = new Set([
         ...data.requests.map(r => r.id),
-        ...data.folders.map(f => f.id)
+        ...data.folders.map(f => f.id),
+        ...(data.executions || []).map(e => e.id)
     ]);
     const newUnsaved = new Set(unsavedItemIds.peek());
     loadedItemIds.forEach(id => newUnsaved.delete(id));

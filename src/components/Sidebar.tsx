@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical } from 'lucide-preact';
-import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName } from '../store';
+import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions } from '../store';
 import { SidebarItem } from './SidebarItem';
+import { ExecutionSidebarItem } from './ExecutionSidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from './Modal';
 import { GitPanel } from './GitPanel';
@@ -402,9 +403,17 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     ))}
                                 {requests.value
                                     .filter(r => r.collectionId === collection.id && !r.parentId)
-                                    .map(r => (
-                                        <SidebarItem key={r.id} item={r} type="request" />
-                                    ))}
+                                    .map(r => {
+                                        const childExecutions = executions.value.filter(e => e.requestId === r.id);
+                                        return (
+                                            <div key={r.id}>
+                                                <SidebarItem item={r} type="request" />
+                                                {childExecutions.map(ex => (
+                                                    <ExecutionSidebarItem key={ex.id} execution={ex} depth={1} />
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
 
                                 {folders.value.filter(f => f.collectionId === collection.id && !f.parentId).length === 0 &&
                                     requests.value.filter(r => r.collectionId === collection.id && !r.parentId).length === 0 && (

@@ -1,8 +1,9 @@
 import { MainLayout } from "./components/MainLayout";
 import { RequestEditor } from "./components/RequestEditor";
 import { FolderEditor } from "./components/FolderEditor";
+import { ExecutionEditor } from "./components/ExecutionEditor";
 import { TabBar } from "./components/TabBar";
-import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing } from "./store";
+import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing, activeExecutionId } from "./store";
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { UserGuideView } from "./components/UserGuideView";
 
@@ -40,6 +41,8 @@ function App() {
         {activeTab ? (
           activeTab.type === 'request' ? (
             <RequestEditor key={activeTab.id} />
+          ) : activeTab.type === 'execution' ? (
+            <ExecutionEditor key={activeTab.id} />
           ) : (
             <FolderEditor key={activeTab.id} />
           )

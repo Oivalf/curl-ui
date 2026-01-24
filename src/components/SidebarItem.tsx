@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { Folder as FolderIcon, FolderOpen, FileJson, ChevronRight, ChevronDown, Trash2 } from 'lucide-preact';
-import { activeRequestId, activeFolderId, folders, requests, RequestItem, Folder, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
+import { activeRequestId, activeFolderId, activeExecutionId, folders, requests, executions, RequestItem, Folder, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
+import { ExecutionSidebarItem } from './ExecutionSidebarItem';
 
 interface SidebarItemProps {
     item: RequestItem | Folder;
@@ -44,9 +45,11 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
         if (!isFolder) {
             activeRequestId.value = request.id;
             activeFolderId.value = null;
+            activeExecutionId.value = null;
         } else {
             activeFolderId.value = folder.id;
             activeRequestId.value = null;
+            activeExecutionId.value = null;
         }
     };
 
@@ -192,9 +195,17 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
                 {childFolders.map(f => (
                     <SidebarItem key={f.id} item={f} type="folder" depth={depth + 1} />
                 ))}
-                {childRequests.map(r => (
-                    <SidebarItem key={r.id} item={r} type="request" depth={depth + 1} />
-                ))}
+                {childRequests.map(r => {
+                    const childExecutions = executions.value.filter(e => e.requestId === r.id);
+                    return (
+                        <div key={r.id}>
+                            <SidebarItem item={r} type="request" depth={depth + 1} />
+                            {childExecutions.map(ex => (
+                                <ExecutionSidebarItem key={ex.id} execution={ex} depth={depth + 2} />
+                            ))}
+                        </div>
+                    );
+                })}
             </div>
         );
     };

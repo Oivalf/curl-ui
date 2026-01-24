@@ -65,7 +65,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "gogole",
       "method": "GET",
-      "url": "https://google.com",
+      "url": "https://google.com/?ciao=7",
       "headers": {},
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "body": "",
@@ -87,6 +87,63 @@
           "content": "console.log('post Script 1');",
           "enabled": true,
           "executeOnStatusCodes": ""
+        }
+      ]
+    },
+    {
+      "id": "48a976d2-8831-481b-ac0a-b69128fb876d",
+      "name": "nuova req",
+      "method": "GET",
+      "url": "https://example.com",
+      "headers": {},
+      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "8a177af0-0f5c-470e-b0be-b041f6f19c8b",
+      "name": "Get Todos",
+      "method": "GET",
+      "url": "https://jsonplaceholder.{{gvar}}.com/todos/12",
+      "headers": {},
+      "parentId": null,
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [
+        {
+          "id": "e02eb967-27d7-4f0f-a3af-b709d67b699f",
+          "name": "Ndue",
+          "content": "console.log('pre-Script ndue');",
+          "enabled": true
+        },
+        {
+          "id": "466ff4b5-41f0-4a81-aec6-d36bef4c2afa",
+          "name": "uno",
+          "content": "console.log('pre-Script uno');",
+          "enabled": false
+        }
+      ],
+      "postScripts": [
+        {
+          "id": "8eacbabf-f01c-483b-a0a5-03b9857e0bcb",
+          "name": "p2",
+          "content": "console.log('Script');",
+          "enabled": true,
+          "executeOnStatusCodes": "2xx"
+        },
+        {
+          "id": "7c5b0c39-11f5-4a21-b25f-69bb77d798b1",
+          "name": "p1",
+          "content": "console.log('post-Script p1');",
+          "enabled": true
         }
       ]
     }
@@ -157,6 +214,65 @@
       "auth": {
         "type": "inherit"
       }
+    }
+  ],
+  "executions": [
+    {
+      "id": "8414f4d8-8fa0-40f1-b430-93306e6c9303",
+      "requestId": "1",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "New Execution",
+      "method": "GET",
+      "url": "https://google.com",
+      "headers": {},
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [
+        {
+          "id": "e02eb967-27d7-4f0f-a3af-b709d67b699f",
+          "name": "Ndue",
+          "content": "console.log('pre-Script ndue');",
+          "enabled": true
+        },
+        {
+          "id": "466ff4b5-41f0-4a81-aec6-d36bef4c2afa",
+          "name": "uno",
+          "content": "console.log('pre-Script uno');",
+          "enabled": false
+        }
+      ],
+      "postScripts": [
+        {
+          "id": "8eacbabf-f01c-483b-a0a5-03b9857e0bcb",
+          "name": "p2",
+          "content": "console.log('Script');",
+          "enabled": true,
+          "executeOnStatusCodes": "2xx"
+        },
+        {
+          "id": "7c5b0c39-11f5-4a21-b25f-69bb77d798b1",
+          "name": "p1",
+          "content": "console.log('post-Script p1');",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "7436372c-394c-4a4a-a103-279582ce934e",
+      "requestId": "48a976d2-8831-481b-ac0a-b69128fb876d",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "mkji",
+      "method": "GET",
+      "url": "https://example.com",
+      "headers": {},
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
     }
   ],
   "environments": [
