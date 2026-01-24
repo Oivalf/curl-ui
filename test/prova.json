@@ -8,7 +8,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "Get Todos",
       "method": "GET",
-      "url": "https://jsonplaceholder.{{gvar}}.com/todos/10",
+      "url": "https://jsonplaceholder.{{gvar}}.com/todos/11",
       "headers": {},
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "body": "",
