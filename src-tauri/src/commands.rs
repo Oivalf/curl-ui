@@ -185,6 +185,18 @@ pub fn git_add_file(path: String) -> Result<(), String> {
 }
 
 #[command]
+pub fn git_reset(path: String) -> Result<(), String> {
+    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let head_obj = head.peel_to_commit().map_err(|e| e.to_string())?;
+
+    repo.reset(head_obj.as_object(), git2::ResetType::Mixed, None)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[command]
 pub fn git_commit(args: GitCommitArgs) -> Result<String, String> {
     let repo = Repository::open(&args.path).map_err(|e| e.to_string())?;
     let mut index = repo.index().map_err(|e| e.to_string())?;

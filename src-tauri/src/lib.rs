@@ -84,6 +84,7 @@ pub fn run() {
             commands::get_git_root,
             commands::git_push,
             commands::git_add_file,
+            commands::git_reset,
             refresh_projects_menu,
             enable_window_menu
         ])
