@@ -8,7 +8,6 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 export interface Collection {
     id: string;
     name: string;
-    projectName: string; // Workspace/Project name
     path?: string; // File path if saved
 }
 
@@ -90,7 +89,6 @@ export interface ContextMenuState {
 export interface CollectionData {
     id: string;
     name: string;
-    projectName: string;
     requests: RequestItem[];
     folders: Folder[];
     executions: ExecutionItem[];
@@ -245,7 +243,7 @@ export const refreshMenu = async () => {
 
 export const syncProjectManifest = async (projectName: string) => {
     try {
-        const projectCollections = collections.value.filter(c => c.projectName === projectName && c.path);
+        const projectCollections = collections.value.filter(c => c.path);
         const paths = projectCollections.map(c => c.path!);
         if (paths.length > 0) {
             await invoke('sync_project_manifest', { name: projectName, collectionPaths: paths });
@@ -313,7 +311,6 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
             const data: CollectionData = {
                 id: collection.id,
                 name: collection.name,
-                projectName: collection.projectName,
                 requests: collectionRequests,
                 folders: collectionFolders,
                 executions: collectionExecutions,
@@ -329,7 +326,7 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
             unsavedItemIds.value = newUnsaved;
 
             // Sync manifest
-            await syncProjectManifest(collection.projectName);
+            await syncProjectManifest(activeProjectName.peek());
 
             const msg = `Collection "${collection.name}" saved!`;
             if (!suppressAlert) alert(msg);
@@ -348,16 +345,12 @@ export const loadCollectionFromPath = async (path: string) => {
     const dataStr = await invoke<string>('load_workspace', { path });
     const data: CollectionData = JSON.parse(dataStr);
 
-    // Force project name to be the current active project
-    data.projectName = activeProjectName.peek();
-
     const existingIdx = collections.value.findIndex(c => c.id === data.id);
     if (existingIdx !== -1) {
         const newColls = [...collections.value];
         newColls[existingIdx] = {
             id: data.id,
             name: data.name,
-            projectName: data.projectName || activeProjectName.peek(),
             path
         };
         collections.value = newColls;
@@ -369,7 +362,6 @@ export const loadCollectionFromPath = async (path: string) => {
         collections.value = [...collections.value, {
             id: data.id,
             name: data.name,
-            projectName: data.projectName || activeProjectName.peek(),
             path
         }];
     }
@@ -413,7 +405,7 @@ export const loadCollectionFromPath = async (path: string) => {
     unsavedItemIds.value = newUnsaved;
 
     // Sync manifest
-    await syncProjectManifest(data.projectName || activeProjectName.peek());
+    await syncProjectManifest(activeProjectName.peek());
 };
 
 export const loadCollectionFromDisk = async () => {
