@@ -27,6 +27,53 @@ export interface ScriptItem {
     executeOnStatusCodes?: string;
 }
 
+
+export class QueryParam  {
+    constructor(public name: string, public values: string[]) {
+        this.name = name;
+        this.values = values;
+    }
+
+    toString(): string {
+        let str: string = '';
+        if(this.values && this.values.length > 0) {
+            for (let i = 0; i < this.values.length; i++) {
+                str = str + this.name +'=' + this.values[i];
+                if(i<(this.values.length-1)){
+                    str = str + '&';
+                }
+            }
+        } else {
+            str = this.name +'=';
+        }
+        return str;
+    }
+}
+
+export class UrlData {
+    constructor(public path: string, public queryParams: QueryParam[]) {
+        this.path = path;
+        this.queryParams = queryParams;
+    }
+
+    toString(): string {
+        let urlString: string = this.path;
+
+        if(this.queryParams && this.queryParams.length > 0) {
+            urlString = urlString + '?'
+            for (let i = 0; i < this.queryParams.length; i++) {
+                urlString = urlString + this.queryParams[i].toString();
+                if (i < this.queryParams.length -1){
+                    urlString = urlString + '&';
+                }
+            }
+        }
+        return urlString;
+    }
+}
+
+
+
 export interface RequestItem {
     id: string;
     collectionId: string;
