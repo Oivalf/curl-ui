@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { contextMenu, requests, folders, activeRequestId } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy } from 'lucide-preact';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X } from 'lucide-preact';
+
+const SaveIcon = Save as any;
+const XIcon = X as any;
 
 export function SidebarContextMenu() {
     const menuRef = useRef<HTMLDivElement>(null);
@@ -176,47 +179,135 @@ export function SidebarContextMenu() {
             }}
             onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
         >
-            <div
-                className="context-menu-item"
-                onClick={handleRename}
-                style={itemStyle}
-            >
-                <Edit2 size={14} /> Rename
-            </div>
-
-            <div
-                className="context-menu-item"
-                onClick={handleDuplicate}
-                style={itemStyle}
-            >
-                <Copy size={14} /> Duplicate
-            </div>
-
-            <div
-                className="context-menu-item"
-                onClick={handleDelete}
-                style={{ ...itemStyle, color: 'var(--error)' }}
-            >
-                <Trash2 size={14} /> Delete
-            </div>
-
-            {menu.type === 'folder' && (
+            {menu.type === 'collection' ? (
                 <>
+                    <div
+                        className="context-menu-item"
+                        onClick={() => {
+                            import('../store').then(({ saveCollectionToDisk }) => {
+                                saveCollectionToDisk(menu.collectionId);
+                            });
+                            contextMenu.value = null;
+                        }}
+                        style={itemStyle}
+                    >
+                        <SaveIcon size={14} /> Save
+                    </div>
+                    <div
+                        className="context-menu-item"
+                        onClick={() => {
+                            const name = prompt("Enter request name:", "New Request");
+                            if (name) {
+                                const newId = crypto.randomUUID();
+                                requests.value = [...requests.value, {
+                                    id: newId,
+                                    name: name,
+                                    method: "GET",
+                                    url: "https://example.com",
+                                    headers: {},
+                                    parentId: null, // Root of collection
+                                    collectionId: menu.collectionId
+                                }];
+                                activeRequestId.value = newId;
+                            }
+                            contextMenu.value = null;
+                        }}
+                        style={itemStyle}
+                    >
+                        <FilePlus size={14} /> New Request
+                    </div>
+                    <div
+                        className="context-menu-item"
+                        onClick={() => {
+                            const name = prompt("Enter folder name:", "New Folder");
+                            if (name) {
+                                const newId = crypto.randomUUID();
+                                folders.value = [...folders.value, {
+                                    id: newId,
+                                    name: name,
+                                    parentId: null, // Root of collection
+                                    collectionId: menu.collectionId,
+                                    collapsed: false
+                                }];
+                            }
+                            contextMenu.value = null;
+                        }}
+                        style={itemStyle}
+                    >
+                        <FolderPlus size={14} /> New Folder
+                    </div>
                     <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
                     <div
                         className="context-menu-item"
-                        onClick={handleAddRequest}
-                        style={itemStyle}
+                        onClick={() => {
+                            contextMenu.value = null;
+                            import('../store').then(({ collections, syncProjectManifest, activeProjectName, confirmationState }) => {
+                                const collection = collections.peek().find(c => c.id === menu.collectionId);
+                                if (!collection) return;
+
+                                const performRemove = () => {
+                                    collections.value = collections.value.filter(c => c.id !== collection.id);
+                                    syncProjectManifest(activeProjectName.peek());
+                                };
+
+                                confirmationState.value = {
+                                    isOpen: true,
+                                    title: `Remove collection "${collection.name}"?`,
+                                    message: `Are you sure you want to remove collection "${collection.name}" from the project? The file will not be deleted from disk.`,
+                                    onConfirm: performRemove
+                                };
+                            });
+                        }}
+                        style={{ ...itemStyle, color: 'var(--error)' }}
                     >
-                        <FilePlus size={14} /> Add Request
+                        <XIcon size={14} /> Remove
                     </div>
+                </>
+            ) : (
+                <>
                     <div
                         className="context-menu-item"
-                        onClick={handleAddFolder}
+                        onClick={handleRename}
                         style={itemStyle}
                     >
-                        <FolderPlus size={14} /> Add Folder
+                        <Edit2 size={14} /> Rename
                     </div>
+
+                    <div
+                        className="context-menu-item"
+                        onClick={handleDuplicate}
+                        style={itemStyle}
+                    >
+                        <Copy size={14} /> Duplicate
+                    </div>
+
+                    <div
+                        className="context-menu-item"
+                        onClick={handleDelete}
+                        style={{ ...itemStyle, color: 'var(--error)' }}
+                    >
+                        <Trash2 size={14} /> Delete
+                    </div>
+
+                    {menu.type === 'folder' && (
+                        <>
+                            <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+                            <div
+                                className="context-menu-item"
+                                onClick={handleAddRequest}
+                                style={itemStyle}
+                            >
+                                <FilePlus size={14} /> Add Request
+                            </div>
+                            <div
+                                className="context-menu-item"
+                                onClick={handleAddFolder}
+                                style={itemStyle}
+                            >
+                                <FolderPlus size={14} /> Add Folder
+                            </div>
+                        </>
+                    )}
                 </>
             )}
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X } from 'lucide-preact';
+import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical } from 'lucide-preact';
 import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -21,6 +21,7 @@ const ChevronRightIcon = ChevronRight as any;
 const ChevronDownIcon = ChevronDown as any;
 const TrashIcon = Trash2 as any;
 const XIcon = X as any;
+const MoreVerticalIcon = MoreVertical as any;
 
 interface SidebarProps {
     width?: number; // Optional to prevent breaking updates if parent renders without it temporarily
@@ -28,6 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({ width = 250 }: SidebarProps) {
     const [isGitOpen, setGitOpen] = useState(false);
+    const [openMenuCollectionId, setOpenMenuCollectionId] = useState<string | null>(null);
 
     // Simple local state to track expanded collections. 
     // In a larger app, this might go into store or a persistent local state.
@@ -214,6 +216,18 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         {/* Collection Header */}
                         <div
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0', cursor: 'pointer', fontWeight: 'bold', color: 'var(--text-primary)' }}
+                            onContextMenu={(e) => {
+                                e.preventDefault();
+                                import('../store').then(({ contextMenu }) => {
+                                    contextMenu.value = {
+                                        x: e.clientX,
+                                        y: e.clientY,
+                                        itemId: collection.id,
+                                        type: 'collection',
+                                        collectionId: collection.id
+                                    };
+                                });
+                            }}
                         >
                             <div
                                 onClick={() => toggleCollection(collection.id)}
@@ -246,83 +260,136 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                             </div>
 
                             {/* Collection Actions: Save, Add Folder/Request */}
-                            <button
-                                onClick={(e) => { e.stopPropagation(); saveCollectionToDisk(collection.id); }}
-                                title="Save Collection"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-                            >
-                                <SaveIcon size={14} />
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const name = prompt("Request Name:", "New Request");
-                                    if (name) {
-                                        const newId = crypto.randomUUID();
-                                        requests.value = [...requests.value, {
-                                            id: newId,
-                                            collectionId: collection.id, // Assign to this collection
-                                            name: name,
-                                            method: "GET",
-                                            url: "https://example.com",
-                                            headers: {},
-                                            parentId: null
-                                        }];
-                                        activeRequestId.value = newId;
-                                    }
-                                }}
-                                title="Add Request"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-                            >
-                                <PlusIcon size={14} />
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const name = prompt("Folder Name:", "New Folder");
-                                    if (name) {
-                                        const newId = crypto.randomUUID();
-                                        folders.value = [...folders.value, {
-                                            id: newId,
-                                            collectionId: collection.id, // Assign to this collection
-                                            name: name,
-                                            parentId: null,
-                                            collapsed: false
-                                        }];
-                                    }
-                                }}
-                                title="Add Folder"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-                            >
-                                <FolderPlusIcon size={14} />
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
+                            {/* Collection Actions Menu */}
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenMenuCollectionId(openMenuCollectionId === collection.id ? null : collection.id);
+                                    }}
+                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                                >
+                                    <MoreVerticalIcon size={16} />
+                                </button>
 
-                                    const performRemove = () => {
-                                        collections.value = collections.value.filter(c => c.id !== collection.id);
-                                        // Sync manifest to persist removal
-                                        import('../store').then(({ syncProjectManifest, activeProjectName }) => {
-                                            syncProjectManifest(activeProjectName.peek());
-                                        });
-                                    };
+                                {openMenuCollectionId === collection.id && (
+                                    <>
+                                        {/* Backrdrop to close menu */}
+                                        <div
+                                            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50 }}
+                                            onClick={(e) => { e.stopPropagation(); setOpenMenuCollectionId(null); }}
+                                        />
 
-                                    // Trigger Modal using the store's confirmationState
-                                    import('../store').then(({ confirmationState }) => {
-                                        confirmationState.value = {
-                                            isOpen: true,
-                                            title: `Remove collection "${collection.name}"?`,
-                                            message: `Are you sure you want to remove collection "${collection.name}" from the project? The file will not be deleted from disk.`,
-                                            onConfirm: performRemove
-                                        };
-                                    });
-                                }}
-                                title="Remove Collection"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-                            >
-                                <XIcon size={14} />
-                            </button>
+                                        <div style={{
+                                            position: 'absolute',
+                                            right: 0,
+                                            top: '100%',
+                                            backgroundColor: 'var(--bg-surface)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+                                            zIndex: 51,
+                                            minWidth: '150px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            padding: '4px 0'
+                                        }}>
+                                            <button
+                                                className="menu-item"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    saveCollectionToDisk(collection.id);
+                                                    setOpenMenuCollectionId(null);
+                                                }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                <SaveIcon size={14} /> Save
+                                            </button>
+                                            <button
+                                                className="menu-item"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenMenuCollectionId(null);
+                                                    const name = prompt("Request Name:", "New Request");
+                                                    if (name) {
+                                                        const newId = crypto.randomUUID();
+                                                        requests.value = [...requests.value, {
+                                                            id: newId,
+                                                            collectionId: collection.id, // Assign to this collection
+                                                            name: name,
+                                                            method: "GET",
+                                                            url: "https://example.com",
+                                                            headers: {},
+                                                            parentId: null
+                                                        }];
+                                                        activeRequestId.value = newId;
+                                                    }
+                                                }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                <PlusIcon size={14} /> New Request
+                                            </button>
+                                            <button
+                                                className="menu-item"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenMenuCollectionId(null);
+                                                    const name = prompt("Folder Name:", "New Folder");
+                                                    if (name) {
+                                                        const newId = crypto.randomUUID();
+                                                        folders.value = [...folders.value, {
+                                                            id: newId,
+                                                            collectionId: collection.id, // Assign to this collection
+                                                            name: name,
+                                                            parentId: null,
+                                                            collapsed: false
+                                                        }];
+                                                    }
+                                                }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                <FolderPlusIcon size={14} /> New Folder
+                                            </button>
+                                            <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+                                            <button
+                                                className="menu-item"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenMenuCollectionId(null);
+                                                    const performRemove = () => {
+                                                        collections.value = collections.value.filter(c => c.id !== collection.id);
+                                                        // Sync manifest to persist removal
+                                                        import('../store').then(({ syncProjectManifest, activeProjectName }) => {
+                                                            syncProjectManifest(activeProjectName.peek());
+                                                        });
+                                                    };
+
+                                                    // Trigger Modal using the store's confirmationState
+                                                    import('../store').then(({ confirmationState }) => {
+                                                        confirmationState.value = {
+                                                            isOpen: true,
+                                                            title: `Remove collection "${collection.name}"?`,
+                                                            message: `Are you sure you want to remove collection "${collection.name}" from the project? The file will not be deleted from disk.`,
+                                                            onConfirm: performRemove
+                                                        };
+                                                    });
+                                                }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 0, 0, 0.1)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                <XIcon size={14} /> Remove
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         {/* Collection Items */}
