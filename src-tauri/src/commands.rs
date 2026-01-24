@@ -169,6 +169,22 @@ pub fn git_add_all(path: String) -> Result<(), String> {
 }
 
 #[command]
+pub fn git_add_file(path: String) -> Result<(), String> {
+    let repo = Repository::discover(&path).map_err(|e| e.to_string())?;
+    let path_path = std::path::Path::new(&path);
+
+    // Get relative path
+    let workdir = repo.workdir().ok_or("No workdir")?;
+    let relative_path = path_path.strip_prefix(workdir).map_err(|e| e.to_string())?;
+
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+    index.add_path(relative_path).map_err(|e| e.to_string())?;
+    index.write().map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[command]
 pub fn git_commit(args: GitCommitArgs) -> Result<String, String> {
     let repo = Repository::open(&args.path).map_err(|e| e.to_string())?;
     let mut index = repo.index().map_err(|e| e.to_string())?;
@@ -201,6 +217,41 @@ pub fn git_commit(args: GitCommitArgs) -> Result<String, String> {
     .map_err(|e| e.to_string())?;
 
     Ok("Committed successfully".to_string())
+}
+
+#[command]
+pub fn get_git_root(path: String) -> Result<String, String> {
+    let repo = Repository::discover(&path).map_err(|e| e.to_string())?;
+    let path = repo.path().parent().unwrap_or(repo.path());
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[command]
+pub fn git_push(path: String) -> Result<String, String> {
+    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+    let mut remote = repo.find_remote("origin").map_err(|e| e.to_string())?;
+
+    let mut callbacks = git2::RemoteCallbacks::new();
+    callbacks.credentials(|_url, username_from_url, allowed_types| {
+        if allowed_types.contains(git2::CredentialType::SSH_KEY) {
+            git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        } else {
+            git2::Cred::default()
+        }
+    });
+
+    let mut push_opts = git2::PushOptions::new();
+    push_opts.remote_callbacks(callbacks);
+
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let branch_name = head.shorthand().unwrap_or("master");
+    let refspec = format!("refs/heads/{}:refs/heads/{}", branch_name, branch_name);
+
+    remote
+        .push(&[refspec], Some(&mut push_opts))
+        .map_err(|e| e.to_string())?;
+
+    Ok("Pushed successfully".to_string())
 }
 
 #[command]

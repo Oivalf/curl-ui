@@ -81,6 +81,9 @@ pub fn run() {
             commands::get_user_guide_content,
             commands::delete_project,
             commands::is_git_repo,
+            commands::get_git_root,
+            commands::git_push,
+            commands::git_add_file,
             refresh_projects_menu,
             enable_window_menu
         ])

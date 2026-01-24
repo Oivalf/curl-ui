@@ -23,12 +23,17 @@
       "collectionId": "c030889c-5cfa-4dd0-8b63-03ce8affcea4",
       "name": "pisolo",
       "method": "GET",
-      "url": "https://settenani/{name}",
+      "url": "https://settenani/%7Bname%7D",
       "headers": {
         "pp": "cc"
       },
       "parentId": null,
-      "body": ""
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
     }
   ],
   "folders": [],
