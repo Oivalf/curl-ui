@@ -1,17 +1,22 @@
 {
   "id": "c030889c-5cfa-4dd0-8b63-03ce8affcea4",
   "name": "lallolo",
-  "projectName": "Default Project",
+  "projectName": "logfret",
   "requests": [
     {
       "id": "8ee96621-0286-436c-a37b-720b88fc67ab",
       "collectionId": "c030889c-5cfa-4dd0-8b63-03ce8affcea4",
       "name": "Mammolo",
       "method": "GET",
-      "url": "https://settenani/{name}",
+      "url": "https://settenani/{name}?ciaone=",
       "headers": {},
       "parentId": null,
-      "body": ""
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
     },
     {
       "id": "3615f04b-b26f-47f4-965a-259b1c035d21",
@@ -45,6 +50,14 @@
       "name": "Local",
       "variables": [
         {
+          "key": "bianca",
+          "value": "local"
+        },
+        {
+          "key": "ma",
+          "value": "rea"
+        },
+        {
           "key": "gvar",
           "value": "local"
         }
@@ -60,6 +73,24 @@
         {
           "key": "strega",
           "value": ""
+        }
+      ]
+    },
+    {
+      "name": "Test",
+      "variables": [
+        {
+          "key": "bianca",
+          "value": "nera"
+        }
+      ]
+    },
+    {
+      "name": "Prod",
+      "variables": [
+        {
+          "key": "bianca",
+          "value": "luce"
         }
       ]
     }
