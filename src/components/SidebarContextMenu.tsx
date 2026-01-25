@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, Settings } from 'lucide-preact';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog } from 'lucide-preact';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
@@ -362,7 +362,7 @@ export function SidebarContextMenu() {
                         onClick={handleOpenMockManager}
                         style={itemStyle}
                     >
-                        <Settings size={14} /> Mock Manager
+                        <ServerCog size={14} /> Mock Manager
                     </div>
                     <div
                         className="context-menu-item"
