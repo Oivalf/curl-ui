@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-preact';
 interface MethodSelectProps {
     value: string;
     onChange: (value: string) => void;
+    disabled?: boolean;
 }
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -19,7 +20,7 @@ const getColor = (method: string) => {
     }
 };
 
-export function MethodSelect({ value, onChange }: MethodSelectProps) {
+export function MethodSelect({ value, onChange, disabled }: MethodSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +39,7 @@ export function MethodSelect({ value, onChange }: MethodSelectProps) {
         <div ref={containerRef} style={{ position: 'relative', width: '110px' }}>
             {/* Trigger Button */}
             <div
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
                 style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -47,11 +48,12 @@ export function MethodSelect({ value, onChange }: MethodSelectProps) {
                     backgroundColor: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
                     borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
+                    cursor: disabled ? 'not-allowed' : 'pointer',
                     color: getColor(value),
                     fontWeight: 'bold',
                     fontSize: '0.9rem',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    opacity: disabled ? 0.7 : 1
                 }}
             >
                 {value}

@@ -60,6 +60,12 @@ export function SidebarContextMenu() {
             duplicateFolderRecursive(menu.itemId, folderToDup.parentId);
             folders.value = newFolders;
             requests.value = newRequests;
+
+            // Ensure duplicated requests have executions
+            const duplicatedRequestIds = newRequests.filter(r => !requests.peek().some(old => old.id === r.id)).map(r => r.id);
+            import('../store').then(({ ensureDefaultExecutions }) => {
+                ensureDefaultExecutions(duplicatedRequestIds);
+            });
         } else {
             const reqToDup = requests.value.find(r => r.id === menu.itemId);
             if (!reqToDup) return;
@@ -71,6 +77,11 @@ export function SidebarContextMenu() {
                 name: `${reqToDup.name} (copy)`
             }];
             activeRequestId.value = newId;
+
+            // Auto-create sample execution
+            import('../store').then(({ ensureDefaultExecutions }) => {
+                ensureDefaultExecutions([newId]);
+            });
         }
         contextMenu.value = null;
     };
@@ -145,6 +156,12 @@ export function SidebarContextMenu() {
             collectionId: menu.collectionId
         }];
         activeRequestId.value = newId;
+
+        // Auto-create sample execution
+        import('../store').then(({ ensureDefaultExecutions }) => {
+            ensureDefaultExecutions([newId]);
+        });
+
         contextMenu.value = null;
     };
 
@@ -295,6 +312,11 @@ export function SidebarContextMenu() {
                                     collectionId: menu.collectionId
                                 }];
                                 activeRequestId.value = newId;
+
+                                // Auto-create sample execution
+                                import('../store').then(({ ensureDefaultExecutions }) => {
+                                    ensureDefaultExecutions([newId]);
+                                });
                             }
                             contextMenu.value = null;
                         }}

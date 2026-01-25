@@ -1,13 +1,16 @@
 import { Signal } from "@preact/signals";
+import { OverrideIndicator } from "../OverrideIndicator";
 
 interface RequestParamsEditorProps {
     queryParams: Signal<{ key: string, values: string[] }[]>;
     pathParams: Signal<Record<string, string>>;
     detectedPathKeys: Signal<string[]>;
     updateUrlFromParams: (newParams: { key: string, values: string[] }[]) => void;
+    isReadOnly?: boolean;
+    overriddenKeys?: Set<string>;
 }
 
-export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams }: RequestParamsEditorProps) {
+export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys }: RequestParamsEditorProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Path Params Section */}
@@ -39,16 +42,23 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                             <input
                                 placeholder="Key"
                                 value={p.key}
+                                readOnly={isReadOnly}
                                 onInput={(e) => {
+                                    if (isReadOnly) return;
                                     const newParams = queryParams.value.map((param, idx) =>
                                         idx === i ? { ...param, key: e.currentTarget.value } : param
                                     );
                                     updateUrlFromParams(newParams);
                                 }}
+                                style={{
+                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                    cursor: isReadOnly ? 'default' : 'text'
+                                }}
                             />
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {p.values.length === 0 && (
+                            {p.values.length === 0 && !isReadOnly && (
                                 <button
                                     onClick={() => {
                                         const newParams = queryParams.value.map((param, idx) =>
@@ -62,7 +72,8 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                                 </button>
                             )}
                             {p.values.map((val, valIdx) => (
-                                <div key={valIdx} style={{ display: 'flex', gap: '4px' }}>
+                                <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                    {overriddenKeys?.has(p.key) && <OverrideIndicator />}
                                     <input
                                         placeholder="Value"
                                         value={val}
@@ -77,45 +88,53 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                                         }}
                                         style={{ flex: 1 }}
                                     />
-                                    <button
-                                        onClick={() => {
-                                            const newParams = queryParams.value.map((param, idx) => {
-                                                if (idx !== i) return param;
-                                                const newValues = param.values.filter((_, vIdx) => vIdx !== valIdx);
-                                                return { ...param, values: newValues };
-                                            });
-                                            updateUrlFromParams(newParams);
-                                        }}
-                                        style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                    >
-                                        -
-                                    </button>
+                                    {!isReadOnly && (
+                                        <button
+                                            onClick={() => {
+                                                const newParams = queryParams.value.map((param, idx) => {
+                                                    if (idx !== i) return param;
+                                                    const newValues = param.values.filter((_, vIdx) => vIdx !== valIdx);
+                                                    return { ...param, values: newValues };
+                                                });
+                                                updateUrlFromParams(newParams);
+                                            }}
+                                            style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            -
+                                        </button>
+                                    )}
                                 </div>
                             ))}
-                            <button
-                                onClick={() => {
-                                    const newParams = queryParams.value.map((param, idx) =>
-                                        idx === i ? { ...param, values: [...param.values, ''] } : param
-                                    );
-                                    updateUrlFromParams(newParams);
-                                }}
-                                style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                                +
-                            </button>
+                            {!isReadOnly && (
+                                <button
+                                    onClick={() => {
+                                        const newParams = queryParams.value.map((param, idx) =>
+                                            idx === i ? { ...param, values: [...param.values, ''] } : param
+                                        );
+                                        updateUrlFromParams(newParams);
+                                    }}
+                                    style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    +
+                                </button>
+                            )}
                         </div>
-                        <button onClick={() => {
-                            const newParams = queryParams.value.filter((_, idx) => idx !== i);
-                            updateUrlFromParams(newParams);
-                        }} style={{ color: 'var(--error)', alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                        {!isReadOnly && (
+                            <button onClick={() => {
+                                const newParams = queryParams.value.filter((_, idx) => idx !== i);
+                                updateUrlFromParams(newParams);
+                            }} style={{ color: 'var(--error)', alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                        )}
                     </div>
                 ))}
-                <button
-                    onClick={() => updateUrlFromParams([...queryParams.value, { key: '', values: [''] }])}
-                    style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                    + Add Param
-                </button>
+                {!isReadOnly && (
+                    <button
+                        onClick={() => updateUrlFromParams([...queryParams.value, { key: '', values: [''] }])}
+                        style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                        + Add Param
+                    </button>
+                )}
             </div>
         </div>
     );

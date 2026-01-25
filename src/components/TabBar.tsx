@@ -1,5 +1,5 @@
-import { openTabs, activeTabId, requests, folders, activeRequestId, activeFolderId, Tab, unsavedItemIds } from "../store";
-import { X, FileJson, Folder, ChevronDown } from 'lucide-preact';
+import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds } from "../store";
+import { X, FileJson, Folder, ChevronDown, Play } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 
@@ -24,9 +24,15 @@ export function TabBar() {
                 if (newTab.type === 'request') {
                     activeRequestId.value = newTab.id;
                     activeFolderId.value = null;
+                    activeExecutionId.value = null;
+                } else if (newTab.type === 'execution') {
+                    activeExecutionId.value = newTab.id;
+                    activeRequestId.value = null;
+                    activeFolderId.value = null;
                 } else {
                     activeFolderId.value = newTab.id;
                     activeRequestId.value = null;
+                    activeExecutionId.value = null;
                 }
             } else {
                 activeTabId.value = null;
@@ -42,9 +48,15 @@ export function TabBar() {
         if (tab.type === 'request') {
             activeRequestId.value = tab.id;
             activeFolderId.value = null;
+            activeExecutionId.value = null;
+        } else if (tab.type === 'execution') {
+            activeExecutionId.value = tab.id;
+            activeRequestId.value = null;
+            activeFolderId.value = null;
         } else {
             activeFolderId.value = tab.id;
             activeRequestId.value = null;
+            activeExecutionId.value = null;
         }
         isMenuOpen.value = false;
     };
@@ -67,9 +79,10 @@ export function TabBar() {
 
     // Helper to get fresh name
     const getTabName = (tab: Tab) => {
-        return tab.type === 'request'
-            ? requests.value.find(r => r.id === tab.id)?.name || tab.name
-            : folders.value.find(f => f.id === tab.id)?.name || tab.name;
+        if (tab.type === 'request') return requests.value.find(r => r.id === tab.id)?.name || tab.name;
+        if (tab.type === 'folder') return folders.value.find(f => f.id === tab.id)?.name || tab.name;
+        if (tab.type === 'execution') return executions.value.find(e => e.id === tab.id)?.name || tab.name;
+        return tab.name;
     };
 
     // Grouping for Menu
@@ -77,10 +90,11 @@ export function TabBar() {
         const sorted = [...openTabs.value].sort((a, b) => getTabName(a).localeCompare(getTabName(b)));
         const reqs = sorted.filter(t => t.type === 'request');
         const folds = sorted.filter(t => t.type === 'folder');
-        return { reqs, folds };
+        const execs = sorted.filter(t => t.type === 'execution');
+        return { reqs, folds, execs };
     };
 
-    const { reqs, folds } = getGroupedTabs();
+    const { reqs, folds, execs } = getGroupedTabs();
 
     if (openTabs.value.length === 0) return null;
 
@@ -111,7 +125,7 @@ export function TabBar() {
                                 height: '100%'
                             }}
                         >
-                            {tab.type === 'request' ? <FileJson size={14} /> : <Folder size={14} />}
+                            {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : <Folder size={14} />}
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, fontSize: '0.9rem' }}>
                                 {freshName}
                                 {unsavedItemIds.value.has(tab.id) && (
@@ -212,6 +226,35 @@ export function TabBar() {
                                         }}
                                     >
                                         <FileJson size={14} />
+                                        <span style={{ fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTabName(tab)}</span>
+                                        {activeTabId.value === tab.id && <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {reqs.length > 0 && execs.length > 0 && <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />}
+
+                        {execs.length > 0 && (
+                            <div>
+                                <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Executions
+                                </div>
+                                {execs.map(tab => (
+                                    <div
+                                        key={tab.id}
+                                        onClick={() => activateTab(tab)}
+                                        style={{
+                                            padding: '8px 12px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer',
+                                            backgroundColor: activeTabId.value === tab.id ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                            color: activeTabId.value === tab.id ? 'var(--accent-primary)' : 'var(--text-primary)'
+                                        }}
+                                    >
+                                        <Play size={14} />
                                         <span style={{ fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTabName(tab)}</span>
                                         {activeTabId.value === tab.id && <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />}
                                     </div>

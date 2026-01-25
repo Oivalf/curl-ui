@@ -1,10 +1,7 @@
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
-import { useRef, useEffect, useCallback } from "preact/hooks";
-import { Play } from 'lucide-preact';
-import { invoke } from '@tauri-apps/api/core';
-import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, responseData, ScriptItem, addLog } from "../store";
+import { useRef } from "preact/hooks";
+import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem } from "../store";
 import { RequestPanel } from "./RequestPanel";
-import { ResponsePanel } from "./ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
 
 export function RequestEditor() {
@@ -46,9 +43,6 @@ export function RequestEditor() {
         if (!req || !req.parentId) return [];
         return resolveHeaders(req.parentId);
     });
-
-    // Loading State
-    const isLoading = useSignal(false);
 
     // Params State
     const queryParams = useSignal<{ key: string, values: string[] }[]>([]);
@@ -138,7 +132,7 @@ export function RequestEditor() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter') {
-            handleSend();
+            // handleSend removed
         }
     };
 
@@ -251,227 +245,6 @@ export function RequestEditor() {
         return result;
     };
 
-    // Import store values directly inside component to ensure reactivity if needed, 
-    // but they are imported at top level.
-
-    const executeScript = async (scriptContent: string, context: any) => {
-        try {
-            // Function constructor to create a sandboxed-ish scope
-            // We pass keys of context as arguments
-            const keys = Object.keys(context);
-            const values = Object.values(context);
-            const func = new Function(...keys, scriptContent);
-            await func(...values);
-        } catch (err) {
-            console.error("Script Execution Error:", err);
-            throw err;
-        }
-    };
-
-    const handleSend = async () => {
-        if (isLoading.value) return;
-        isLoading.value = true;
-        responseData.value = null; // Clear previous
-        const startTime = Date.now();
-
-        try {
-            // 1. Execute Pre-Scripts
-            const activeEnv = environments.peek().find(e => e.name === activeEnvironmentName.peek());
-
-            // Script Context
-            const scriptContext = {
-                console: {
-                    ...console,
-                    log: (...args: any[]) => {
-                        console.log(...args);
-                        addLog('info', args.map(a => String(a)).join(' '), 'Script');
-                    },
-                    error: (...args: any[]) => {
-                        console.error(...args);
-                        addLog('error', args.map(a => String(a)).join(' '), 'Script');
-                    },
-                    warn: (...args: any[]) => {
-                        console.warn(...args);
-                        addLog('warn', args.map(a => String(a)).join(' '), 'Script');
-                    },
-                    info: (...args: any[]) => {
-                        console.info(...args);
-                        addLog('info', args.map(a => String(a)).join(' '), 'Script');
-                    }
-                },
-                env: {
-                    get: (key: string) => {
-                        const fromActive = activeEnv?.variables.find(v => v.key === key)?.value;
-                        if (fromActive !== undefined) return fromActive;
-                        const globalEnv = environments.peek().find(e => e.name === 'Global');
-                        return globalEnv?.variables.find(v => v.key === key)?.value;
-                    },
-                    set: (key: string, value: string) => {
-                        const targetEnv = activeEnv || environments.peek().find(e => e.name === 'Global');
-                        if (!targetEnv) return;
-
-                        const existing = targetEnv.variables.find(v => v.key === key);
-                        if (existing) {
-                            existing.value = value;
-                        } else {
-                            targetEnv.variables.push({ key, value });
-                        }
-                        environments.value = [...environments.peek()];
-                    }
-                }
-            };
-
-            for (const script of preScripts.peek()) {
-                if (script.enabled) {
-                    try {
-                        console.log(`Executing Pre-Script: ${script.name}`);
-                        await executeScript(script.content, scriptContext);
-                    } catch (e) {
-                        alert(`Error executing Pre-Script "${script.name}":\n${e}`);
-                        throw new Error(`Pre-Script failed: ${e}`); // Stop execution
-                    }
-                }
-            }
-
-            // Prepare headers
-            const startHeaders = resolveHeaders(activeRequestId.value!);
-            const finalHeaders: Record<string, string> = {};
-
-            startHeaders.forEach(h => {
-                if (h.key && h.value) {
-                    finalHeaders[h.key] = substituteVariables(h.value);
-                }
-            });
-
-            // Auth (resolve inherit)
-            let authConfig = auth.value;
-            if (authConfig.type === 'inherit' && inheritedAuth.value) {
-                authConfig = inheritedAuth.value.config;
-            }
-
-            // Apply Auth to Headers
-            if (authConfig.type === 'basic' && authConfig.basic) {
-                const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-                finalHeaders['Authorization'] = `Basic ${token}`;
-            } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-                finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
-            }
-
-            const finalUrl = substituteVariables(getFinalUrl());
-            let finalBody = bodyType.value === 'none' ? null : substituteVariables(body.value);
-            let formDataArgs: any = null;
-
-            if (bodyType.value === 'form_urlencoded') {
-                // Convert formData to urlencoded string
-                const params = new URLSearchParams();
-                formData.value.forEach(group => {
-                    group.values.forEach(v => {
-                        params.append(group.key, substituteVariables(v));
-                    });
-                });
-                finalBody = params.toString();
-                // Ensure Content-Type is set if not already
-                if (!finalHeaders['Content-Type']) finalHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
-
-            } else if (bodyType.value === 'multipart') {
-                // Pass structured formData to backend
-                formDataArgs = [];
-                formData.value.forEach(group => {
-                    group.values.forEach(v => {
-                        formDataArgs.push({
-                            key: group.key,
-                            value: substituteVariables(v),
-                            entry_type: group.type
-                        });
-                    });
-                });
-                finalBody = null; // backend handles multipart via form_data arg
-            } else if (bodyType.value === 'json' && !finalHeaders['Content-Type']) {
-                finalHeaders['Content-Type'] = 'application/json';
-            }
-            // Add other content types defaults if needed
-
-            const res = await invoke<{ status: number, headers: Record<string, string>, body: string, time_taken: number }>('http_request', {
-                args: {
-                    method: method.value,
-                    url: finalUrl,
-                    headers: finalHeaders,
-                    body: finalBody,
-                    form_data: formDataArgs
-                }
-            });
-
-            const duration = Date.now() - startTime;
-
-            responseData.value = {
-                status: res.status,
-                headers: res.headers,
-                body: res.body,
-                size: new Blob([res.body]).size,
-                time: duration
-            };
-
-            // 2. Execute Post-Scripts
-            const shouldExecuteScript = (pattern: string | undefined, status: number): boolean => {
-                if (!pattern || pattern.trim() === '') return true; // Always execute if no pattern
-
-                const patterns = pattern.split(',').map(p => p.trim());
-                const statusStr = status.toString();
-
-                return patterns.some(p => {
-                    if (p === statusStr) return true;
-                    // Check for wildcards e.g. 2xx
-                    if (p.toLowerCase().endsWith('xx')) {
-                        const prefix = p.slice(0, -2);
-                        return statusStr.startsWith(prefix);
-                    }
-                    return false;
-                });
-            };
-
-            const responseContext = {
-                status: res.status,
-                headers: res.headers,
-                body: res.body,
-                time: duration
-            };
-
-            // Re-create context to include response
-            const postScriptContext = {
-                ...scriptContext,
-                response: responseContext
-            };
-
-            for (const script of postScripts.peek()) {
-                if (script.enabled) {
-                    if (shouldExecuteScript(script.executeOnStatusCodes, res.status)) {
-                        try {
-                            console.log(`Executing Post-Script: ${script.name}`);
-                            await executeScript(script.content, postScriptContext);
-                        } catch (e) {
-                            addLog('error', `Post-Script "${script.name}" failed: ${e}`, 'Request');
-                            // We don't abort the request flow here as response is already received
-                        }
-                    } else {
-                        console.log(`Skipping Post-Script "${script.name}" (Status ${res.status} does not match ${script.executeOnStatusCodes})`);
-                    }
-                }
-            }
-
-        } catch (err) {
-            console.error(err);
-            responseData.value = {
-                status: 0,
-                headers: {},
-                body: `Error: ${err}`,
-                size: 0,
-                time: 0
-            };
-        } finally {
-            isLoading.value = false;
-        }
-    };
-
     const generateCurl = () => {
         let cmd = `curl -X ${method.value} '${substituteVariables(getFinalUrl())}'`;
 
@@ -548,36 +321,6 @@ export function RequestEditor() {
     };
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const leftPanelWidth = useSignal(50); // percentage
-    const isResizing = useSignal(false);
-
-    const startResizing = useCallback(() => {
-        isResizing.value = true;
-    }, []);
-
-    const stopResizing = useCallback(() => {
-        isResizing.value = false;
-    }, []);
-
-    const resize = useCallback((e: MouseEvent) => {
-        if (isResizing.value && containerRef.current) {
-            const containerRect = containerRef.current.getBoundingClientRect();
-            const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-            // Clamp between 20% and 80%
-            if (newWidth >= 20 && newWidth <= 80) {
-                leftPanelWidth.value = newWidth;
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        window.addEventListener('mousemove', resize);
-        window.addEventListener('mouseup', stopResizing);
-        return () => {
-            window.removeEventListener('mousemove', resize);
-            window.removeEventListener('mouseup', stopResizing);
-        };
-    }, [resize, stopResizing]);
 
     return (
         <div style={{ padding: 'var(--spacing-md)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)', height: '100%' }}>
@@ -619,7 +362,7 @@ export function RequestEditor() {
                             style={{
                                 flex: 1,
                                 padding: '8px',
-                                paddingLeft: url.value ? '8px' : '8px', // TODO: improve overlay logic if needed
+                                paddingLeft: url.value ? '8px' : '8px',
                                 backgroundColor: 'var(--bg-input)',
                                 border: '1px solid var(--border-color)',
                                 borderRadius: 'var(--radius-sm)',
@@ -631,30 +374,10 @@ export function RequestEditor() {
                         />
                     </div>
                 </div>
-                <button
-                    onClick={handleSend}
-                    disabled={isLoading.value}
-                    style={{
-                        padding: '8px 16px',
-                        backgroundColor: 'var(--accent-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 'var(--radius-sm)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        opacity: isLoading.value ? 0.7 : 1
-                    }}
-                >
-                    <Play size={16} />
-                    {isLoading.value ? 'Sending...' : 'Send'}
-                </button>
             </div>
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
                     <RequestPanel
                         method={method}
                         headers={headers}
@@ -673,24 +396,6 @@ export function RequestEditor() {
                         preScripts={preScripts}
                         postScripts={postScripts}
                     />
-                </div>
-                {/* Resizer Handle */}
-                <div
-                    onMouseDown={startResizing}
-                    style={{
-                        width: '5px',
-                        cursor: 'col-resize',
-                        backgroundColor: isResizing.value ? 'var(--accent-primary)' : 'var(--border-color)',
-                        opacity: isResizing.value ? 1 : 0.5,
-                        transition: 'background-color 0.2s',
-                        margin: '0 4px',
-                        borderRadius: '2px',
-                        zIndex: 10
-                    }}
-                />
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', minHeight: 0 }}>
-                    <ResponsePanel />
                 </div>
             </div>
         </div>

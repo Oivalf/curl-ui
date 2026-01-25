@@ -1,14 +1,17 @@
 import { Signal } from "@preact/signals";
 import { AuthConfig, AuthType, navigateToItem } from "../store";
+import { OverrideIndicator } from "./OverrideIndicator";
 
 interface AuthEditorProps {
     auth: Signal<AuthConfig | undefined>;
     onChange: (newAuth: AuthConfig) => void;
     showInherit?: boolean;
     inheritedAuth?: { config: AuthConfig, source: string, sourceId?: string };
+    isReadOnly?: boolean;
+    isOverridden?: boolean;
 }
 
-export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth }: AuthEditorProps) {
+export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, isReadOnly = false, isOverridden }: AuthEditorProps) {
     const currentAuth = auth.value || { type: showInherit ? 'inherit' : 'none' };
 
     const handleTypeChange = (type: AuthType) => {
@@ -36,13 +39,15 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth }
                 <select
                     value={currentAuth.type}
                     onChange={(e) => handleTypeChange(e.currentTarget.value as AuthType)}
+                    disabled={isReadOnly}
                     style={{
                         padding: '8px',
-                        backgroundColor: 'var(--bg-input)',
-                        border: '1px solid var(--border-color)',
+                        backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                        border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
                         borderRadius: 'var(--radius-sm)',
                         color: 'var(--text-primary)',
-                        outline: 'none'
+                        outline: 'none',
+                        cursor: isReadOnly ? 'default' : 'pointer'
                     }}
                 >
                     {showInherit && <option value="inherit">Inherit from Parent</option>}
@@ -56,35 +61,45 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth }
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Username</label>
-                        <input
-                            type="text"
-                            value={currentAuth.basic?.username || ''}
-                            onInput={(e) => updateBasic('username', e.currentTarget.value)}
-                            style={{
-                                padding: '8px',
-                                backgroundColor: 'var(--bg-input)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--text-primary)',
-                                outline: 'none'
-                            }}
-                        />
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {isOverridden && <OverrideIndicator />}
+                            <input
+                                type="text"
+                                placeholder="Username"
+                                value={currentAuth.basic?.username || ''}
+                                onInput={(e) => updateBasic('username', e.currentTarget.value)}
+                                style={{
+                                    padding: '8px',
+                                    backgroundColor: 'var(--bg-input)',
+                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    color: 'var(--text-primary)',
+                                    outline: 'none',
+                                    flex: 1
+                                }}
+                            />
+                        </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Password</label>
-                        <input
-                            type="password"
-                            value={currentAuth.basic?.password || ''}
-                            onInput={(e) => updateBasic('password', e.currentTarget.value)}
-                            style={{
-                                padding: '8px',
-                                backgroundColor: 'var(--bg-input)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--text-primary)',
-                                outline: 'none'
-                            }}
-                        />
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {isOverridden && <OverrideIndicator />}
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={currentAuth.basic?.password || ''}
+                                onInput={(e) => updateBasic('password', e.currentTarget.value)}
+                                style={{
+                                    padding: '8px',
+                                    backgroundColor: 'var(--bg-input)',
+                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    color: 'var(--text-primary)',
+                                    outline: 'none',
+                                    flex: 1
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
@@ -92,20 +107,24 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth }
             {currentAuth.type === 'bearer' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Token</label>
-                    <input
-                        type="text" // or password if preferred
-                        value={currentAuth.bearer?.token || ''}
-                        onInput={(e) => updateBearer(e.currentTarget.value)}
-                        placeholder="e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                        style={{
-                            padding: '8px',
-                            backgroundColor: 'var(--bg-input)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: 'var(--text-primary)',
-                            outline: 'none'
-                        }}
-                    />
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        {isOverridden && <OverrideIndicator />}
+                        <input
+                            type="text" // or password if preferred
+                            value={currentAuth.bearer?.token || ''}
+                            onInput={(e) => updateBearer(e.currentTarget.value)}
+                            placeholder="e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                            style={{
+                                padding: '8px',
+                                backgroundColor: 'var(--bg-input)',
+                                border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: 'var(--text-primary)',
+                                outline: 'none',
+                                flex: 1
+                            }}
+                        />
+                    </div>
                 </div>
             )}
 

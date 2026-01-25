@@ -132,18 +132,6 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
                 marginLeft: '4px'
             }}>
                 <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                    color: displayMethod === 'GET' ? 'var(--success)' :
-                        displayMethod === 'POST' ? 'var(--warning)' :
-                            displayMethod === 'DELETE' ? 'var(--error)' :
-                                displayMethod === 'PATCH' ? 'var(--yellow)' :
-                                    displayMethod === 'PUT' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                    minWidth: '35px'
-                }}>
-                    {displayMethod}
-                </span>
-                <span style={{
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',

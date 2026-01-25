@@ -1,20 +1,30 @@
 import { Signal } from "@preact/signals";
 import { FolderOpen } from 'lucide-preact';
 import { open } from '@tauri-apps/plugin-dialog';
+import { OverrideIndicator } from "../OverrideIndicator";
 
 interface RequestBodyEditorProps {
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
     body: Signal<string>;
     formData: Signal<{ key: string, type: 'text' | 'file', values: string[] }[]>;
+    isReadOnly?: boolean;
+    isOverridden?: boolean;
 }
 
-export function RequestBodyEditor({ bodyType, body, formData }: RequestBodyEditorProps) {
+export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden }: RequestBodyEditorProps) {
     return (
         <>
             <select
                 value={bodyType.value}
                 onChange={(e) => bodyType.value = e.currentTarget.value as any}
-                style={{ width: '100%', marginBottom: '4px' }}
+                disabled={isReadOnly}
+                style={{
+                    width: '100%',
+                    marginBottom: '4px',
+                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                    cursor: isReadOnly ? 'default' : 'pointer'
+                }}
             >
                 <option value="none">None</option>
                 <option value="json">JSON</option>
@@ -42,10 +52,17 @@ export function RequestBodyEditor({ bodyType, body, formData }: RequestBodyEdito
                                 <input
                                     placeholder="Key"
                                     value={row.key}
+                                    readOnly={isReadOnly}
                                     onInput={(e) => {
+                                        if (isReadOnly) return;
                                         const newData = [...formData.value];
                                         newData[i].key = e.currentTarget.value;
                                         formData.value = newData;
+                                    }}
+                                    style={{
+                                        backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                        border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                        cursor: isReadOnly ? 'default' : 'text'
                                     }}
                                 />
                             </div>
@@ -54,12 +71,19 @@ export function RequestBodyEditor({ bodyType, body, formData }: RequestBodyEdito
                             <div style={{ width: '80px' }}>
                                 <select
                                     value={row.type}
+                                    disabled={isReadOnly}
                                     onChange={(e) => {
                                         const newData = [...formData.value];
                                         newData[i].type = e.currentTarget.value as any;
                                         formData.value = newData;
                                     }}
-                                    style={{ width: '100%' }}
+                                    style={{
+                                        width: '100%',
+                                        backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                        border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                        cursor: isReadOnly ? 'default' : 'pointer',
+                                        appearance: isReadOnly ? 'none' : 'auto'
+                                    }}
                                 >
                                     <option value="text">Text</option>
                                     <option value="file">File</option>
@@ -69,7 +93,8 @@ export function RequestBodyEditor({ bodyType, body, formData }: RequestBodyEdito
                             {/* Values Column */}
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {row.values.map((val, valIdx) => (
-                                    <div key={valIdx} style={{ display: 'flex', gap: '4px' }}>
+                                    <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                        {isOverridden && <OverrideIndicator />}
                                         {/* Value Input */}
                                         <div style={{ flex: 1, display: 'flex', gap: '4px' }}>
                                             <input
@@ -113,62 +138,78 @@ export function RequestBodyEditor({ bodyType, body, formData }: RequestBodyEdito
                                                 </button>
                                             )}
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                const newData = [...formData.value];
-                                                newData[i].values = newData[i].values.filter((_, vIdx) => vIdx !== valIdx);
-                                                formData.value = newData;
-                                            }}
-                                            style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                        >
-                                            -
-                                        </button>
+                                        {!isReadOnly && (
+                                            <button
+                                                onClick={() => {
+                                                    const newData = [...formData.value];
+                                                    newData[i].values = newData[i].values.filter((_, vIdx) => vIdx !== valIdx);
+                                                    formData.value = newData;
+                                                }}
+                                                style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                -
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
-                                <button
-                                    onClick={() => {
-                                        const newData = [...formData.value];
-                                        newData[i].values.push('');
-                                        formData.value = newData;
-                                    }}
-                                    style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
-                                >
-                                    +
-                                </button>
+                                {!isReadOnly && (
+                                    <button
+                                        onClick={() => {
+                                            const newData = [...formData.value];
+                                            newData[i].values.push('');
+                                            formData.value = newData;
+                                        }}
+                                        style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    >
+                                        +
+                                    </button>
+                                )}
                             </div>
 
                             {/* Remove Group Button */}
-                            <button onClick={() => {
-                                const newData = formData.value.filter((_, idx) => idx !== i);
-                                formData.value = newData;
-                            }} style={{ color: 'var(--error)', alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                            {!isReadOnly && (
+                                <button onClick={() => {
+                                    const newData = formData.value.filter((_, idx) => idx !== i);
+                                    formData.value = newData;
+                                }} style={{ color: 'var(--error)', alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                            )}
                         </div>
                     ))}
-                    <button
-                        onClick={() => formData.value = [...formData.value, { key: '', type: 'text', values: [''] }]}
-                        style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                        + Add Field
-                    </button>
+                    {!isReadOnly && (
+                        <button
+                            onClick={() => formData.value = [...formData.value, { key: '', type: 'text', values: [''] }]}
+                            style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                            + Add Field
+                        </button>
+                    )}
                 </div>
             ) : (
                 bodyType.value !== 'none' && (
-                    <textarea
-                        value={body.value}
-                        onInput={(e) => body.value = e.currentTarget.value}
-                        style={{
-                            flex: 1,
-                            width: '100%',
-                            resize: 'none',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 'var(--radius-sm)',
-                            backgroundColor: 'var(--bg-input)',
-                            color: 'var(--text-primary)',
-                            padding: '8px',
-                            fontFamily: 'var(--font-mono)'
-                        }}
-                        placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
-                    />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {isOverridden && (
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', padding: '4px 0' }}>
+                                <OverrideIndicator />
+                                <span style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>Body overridden</span>
+                            </div>
+                        )}
+                        <textarea
+                            value={body.value}
+                            onInput={(e) => body.value = e.currentTarget.value}
+                            style={{
+                                flex: 1,
+                                width: '100%',
+                                resize: 'none',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: 'var(--radius-sm)',
+                                backgroundColor: 'var(--bg-input)',
+                                color: 'var(--text-primary)',
+                                padding: '8px',
+                                fontFamily: 'var(--font-mono)'
+                            }}
+                            placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
+                        />
+                    </div>
                 )
             )}
 

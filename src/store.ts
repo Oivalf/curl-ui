@@ -28,7 +28,7 @@ export interface ScriptItem {
 }
 
 
-export class QueryParam  {
+export class QueryParam {
     constructor(public name: string, public values: string[]) {
         this.name = name;
         this.values = values;
@@ -36,15 +36,15 @@ export class QueryParam  {
 
     toString(): string {
         let str: string = '';
-        if(this.values && this.values.length > 0) {
+        if (this.values && this.values.length > 0) {
             for (let i = 0; i < this.values.length; i++) {
-                str = str + this.name +'=' + this.values[i];
-                if(i<(this.values.length-1)){
+                str = str + this.name + '=' + this.values[i];
+                if (i < (this.values.length - 1)) {
                     str = str + '&';
                 }
             }
         } else {
-            str = this.name +'=';
+            str = this.name + '=';
         }
         return str;
     }
@@ -59,11 +59,11 @@ export class UrlData {
     toString(): string {
         let urlString: string = this.path;
 
-        if(this.queryParams && this.queryParams.length > 0) {
+        if (this.queryParams && this.queryParams.length > 0) {
             urlString = urlString + '?'
             for (let i = 0; i < this.queryParams.length; i++) {
                 urlString = urlString + this.queryParams[i].toString();
-                if (i < this.queryParams.length -1){
+                if (i < this.queryParams.length - 1) {
                     urlString = urlString + '&';
                 }
             }
@@ -453,6 +453,34 @@ export const loadCollectionFromPath = async (path: string) => {
 
     // Sync manifest
     await syncProjectManifest(activeProjectName.peek());
+
+    // Ensure all requests have at least one execution
+    ensureDefaultExecutions(data.requests.map(r => r.id));
+};
+
+export const ensureDefaultExecutions = (requestIds: string[]) => {
+    const currentExecs = executions.peek();
+    const currentRequests = requests.peek();
+    const newExecs: ExecutionItem[] = [];
+
+    requestIds.forEach(reqId => {
+        const hasExec = currentExecs.some(e => e.requestId === reqId) || newExecs.some(e => e.requestId === reqId);
+        if (!hasExec) {
+            const req = currentRequests.find(r => r.id === reqId);
+            if (req) {
+                newExecs.push({
+                    id: crypto.randomUUID(),
+                    requestId: reqId,
+                    collectionId: req.collectionId,
+                    name: "sample"
+                });
+            }
+        }
+    });
+
+    if (newExecs.length > 0) {
+        executions.value = [...currentExecs, ...newExecs];
+    }
 };
 
 export const loadCollectionFromDisk = async () => {

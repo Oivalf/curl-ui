@@ -30,25 +30,59 @@ export function ExecutionEditor() {
 
     // Convert headers object to array for easier editing
     // Merge parent headers with execution overrides
-    const mergedHeaders = () => {
+    const getMergedHeaders = () => {
         const parentHeaders = Object.entries(parentRequest.headers || {});
-        const execHeaders = Object.entries(currentExecution.headers || {});
-        const merged = new Map<string, string>();
-        parentHeaders.forEach(([k, v]) => merged.set(k, v));
-        execHeaders.forEach(([k, v]) => merged.set(k, v));
-        return Array.from(merged.entries()).map(([k, v]) => ({ key: k, value: v }));
+        const execOverrides = currentExecution.headers || {};
+        return parentHeaders.map(([k, v]) => ({
+            key: k,
+            value: execOverrides[k] !== undefined ? execOverrides[k] : v
+        }));
     };
 
-    const headers = useSignal<{ key: string, value: string }[]>(mergedHeaders());
+    const headers = useSignal<{ key: string, value: string }[]>(getMergedHeaders());
     const body = useSignal(currentExecution.body ?? parentRequest.body ?? '');
-    const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
-        (body.value && body.value.startsWith('{')) ? 'json' : 'none'
-    );
+    const bodyType = useComputed<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(() => {
+        // Body type is inherited from parent request, but we derive it from the content if parent doesn't specify?
+        // Actually, the user says the type is fixed but value can change.
+        // For now let's derive it from the body content or follow parent if we had a bodyType field (which we don't yet).
+        // Best approach: determine type from content of the body (JSON check).
+        return (body.value && (body.value.trim().startsWith('{') || body.value.trim().startsWith('['))) ? 'json' : 'none';
+    });
     const preScripts = useSignal<ScriptItem[]>(currentExecution.preScripts ?? parentRequest.preScripts ?? []);
     const postScripts = useSignal<ScriptItem[]>(currentExecution.postScripts ?? parentRequest.postScripts ?? []);
 
     // Auth State - use execution auth or inherit from parent
     const auth = useSignal<AuthConfig>(currentExecution.auth ?? parentRequest.auth ?? { type: 'inherit' });
+
+    // Sync from parent when parent changes and no override exists
+    useSignalEffect(() => {
+        // This effect reacts to parentRequest changes
+        const pReq = parentRequest;
+        const cExec = executions.value.find(e => e.id === activeExecutionId.value);
+        if (!cExec) return;
+
+        if (cExec.url === undefined) {
+            url.value = pReq.url;
+        }
+        if (cExec.method === undefined) {
+            method.value = pReq.method;
+        }
+        if (cExec.headers === undefined) {
+            headers.value = getMergedHeaders();
+        }
+        if (cExec.body === undefined) {
+            body.value = pReq.body ?? '';
+        }
+        if (cExec.auth === undefined) {
+            auth.value = pReq.auth ?? { type: 'inherit' };
+        }
+        if (cExec.preScripts === undefined) {
+            preScripts.value = pReq.preScripts ?? [];
+        }
+        if (cExec.postScripts === undefined) {
+            postScripts.value = pReq.postScripts ?? [];
+        }
+    });
 
     // Inherited Auth
     const inheritedAuth = useComputed(() => {
@@ -144,6 +178,30 @@ export function ExecutionEditor() {
         return substituteVariables(getFinalUrl());
     });
 
+    // Detect Overrides for UI highlighting
+    const overriddenHeaders = useComputed(() => {
+        const parentHeaderMap = parentRequest.headers || {};
+        return new Set(headers.value.filter(h => h.key && parentHeaderMap[h.key] !== undefined && h.value !== parentHeaderMap[h.key]).map(h => h.key));
+    });
+
+    const overriddenQueryParams = useComputed(() => {
+        const parentUrlStr = parentRequest.url.includes('://') ? parentRequest.url : 'http://dummy/' + parentRequest.url;
+        try {
+            const pUrl = new URL(parentUrlStr);
+            const overriddenKeys = new Set<string>();
+            queryParams.value.forEach(p => {
+                const parentValues = pUrl.searchParams.getAll(p.key);
+                if (JSON.stringify(p.values) !== JSON.stringify(parentValues)) {
+                    overriddenKeys.add(p.key);
+                }
+            });
+            return overriddenKeys;
+        } catch { return new Set<string>(); }
+    });
+
+    const isBodyOverridden = useComputed(() => body.value !== (parentRequest.body ?? ''));
+    const isAuthOverridden = useComputed(() => JSON.stringify(auth.value) !== JSON.stringify(parentRequest.auth ?? { type: 'inherit' }));
+
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleSend();
@@ -153,8 +211,6 @@ export function ExecutionEditor() {
     // Sync Local State to Global Store
     useSignalEffect(() => {
         const currentName = name.value;
-        const currentMethod = method.value;
-        const currentUrl = url.value;
         const currentHeaders = headers.value;
         const currentBody = body.value;
         const currentAuth = auth.value;
@@ -169,26 +225,46 @@ export function ExecutionEditor() {
 
         if (idx !== -1) {
             const exec = allExecutions[idx];
+
+            // Determine if values should be saved as overrides or remain inherited (undefined)
             const headersObj: Record<string, string> = {};
             currentHeaders.forEach(h => { if (h.key) headersObj[h.key] = h.value; });
 
-            const headersChanged = JSON.stringify(exec.headers) !== JSON.stringify(headersObj);
-            const authChanged = JSON.stringify(exec.auth) !== JSON.stringify(currentAuth);
-            const preScriptsChanged = JSON.stringify(exec.preScripts) !== JSON.stringify(currentPreScripts);
-            const postScriptsChanged = JSON.stringify(exec.postScripts) !== JSON.stringify(currentPostScripts);
+            // Comparison for headers inheritance
+            const parentHeaders = parentRequest.headers || {};
+            const matchesParentHeaders = JSON.stringify(headersObj) === JSON.stringify(parentHeaders);
+            const finalHeaders = matchesParentHeaders ? undefined : headersObj;
 
-            if (exec.name !== currentName || exec.method !== currentMethod || exec.url !== currentUrl || headersChanged || exec.body !== currentBody || authChanged || preScriptsChanged || postScriptsChanged) {
+            // Comparison for body inheritance
+            const parentBody = parentRequest.body ?? '';
+            const finalBody = currentBody === parentBody ? undefined : currentBody;
+
+            // Comparison for auth inheritance
+            const parentAuth = parentRequest.auth ?? { type: 'inherit' };
+            const finalAuth = JSON.stringify(currentAuth) === JSON.stringify(parentAuth) ? undefined : currentAuth;
+
+            // Comparison for scripts inheritance
+            const finalPreScripts = JSON.stringify(currentPreScripts) === JSON.stringify(parentRequest.preScripts ?? []) ? undefined : currentPreScripts;
+            const finalPostScripts = JSON.stringify(currentPostScripts) === JSON.stringify(parentRequest.postScripts ?? []) ? undefined : currentPostScripts;
+
+            // Checks for changes compared to CURRENT store state to avoid infinite loops and unnecessary updates
+            const headersChanged = JSON.stringify(exec.headers) !== JSON.stringify(finalHeaders);
+            const authChanged = JSON.stringify(exec.auth) !== JSON.stringify(finalAuth);
+            const preScriptsChanged = JSON.stringify(exec.preScripts) !== JSON.stringify(finalPreScripts);
+            const postScriptsChanged = JSON.stringify(exec.postScripts) !== JSON.stringify(finalPostScripts);
+
+            if (exec.name !== currentName || headersChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
                 const newExecutions = [...allExecutions];
                 newExecutions[idx] = {
                     ...exec,
                     name: currentName,
-                    method: currentMethod,
-                    url: currentUrl,
-                    headers: headersObj,
-                    body: currentBody,
-                    auth: currentAuth,
-                    preScripts: currentPreScripts,
-                    postScripts: currentPostScripts
+                    method: undefined, // Always follow parent
+                    url: undefined,    // Always follow parent
+                    headers: finalHeaders,
+                    body: finalBody,
+                    auth: finalAuth,
+                    preScripts: finalPreScripts,
+                    postScripts: finalPostScripts
                 };
                 executions.value = newExecutions;
 
@@ -624,7 +700,7 @@ export function ExecutionEditor() {
                 }}
             />
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <MethodSelect value={method.value} onChange={(v) => method.value = v} />
+                <MethodSelect value={method.value} onChange={() => { }} disabled={true} />
                 <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
                     <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <span style={{
@@ -639,20 +715,22 @@ export function ExecutionEditor() {
                         <input
                             type="text"
                             value={url.value}
-                            onInput={(e) => url.value = e.currentTarget.value}
+                            readOnly={true}
+                            onInput={() => { }} // Read-only
                             onKeyDown={handleKeyDown}
                             placeholder="https://api.example.com/v1/users"
                             style={{
                                 flex: 1,
                                 padding: '8px',
                                 paddingLeft: '8px',
-                                backgroundColor: 'var(--bg-input)',
-                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'transparent',
+                                border: '1px solid transparent',
                                 borderRadius: 'var(--radius-sm)',
                                 color: 'var(--text-primary)',
                                 outline: 'none',
                                 fontFamily: 'var(--font-mono)',
-                                fontSize: '0.9rem'
+                                fontSize: '0.9rem',
+                                cursor: 'default'
                             }}
                         />
                     </div>
@@ -662,7 +740,7 @@ export function ExecutionEditor() {
                     disabled={isLoading.value}
                     style={{
                         padding: '8px 16px',
-                        backgroundColor: 'var(--accent-secondary)',
+                        backgroundColor: 'var(--accent-primary)',
                         color: 'white',
                         border: 'none',
                         borderRadius: 'var(--radius-sm)',
@@ -698,6 +776,11 @@ export function ExecutionEditor() {
                         inheritedHeaders={inheritedHeaders.value}
                         preScripts={preScripts}
                         postScripts={postScripts}
+                        isReadOnly={true}
+                        overriddenHeaders={overriddenHeaders.value}
+                        overriddenQueryParams={overriddenQueryParams.value}
+                        isBodyOverridden={isBodyOverridden.value}
+                        isAuthOverridden={isAuthOverridden.value}
                     />
                 </div>
                 {/* Resizer Handle */}

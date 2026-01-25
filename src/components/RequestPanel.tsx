@@ -13,7 +13,7 @@ interface RequestPanelProps {
     headers: Signal<{ key: string, value: string }[]>;
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
     body: Signal<string>;
-    auth?: Signal<AuthConfig>;
+    auth: Signal<AuthConfig | undefined>;
     queryParams: Signal<{ key: string, values: string[] }[]>;
     pathParams: Signal<Record<string, string>>;
     formData: Signal<{ key: string, type: 'text' | 'file', values: string[] }[]>;
@@ -25,6 +25,11 @@ interface RequestPanelProps {
     inheritedHeaders?: { key: string, value: string, source: string, sourceId?: string }[];
     preScripts: Signal<ScriptItem[]>;
     postScripts: Signal<ScriptItem[]>;
+    isReadOnly?: boolean;
+    overriddenHeaders?: Set<string>;
+    overriddenQueryParams?: Set<string>;
+    isBodyOverridden?: boolean;
+    isAuthOverridden?: boolean;
 }
 
 export function RequestPanel({
@@ -43,7 +48,12 @@ export function RequestPanel({
     inheritedAuth,
     inheritedHeaders,
     preScripts,
-    postScripts
+    postScripts,
+    isReadOnly,
+    overriddenHeaders,
+    overriddenQueryParams,
+    isBodyOverridden,
+    isAuthOverridden
 }: RequestPanelProps) {
     const activeRequestTab = useSignal<'params' | 'body' | 'headers' | 'auth' | 'scripts' | 'raw' | 'curl'>('params');
     const activeScriptTab = useSignal<'pre' | 'post'>('pre');
@@ -63,24 +73,43 @@ export function RequestPanel({
 
             <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {activeRequestTab.value === 'params' ? (
+                    {activeRequestTab.value === 'params' && (
                         <RequestParamsEditor
                             queryParams={queryParams}
                             pathParams={pathParams}
                             detectedPathKeys={detectedPathKeys}
                             updateUrlFromParams={updateUrlFromParams}
+                            isReadOnly={isReadOnly}
+                            overriddenKeys={overriddenQueryParams}
                         />
-                    ) : activeRequestTab.value === 'body' ? (
+                    )}
+                    {activeRequestTab.value === 'body' && (
                         <RequestBodyEditor
                             bodyType={bodyType}
                             body={body}
                             formData={formData}
+                            isReadOnly={isReadOnly}
+                            isOverridden={isBodyOverridden}
                         />
-                    ) : activeRequestTab.value === 'headers' ? (
-                        <RequestHeadersEditor headers={headers} inheritedHeaders={inheritedHeaders} />
-                    ) : activeRequestTab.value === 'auth' ? (
-                        <AuthEditor auth={auth!} onChange={(newAuth) => auth!.value = newAuth} inheritedAuth={inheritedAuth} />
-                    ) : activeRequestTab.value === 'scripts' ? (
+                    )}
+                    {activeRequestTab.value === 'headers' && (
+                        <RequestHeadersEditor
+                            headers={headers}
+                            inheritedHeaders={inheritedHeaders}
+                            isReadOnly={isReadOnly}
+                            overriddenKeys={overriddenHeaders}
+                        />
+                    )}
+                    {activeRequestTab.value === 'auth' && (
+                        <AuthEditor
+                            auth={auth}
+                            onChange={(v) => auth.value = v}
+                            inheritedAuth={inheritedAuth}
+                            isReadOnly={isReadOnly}
+                            isOverridden={isAuthOverridden}
+                        />
+                    )}
+                    {activeRequestTab.value === 'scripts' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {/* Sub-tabs for Scripts */}
                             <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '8px' }}>
@@ -114,7 +143,8 @@ export function RequestPanel({
                                 <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} />
                             )}
                         </div>
-                    ) : activeRequestTab.value === 'raw' ? (
+                    )}
+                    {activeRequestTab.value === 'raw' && (
                         <RequestRawView
                             method={method}
                             url={getFinalUrl()}
@@ -122,7 +152,8 @@ export function RequestPanel({
                             bodyType={bodyType}
                             body={body}
                         />
-                    ) : (
+                    )}
+                    {activeRequestTab.value === 'curl' && (
                         <RequestCurlView curlCommand={generateCurl()} />
                     )}
                 </div>
