@@ -1,27 +1,18 @@
-# Collections & Folders
+# 📦 Collections & Folders
 
-Organization is key to efficient API testing. cURL-UI provides a hierarchical structure to manage your requests.
+cURL-UI uses a hierarchical structure to organize requests.
 
 ## Collections
-
-A **Collection** is the top-level container for your requests. In cURL-UI, collections are stored as JSON files on your disk.
-
-- **Creating a Collection**: Click the **New** button in the sidebar. You'll be prompted for a name.
-- **Importing**: You can load existing JSON collections from your disk.
-- **Persistence**: Changes to collections are NOT saved automatically. Use **File > Save** (Cmd/Ctrl + S) or **Save All** to persist your changes to disk.
+A **Collection** is the top-level container, stored as a JSON file on disk.
+- **Creation**: Create new collections or import existing JSON files using the sidebar.
+- **Saving**: Changes are not auto-saved. Use **File > Save** to persist modifications.
 
 ## Folders
+Folders group related requests and support variable inheritance.
+- **Settings**: Use the Folder Editor to manage local variables, authentication, and headers.
+- **Inheritance**: Variables and settings defined in a folder apply to all its contents.
 
-Folders allow you to group related requests within a collection.
-
-- **Inheritance**: Folders are more than just containers; they support **Variable Inheritance**. Variables defined at the folder level are automatically available to all requests and subfolders inside them.
-- **Folder Settings**: Click on a folder in the sidebar to open the Folder Editor. Here you can manage:
-    - **Variables**: Local variables for the folder.
-    - **Inherited Variables**: A read-only view of variables inherited from parent folders or the Global environment.
-
-## Sidebar Controls
-
-The sidebar is your main navigation hub:
-- **Expand/Collapse**: Click the arrows next to collections and folders.
-- **Selection**: Clicking an item opens its dedicated editor in the main panel.
-- **Context Actions**: Right-click (or similar UI buttons) to add new requests or folders.
+## Sidebar
+- **Navigation**: Click items to open their respective editors.
+- **Organization**: Use chevrons to expand or collapse folders and requests.
+- **Context Menu**: Right-click items to add, duplicate, or delete requests and folders.

@@ -86,7 +86,9 @@ export function UserGuideView() {
         { id: 'index', label: 'Introduction', icon: <BookIcon size={16} /> },
         { id: 'projects', label: 'Projects' },
         { id: 'collections', label: 'Collections' },
-        { id: 'requests', label: 'Requests' },
+        { id: 'request-editor', label: 'Request Editor' },
+        { id: 'execution-editor', label: 'Execution Editor' },
+        { id: 'folder-editor', label: 'Folder Editor' },
         { id: 'environments', label: 'Environments' },
         { id: 'scripting', label: 'Scripting' },
     ];

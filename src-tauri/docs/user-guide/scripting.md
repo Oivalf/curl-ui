@@ -1,47 +1,35 @@
-# Scripting (Pre/Post)
+# 📜 Scripting
 
-cURL-UI features a powerful JavaScript-based scripting engine that allows you to automate your API workflows.
+cURL-UI allows running JavaScript logic before and after requests.
 
-## The `env` Object
+## Script API
 
-Both Pre-scripts and Post-scripts have access to the `env` object to interact with your environment variables:
+### The `env` Object
+Used to interact with variables:
+- `env.get("key")`: Retrieves a variable value.
+- `env.set("key", "value")`: Sets a variable in the active or Global environment.
 
-- `env.get("key")`: Fetches the value of a variable (respecting inheritance).
-- `env.set("key", "value")`: Sets a variable value. If an environment is active, it sets it there; otherwise, it defaults to the **Global** environment.
+### The `response` Object (Post-scripts only)
+Provides access to response data:
+- `response.status`: HTTP status code.
+- `response.body`: Response body content.
+- `response.headers`: Response headers.
+- `response.time`: Request duration in milliseconds.
 
 ## Pre-scripts
-
-Pre-scripts run **before** the request is sent. Use them to:
-- Generate dynamic timestamps or IDs.
-- Hash sensitive data for authentication.
-- Dynamically build request headers.
-
+Executed before the request is sent. Useful for dynamic data generation.
 ```javascript
-// Example: Set a dynamic timestamp
-env.set("timestamp", new Date().toISOString());
+env.set("timestamp", Date.now().toString());
 ```
 
 ## Post-scripts
-
-Post-scripts run **after** a response is received. Use them to:
-- Extract tokens from a response and save them for future requests.
-- Log specific response data to the console.
-- Perform basic assertions (results visible in the App Console).
-
-### The `response` Object
-Post-scripts have access to the `response` data:
-- `response.status`: The HTTP status code.
-- `response.data`: The parsed JSON body (or raw text).
-- `response.headers`: Response headers.
-
+Executed after a response is received. Useful for extracting data or logging.
 ```javascript
-// Example: Save an auth token
 if (response.status === 200) {
-    env.set("token", response.data.access_token);
-    console.log("Token updated!");
+    const data = JSON.parse(response.body);
+    env.set("token", data.token);
 }
 ```
 
-## App Console
-
-All logs generated via `console.log()`, `console.error()`, etc., in your scripts are displayed in the **Console Panel** at the bottom of the application. This is your primary tool for debugging script logic.
+## Debugging
+Use `console.log()` to output information to the application's Console Panel.

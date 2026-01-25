@@ -1,69 +1,57 @@
 # cURL-UI 🚀
 
-**curl-ui** is a modern, premium, and powerful API client built with **Tauri** and **Preact**. It's designed to provide a sleek and efficient developer experience for testing, organizing, and executing HTTP requests with the speed of rust and the flexibility of a modern UI.
+**cURL-UI** is an HTTP client built with **Tauri** and **Preact**. It provides a desktop interface to organize, configure, and execute HTTP requests.
 
 ---
 
 ## ✨ Features
 
 ### 📂 Collection & Project Management
-- **Hierarchical Organization**: Organize your requests into **Collections** and **Folders**.
-- **Persistence**: Collections are saved directly to your disk in a clean JSON format (e.g., `my-api.json`).
-- **Sidebar Integration**: Easily create, rename, and delete collections and folders with right-click context menus.
-- **Save Everywhere**: Use `Ctrl+S` (Save) or `Ctrl+Shift+S` (**Save All**) to keep your work synchronized. Native File menu support included.
+- **Organization**: Hierarchical structure with Collections and Folders.
+- **Persistence**: All data is stored locally on your machine as human-readable JSON files.
+- **Git Friendly**: The clean JSON format makes it easy to track changes, collaborate, and sync your collections using **Git** or any version control system.
+- **Sidebar**: Context menus for creating, renaming, and deleting items.
+- **Shortcuts**: `Ctrl+S` (Save) and `Ctrl+Shift+S` (Save All) to persist changes.
 
-### 🛠️ Professional Request Editor
-- **Full Method Support**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS.
-- **Dynamic URL Handling**: Supports query parameters and path variables with a dedicated editor.
-- **Versatile Body Editor**:
-    - **JSON/XML**: Syntax-aware raw editing.
-    - **Form Data**: dedicated UI for key-value pairs.
-    - **Multipart**: Support for binary file uploads.
-- **Header Management**: Custom headers with easy-to-use key-value inputs.
-- **Advanced Auth**: Support for **Basic Auth**, **Bearer Tokens**, and powerful **Inheritance** models.
+### 🛠️ Request & Execution Workflow
+- **Request Templates**: Define the base structure for your endpoints (URL, Method, Headers, Auth, Scripts).
+- **Executions**: Run specific instances of a request. Supports overriding template values.
+- **Override Indicators**: Visual indicators (yellow dot) show when an execution value differs from the template.
+- **Method Support**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS.
+- **Body Editor**: Support for JSON, Form-data, Multipart, and plain text.
 
-### 🔗 Smart Inheritance System
-- **Propagate Settings**: Define Auth and Headers at the Folder or Collection level and let child requests inherit them automatically.
-- **Visual Source Tracking**: The UI clearly shows where an inherited setting comes from (e.g., "Inherited from Folder: Users").
-- **Direct Navigation**: Click on an inherited source to instantly navigate to the folder where it's defined.
+### 🔗 Inheritance
+- **Automatic Propagation**: Headers and Authentication can be defined at the folder level and inherited by child requests.
+- **Tracking**: The UI identifies the source of inherited settings and allows jumping to the source folder.
 
 ### 📜 Scripting & Automation
-- **Pre-scripts**: Execute Javascript code before sending a request. Set variables or prepare data dynamically.
-- **Post-scripts**: Process responses automatically.
-    - **Status Filtering**: Run specific scripts only on certain outcomes (e.g., `200`, `2xx`, `401`).
-    - **Response Access**: Access the full `response` object in your scripts.
-- **Scripting API**: Use `env.get()` and `env.set()` to interact with your environment variables.
-- **Integrated Console**: A specialized log panel in the footer to debug your scripts with `console.log`.
+- **JavaScript Engine**: Run custom logic before sending a request or after receiving a response.
+- **Environment Access**: Use `env.get()` and `env.set()` to manage variables dynamically.
+- **Post-script Filtering**: Execution of scripts can be restricted to specific HTTP status codes.
+- **Console**: Log panel for script debugging via standard `console` methods.
 
-### 🌍 Powerful Environment Management
-- **Scoped Variables**: Switch between **Local**, **Dev**, **Test**, and **Prod** environments with a single click in the header.
-- **Global Fallback**: A special "Global" environment for variables that should always be available as a final fallback.
-- **Variable Synchronization**: Keep your environments aligned. Renaming a key in one environment automatically updates all others (excluding Global).
-- **Intelligent Overrides**:
-    - View "Inherited from Global" variables directly while editing any environment.
-    - Override a Global value for a specific environment by simply editing it.
-    - **Override Indicators**: Visual "G" badges mark variables that are currently overriding a Global value.
-- **Variable Substitution**: Use `{{variable_name}}` syntax anywhere in your URL, Headers, or Body for automatic replacement.
+### 🌍 Environments
+- **Scoped Variables**: Manage sets of variables for different environments (e.g., Development, Production).
+- **Global Variables**: Base variables available across all environments.
+- **Key Synchronization**: Keys are synced across non-global environments to maintain consistent structures.
+- **Substitution**: Use `{{variable_name}}` syntax in URLs, Headers, and Bodies.
 
 ---
 
-## 🎨 Design Aesthetics
-- **Premium UI**: Vibrant colors, dark mode, glassmorphism, and dynamic micro-animations.
-- **Cross-Platform**: Built with Tauri for a lightweight, native experience on Linux, macOS, and Windows.
-- **Safe Workflows**: Integrated confirmation modals for destructive actions (e.g., deletes), with intelligent layering to ensure they always appear on top.
-
 ## 📖 User Guide
 
-Explore the detailed documentation to master cURL-UI:
+Documentation is available in the `src-tauri/docs/user-guide` directory or via the in-app help panel.
 
-- **[Introduction & Overview](src-tauri/docs/user-guide/index.md)**
+- **[Introduction](src-tauri/docs/user-guide/index.md)**
+- **[Request Editor](src-tauri/docs/user-guide/request-editor.md)**
+- **[Execution Editor](src-tauri/docs/user-guide/execution-editor.md)**
 
 ---
 
 ## 🛠️ Technology Stack
 - **Frontend**: Preact + TypeScript
-- **State Management**: @preact/signals (for high-performance reactivity)
-- **Styling**: Vanilla CSS (Modern CSS variables and Flex/Grid)
+- **Reactivity**: @preact/signals
+- **Styling**: Vanilla CSS
 - **Icons**: Lucide-Preact
 - **Backend**: Rust (via Tauri 2.0)
 - **Build Tool**: Vite
@@ -72,8 +60,8 @@ Explore the detailed documentation to master cURL-UI:
 
 ## 🚀 Getting Started
 
-1. **Prerequisites**: Ensure you have the [Rust toolchain](https://rustup.rs/) installed.
-2. **Setup**:
+1. **Prerequisites**: [Rust toolchain](https://rustup.rs/) and [Node.js](https://nodejs.org/).
+2. **Installation**:
    ```bash
    npm install
    ```

@@ -1,25 +1,25 @@
-# cURL-UI User Guide
+# 📖 cURL-UI User Guide
 
-Welcome to the **cURL-UI** User Guide! This documentation is designed to help you get the most out of cURL-UI, a modern, high-performance HTTP client built with Tauri and React.
+This guide describes how to use **cURL-UI**, an HTTP client built with Tauri and React.
 
-Whether you're a developer testing APIs or a QA engineer automating requests, this guide will walk you through everything from project management to advanced scripting.
-
-## Guide Sections
+## Sections
 
 | Section | Description |
 | :--- | :--- |
-| **[Project Management](projects.md)** | Learn how to create, switch, and manage your projects. |
-| **[Collections & Folders](collections.md)** | Organize your requests into reusable collections and hierarchical folders. |
-| **[Building Requests](requests.md)** | master the request editor, headers, body, and more. |
-| **[Environments & Variables](environments.md)** | manage variables across different environments (Dev, Test, Prod). |
-| **[Scripting (Pre/Post)](scripting.md)** | Automate your workflows with Pre-scripts and Post-scripts. |
+| **[Projects](projects.md)** | Create and manage projects. |
+| **[Collections & Folders](collections.md)** | Organize requests into collections and hierarchical folders. |
+| **[Request Editor](request-editor.md)** | Configure the base template for your API requests. |
+| **[Execution Editor](execution-editor.md)** | Run requests and manage different execution instances. |
+| **[Folder Editor](folder-editor.md)** | Configure variables and settings shared across a folder. |
+| **[Environments](environments.md)** | Manage variables for different environments (Dev, Test, Prod). |
+| **[Scripting](scripting.md)** | Use JavaScript for pre-request and post-response logic. |
 
-## Quick Start
+## 🚀 Quick Start
 
-1. **Launch the App**: On first launch, you'll see the Welcome Screen.
-2. **Create a Project**: Enter a name for your first project.
-3. **Add a Collection**: Use the sidebar to create or import a JSON collection.
-4. **Send a Request**: Click "New Request" and hit **Send**!
+1. **Create a Project**: Set a name for your local project.
+2. **Add a Collection**: Create or import a collection JSON file.
+3. **Create a Request**: Add a new request template to your collection.
+4. **Run an Execution**: Use the default "sample" execution to send the request.
 
 ---
-© 2025 Oivalf • [GitHub Repository](https://github.com/Oivalf/curl-ui)
+© 2025 Oivalf
