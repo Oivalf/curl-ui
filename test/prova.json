@@ -67,7 +67,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "gogole",
       "method": "GET",
-      "url": "https://google.com/{id}?ciao=7",
+      "url": "https://google.com",
       "headers": {},
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "body": "",

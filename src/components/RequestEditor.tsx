@@ -11,22 +11,17 @@ export function RequestEditor() {
 
     // Helper to separate URL and Query Params
     const parseUrl = (fullUrl: string) => {
-        try {
-            if (!fullUrl.includes('?')) return { base: fullUrl, params: [] };
-            const dummy = fullUrl.includes('://') ? fullUrl : 'http://dummy/' + fullUrl;
-            const urlObj = new URL(dummy);
-            const params: { key: string, values: string[] }[] = [];
-            const processedKeys = new Set<string>();
-            urlObj.searchParams.forEach((_, key) => {
-                if (processedKeys.has(key)) return;
-                processedKeys.add(key);
-                params.push({ key, values: urlObj.searchParams.getAll(key) });
-            });
-            const base = fullUrl.split('?')[0];
-            return { base, params };
-        } catch {
-            return { base: fullUrl, params: [] };
-        }
+        if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
+        const [base, query] = fullUrl.split('?', 2);
+        const searchParams = new URLSearchParams(query);
+        const params: { key: string, values: string[] }[] = [];
+        const processedKeys = new Set<string>();
+        searchParams.forEach((_, key) => {
+            if (processedKeys.has(key)) return;
+            processedKeys.add(key);
+            params.push({ key, values: searchParams.getAll(key) });
+        });
+        return { base, params };
     };
 
     const { base: initialBase, params: initialParams } = parseUrl(currentRequest.url);
@@ -229,81 +224,6 @@ export function RequestEditor() {
         return result;
     };
 
-    const generateCurl = () => {
-        let cmd = `curl -X ${method.value} '${substituteVariables(getFinalUrl())}'`;
-
-        // Add headers
-        const startHeaders = resolveHeaders(activeRequestId.value!);
-        const finalHeaders: Record<string, string> = {};
-
-        startHeaders.forEach(h => {
-            if (h.key && h.value) {
-                finalHeaders[h.key] = substituteVariables(h.value);
-            }
-        });
-
-        // Auth (resolve inherit)
-        let authConfig = auth.value;
-        if (authConfig.type === 'inherit' && inheritedAuth.value) {
-            authConfig = inheritedAuth.value.config;
-        }
-
-        // Apply Auth to Headers
-        if (authConfig.type === 'basic' && authConfig.basic) {
-            const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-            finalHeaders['Authorization'] = `Basic ${token}`;
-        } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-            finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
-        }
-
-        for (const key in finalHeaders) {
-            cmd += ` \\\n  -H "${key}: ${finalHeaders[key]}"`;
-        }
-
-        // Add Content-Type header if not present and body type implies it
-        if (!finalHeaders['Content-Type']) {
-            let contentType: string | null = null;
-            switch (bodyType.value) {
-                case 'json': contentType = 'application/json'; break;
-                case 'xml': contentType = 'application/xml'; break;
-                case 'html': contentType = 'text/html'; break;
-                case 'form_urlencoded': contentType = 'application/x-www-form-urlencoded'; break;
-                case 'text': contentType = 'text/plain'; break;
-                case 'javascript': contentType = 'application/javascript'; break;
-                case 'yaml': contentType = 'application/x-yaml'; break;
-            }
-            if (contentType) {
-                cmd += ` \\\n  -H "Content-Type: ${contentType}"`;
-            }
-        }
-
-        if (bodyType.value === 'multipart') {
-            formData.value.forEach(group => {
-                group.values.forEach(v => {
-                    const subV = substituteVariables(v);
-                    if (group.type === 'file') {
-                        cmd += ` \\\n  -F "${group.key}=@${subV}"`;
-                    } else {
-                        cmd += ` \\\n  -F "${group.key}=${subV}"`;
-                    }
-                });
-            });
-        } else if (bodyType.value === 'form_urlencoded') {
-            formData.value.forEach(group => {
-                group.values.forEach(v => {
-                    const subV = substituteVariables(v);
-                    cmd += ` \\\n  -d "${group.key}=${subV}"`;
-                });
-            });
-        } else if (bodyType.value !== 'none' && body.value) {
-            // Basic escaping for single quotes
-            const escapedBody = substituteVariables(body.value).replace(/'/g, "'\\''");
-            cmd += ` \\\n  -d '${escapedBody}'`;
-        }
-
-        return cmd;
-    };
-
     const containerRef = useRef<HTMLDivElement>(null);
 
     return (
@@ -386,7 +306,6 @@ export function RequestEditor() {
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
                     <RequestPanel
-                        method={method}
                         headers={headers}
                         bodyType={bodyType}
                         body={body}
@@ -396,8 +315,6 @@ export function RequestEditor() {
                         formData={formData}
                         detectedPathKeys={detectedPathKeys}
                         updateUrlFromParams={updateUrlFromParams}
-                        getFinalUrl={getFinalUrl}
-                        generateCurl={generateCurl}
                         inheritedAuth={inheritedAuth.value}
                         inheritedHeaders={inheritedHeaders.value}
                         preScripts={preScripts}

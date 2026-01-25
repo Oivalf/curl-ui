@@ -27,22 +27,17 @@ export function ExecutionEditor() {
     const name = useSignal(currentExecution.name);
     // Helper to separate URL and Query Params
     const parseUrl = (fullUrl: string) => {
-        try {
-            if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
-            const dummy = fullUrl.includes('://') ? fullUrl : 'http://dummy/' + fullUrl;
-            const urlObj = new URL(dummy);
-            const params: { key: string, values: string[] }[] = [];
-            const processedKeys = new Set<string>();
-            urlObj.searchParams.forEach((_, key) => {
-                if (processedKeys.has(key)) return;
-                processedKeys.add(key);
-                params.push({ key, values: urlObj.searchParams.getAll(key) });
-            });
-            const base = fullUrl.split('?')[0];
-            return { base, params };
-        } catch {
-            return { base: fullUrl || '', params: [] };
-        }
+        if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
+        const [base, query] = fullUrl.split('?', 2);
+        const searchParams = new URLSearchParams(query);
+        const params: { key: string, values: string[] }[] = [];
+        const processedKeys = new Set<string>();
+        searchParams.forEach((_, key) => {
+            if (processedKeys.has(key)) return;
+            processedKeys.add(key);
+            params.push({ key, values: searchParams.getAll(key) });
+        });
+        return { base, params };
     };
 
     const { base: initialBase, params: initialParams } = parseUrl(currentExecution.url ?? parentRequest.url);
@@ -178,18 +173,16 @@ export function ExecutionEditor() {
     });
 
     const overriddenQueryParams = useComputed(() => {
-        const parentUrlStr = parentRequest.url.includes('://') ? parentRequest.url : 'http://dummy/' + parentRequest.url;
-        try {
-            const pUrl = new URL(parentUrlStr);
-            const overriddenKeys = new Set<string>();
-            queryParams.value.forEach(p => {
-                const parentValues = pUrl.searchParams.getAll(p.key);
-                if (JSON.stringify(p.values) !== JSON.stringify(parentValues)) {
-                    overriddenKeys.add(p.key);
-                }
-            });
-            return overriddenKeys;
-        } catch { return new Set<string>(); }
+        const { params: parentParams } = parseUrl(parentRequest.url);
+        const overriddenKeys = new Set<string>();
+        queryParams.value.forEach(p => {
+            const parentP = parentParams.find(pp => pp.key === p.key);
+            const parentValues = parentP ? parentP.values : [];
+            if (JSON.stringify(p.values) !== JSON.stringify(parentValues)) {
+                overriddenKeys.add(p.key);
+            }
+        });
+        return overriddenKeys;
     });
 
     const isBodyOverridden = useComputed(() => body.value !== (parentRequest.body ?? ''));
@@ -397,6 +390,22 @@ export function ExecutionEditor() {
                 }
             }
 
+            // Snapshot Request Data
+            const requestRaw = generateRawRequest();
+            const requestCurl = generateCurl();
+            const finalRequestUrl = substituteVariables(getFinalUrl(true));
+            const finalRequestMethod = method.value;
+
+            responseData.value = {
+                status: 0, // Loading
+                headers: {},
+                body: 'Requesting...',
+                requestRaw,
+                requestCurl,
+                requestUrl: finalRequestUrl,
+                requestMethod: finalRequestMethod
+            };
+
             // Use parent request ID to resolve headers hierarchy
             const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
             const finalHeaders: Record<string, string> = {};
@@ -468,6 +477,7 @@ export function ExecutionEditor() {
             const duration = Date.now() - startTime;
 
             responseData.value = {
+                ...responseData.peek(), // Preserve snapshots
                 status: res.status,
                 headers: res.headers,
                 body: res.body,
@@ -529,6 +539,66 @@ export function ExecutionEditor() {
         } finally {
             isLoading.value = false;
         }
+    };
+
+    const generateRawRequest = () => {
+        const urlWithQuery = substituteVariables(getFinalUrl(true));
+        const methodStr = method.value;
+
+        const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
+        const finalHeaders: Record<string, string> = {};
+
+        startHeaders.forEach(h => {
+            if (h.key && h.value) {
+                finalHeaders[h.key] = substituteVariables(h.value);
+            }
+        });
+
+        headers.value.forEach(h => {
+            if (h.key && h.value) {
+                finalHeaders[h.key] = substituteVariables(h.value);
+            }
+        });
+
+        let authConfig = auth.value;
+        if (authConfig.type === 'inherit' && inheritedAuth.value) {
+            authConfig = inheritedAuth.value.config;
+        }
+
+        if (authConfig.type === 'basic' && authConfig.basic) {
+            const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
+            finalHeaders['Authorization'] = `Basic ${token}`;
+        } else if (authConfig.type === 'bearer' && authConfig.bearer) {
+            finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
+        }
+
+        let raw = `${methodStr} ${urlWithQuery} HTTP/1.1\n`;
+
+        // Add content-type if missing
+        if (!finalHeaders['Content-Type'] && bodyType.value !== 'none') {
+            let contentType: string | null = null;
+            switch (bodyType.value) {
+                case 'json': contentType = 'application/json'; break;
+                case 'xml': contentType = 'application/xml'; break;
+                case 'html': contentType = 'text/html'; break;
+                case 'form_urlencoded': contentType = 'application/x-www-form-urlencoded'; break;
+                case 'text': contentType = 'text/plain'; break;
+                case 'javascript': contentType = 'application/javascript'; break;
+                case 'yaml': contentType = 'application/x-yaml'; break;
+            }
+            if (contentType) finalHeaders['Content-Type'] = contentType;
+        }
+
+        for (const key in finalHeaders) {
+            raw += `${key}: ${finalHeaders[key]}\n`;
+        }
+
+        raw += '\n';
+        if (bodyType.value !== 'none') {
+            raw += substituteVariables(body.value);
+        }
+
+        return raw;
     };
 
     const generateCurl = () => {
@@ -751,7 +821,6 @@ export function ExecutionEditor() {
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
                     <RequestPanel
-                        method={method}
                         headers={headers}
                         bodyType={bodyType}
                         body={body}
@@ -761,8 +830,6 @@ export function ExecutionEditor() {
                         formData={formData}
                         detectedPathKeys={detectedPathKeys}
                         updateUrlFromParams={updateUrlFromParams}
-                        getFinalUrl={getFinalUrl}
-                        generateCurl={generateCurl}
                         inheritedAuth={inheritedAuth.value}
                         inheritedHeaders={inheritedHeaders.value}
                         preScripts={preScripts}
