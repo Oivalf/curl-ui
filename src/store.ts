@@ -86,6 +86,7 @@ export interface RequestItem {
     postScripts?: ScriptItem[];
     parentId?: string | null;
     auth?: AuthConfig;
+    collapsed?: boolean;
 }
 
 export interface Folder {

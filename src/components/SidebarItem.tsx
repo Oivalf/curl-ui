@@ -17,11 +17,15 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
     const [isHovered, setIsHovered] = useState(false);
 
     // Toggle collapse
-    const toggleFolder = (e: MouseEvent) => {
+    const toggleCollapse = (e: MouseEvent) => {
         e.stopPropagation();
         if (isFolder) {
             folders.value = folders.value.map(f =>
                 f.id === folder.id ? { ...f, collapsed: !f.collapsed } : f
+            );
+        } else {
+            requests.value = requests.value.map(r =>
+                r.id === request.id ? { ...r, collapsed: !r.collapsed } : r
             );
         }
     };
@@ -183,31 +187,37 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
         }
     };
 
-    // Render children if it's an open folder
+    // Render children if it's open
     const renderChildren = () => {
-        if (!isFolder || folder.collapsed) return null;
+        const isCollapsed = isFolder ? folder.collapsed : request.collapsed;
+        if (isCollapsed) return null;
 
-        const childFolders = folders.value.filter(f => f.parentId === folder.id);
-        const childRequests = requests.value.filter(r => r.parentId === folder.id);
+        if (isFolder) {
+            const childFolders = folders.value.filter(f => f.parentId === folder.id);
+            const childRequests = requests.value.filter(r => r.parentId === folder.id);
 
-        return (
-            <div>
-                {childFolders.map(f => (
-                    <SidebarItem key={f.id} item={f} type="folder" depth={depth + 1} />
-                ))}
-                {childRequests.map(r => {
-                    const childExecutions = executions.value.filter(e => e.requestId === r.id);
-                    return (
-                        <div key={r.id}>
-                            <SidebarItem item={r} type="request" depth={depth + 1} />
-                            {childExecutions.map(ex => (
-                                <ExecutionSidebarItem key={ex.id} execution={ex} depth={depth + 2} />
-                            ))}
-                        </div>
-                    );
-                })}
-            </div>
-        );
+            return (
+                <div>
+                    {childFolders.map(f => (
+                        <SidebarItem key={f.id} item={f} type="folder" depth={depth + 1} />
+                    ))}
+                    {childRequests.map(r => (
+                        <SidebarItem key={r.id} item={r} type="request" depth={depth + 1} />
+                    ))}
+                </div>
+            );
+        } else {
+            const childExecutions = executions.value.filter(e => e.requestId === request.id);
+            if (childExecutions.length === 0) return null;
+
+            return (
+                <div>
+                    {childExecutions.map(ex => (
+                        <ExecutionSidebarItem key={ex.id} execution={ex} depth={depth + 1} />
+                    ))}
+                </div>
+            );
+        }
     };
 
     return (
@@ -250,18 +260,25 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
                     transition: 'background-color 0.1s'
                 }}
             >
-                {/* Folder Arrow / Spacer */}
+                {/* Arrow / Spacer */}
                 <div
-                    onClick={isFolder ? toggleFolder : undefined}
+                    onClick={toggleCollapse}
                     style={{
-                        opacity: isFolder ? 1 : 0,
                         width: '16px',
                         display: 'flex',
-                        cursor: isFolder ? 'pointer' : 'default',
+                        cursor: 'pointer',
                         transform: 'translateY(1px)' // visual alignment
                     }}
                 >
-                    {isFolder && (folder.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />)}
+                    {isFolder ? (
+                        folder.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />
+                    ) : (
+                        executions.value.some(e => e.requestId === request.id) ? (
+                            request.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />
+                        ) : (
+                            <div style={{ width: '14px' }} />
+                        )
+                    )}
                 </div>
 
                 {/* Icon */}
