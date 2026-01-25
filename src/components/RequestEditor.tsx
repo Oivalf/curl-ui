@@ -9,9 +9,31 @@ export function RequestEditor() {
 
     if (!currentRequest) return null;
 
+    // Helper to separate URL and Query Params
+    const parseUrl = (fullUrl: string) => {
+        try {
+            if (!fullUrl.includes('?')) return { base: fullUrl, params: [] };
+            const dummy = fullUrl.includes('://') ? fullUrl : 'http://dummy/' + fullUrl;
+            const urlObj = new URL(dummy);
+            const params: { key: string, values: string[] }[] = [];
+            const processedKeys = new Set<string>();
+            urlObj.searchParams.forEach((_, key) => {
+                if (processedKeys.has(key)) return;
+                processedKeys.add(key);
+                params.push({ key, values: urlObj.searchParams.getAll(key) });
+            });
+            const base = fullUrl.split('?')[0];
+            return { base, params };
+        } catch {
+            return { base: fullUrl, params: [] };
+        }
+    };
+
+    const { base: initialBase, params: initialParams } = parseUrl(currentRequest.url);
+
     // Local state for editing
     const name = useSignal(currentRequest.name);
-    const url = useSignal(currentRequest.url);
+    const url = useSignal(initialBase);
     const method = useSignal(currentRequest.method);
     // Convert headers object to array for easier editing
     const headers = useSignal<{ key: string, value: string }[]>(
@@ -45,66 +67,15 @@ export function RequestEditor() {
     });
 
     // Params State
-    const queryParams = useSignal<{ key: string, values: string[] }[]>([]);
+    const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
 
-    // Sync Query Params from URL on init
-    useSignalEffect(() => {
-        try {
-            const urlObj = new URL(url.value);
-            const params: { key: string, values: string[] }[] = [];
-            const processedKeys = new Set<string>();
-
-            // Group by key
-            urlObj.searchParams.forEach((_, key) => {
-                if (processedKeys.has(key)) return;
-                processedKeys.add(key);
-
-                const values = urlObj.searchParams.getAll(key);
-                params.push({ key, values });
-            });
-
-            // Only update if different to avoid loops
-            if (JSON.stringify(params) !== JSON.stringify(queryParams.peek())) {
-                queryParams.value = params;
-            }
-        } catch {
-            // Invalid URL, ignore
-        }
-    });
+    // URL sync effect removed - handled by onInput and initial state
 
     // Reactive helper to update URL when Query Params change
     const updateUrlFromParams = (newParams: { key: string, values: string[] }[]) => {
-        try {
-            // We use a dummy base if relative, to parsing work
-            const currentUrlStr = url.value.includes('://') ? url.value : 'http://dummy/' + url.value;
-            const urlObj = new URL(currentUrlStr);
-
-            // Clear existing
-            const keys = Array.from(urlObj.searchParams.keys());
-            keys.forEach(k => urlObj.searchParams.delete(k));
-
-            // Add new
-            newParams.forEach(p => {
-                if (p.key) {
-                    p.values.forEach(v => {
-                        urlObj.searchParams.append(p.key, v);
-                    });
-                }
-            });
-
-            let newUrl = urlObj.toString();
-            if (!url.value.includes('://')) {
-                newUrl = newUrl.replace('http://dummy/', '');
-            }
-
-            url.value = newUrl;
-            queryParams.value = newParams;
-        } catch (e) {
-            // fallback
-            queryParams.value = newParams;
-        }
+        queryParams.value = newParams;
     };
 
     // Extract Path Params ({param}) - ignore {{env_var}}
@@ -115,7 +86,7 @@ export function RequestEditor() {
         return matches.map(m => m.slice(1, -1)); // remove { and }
     });
 
-    const getFinalUrl = () => {
+    const getFinalUrl = (includeQuery = true) => {
         let finalUrl = url.value;
         // Substitute Path Params
         detectedPathKeys.value.forEach(key => {
@@ -123,6 +94,19 @@ export function RequestEditor() {
                 finalUrl = finalUrl.replace(`{${key}}`, pathParams.value[key]);
             }
         });
+
+        if (includeQuery && queryParams.value.length > 0) {
+            const searchParams = new URLSearchParams();
+            queryParams.value.forEach(p => {
+                if (p.key) {
+                    p.values.forEach(v => searchParams.append(p.key, v));
+                }
+            });
+            const qs = searchParams.toString();
+            if (qs) {
+                finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs;
+            }
+        }
         return finalUrl;
     };
 
@@ -140,7 +124,7 @@ export function RequestEditor() {
     useSignalEffect(() => {
         const currentName = name.value;
         const currentMethod = method.value;
-        const currentUrl = url.value;
+        const currentUrl = getFinalUrl(true);
         const currentHeaders = headers.value;
         const currentBody = body.value;
         const currentAuth = auth.value;
@@ -342,36 +326,59 @@ export function RequestEditor() {
             />
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <MethodSelect value={method.value} onChange={(v) => method.value = v} />
-                <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        <span style={{
-                            position: 'absolute',
-                            left: '8px',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-muted)',
-                            pointerEvents: 'none'
-                        }}>
-                            {finalUrlPreview.value.split(url.value)[0]}
-                        </span>
-                        <input
-                            type="text"
-                            value={url.value}
-                            onInput={(e) => url.value = e.currentTarget.value}
-                            onKeyDown={handleKeyDown}
-                            placeholder="https://api.example.com/v1/users"
-                            style={{
-                                flex: 1,
-                                padding: '8px',
-                                paddingLeft: url.value ? '8px' : '8px',
-                                backgroundColor: 'var(--bg-input)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--text-primary)',
-                                outline: 'none',
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: '0.9rem'
-                            }}
-                        />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <input
+                        type="text"
+                        value={url.value}
+                        onInput={(e) => {
+                            const val = e.currentTarget.value;
+                            if (val.includes('?')) {
+                                const [base, query] = val.split('?', 2);
+                                url.value = base;
+
+                                // Extra logic to move params to the table if pasted
+                                try {
+                                    const searchParams = new URLSearchParams(query);
+                                    const nextParams = [...queryParams.peek()];
+                                    searchParams.forEach((v, k) => {
+                                        const existing = nextParams.find(p => p.key === k);
+                                        if (existing) {
+                                            existing.values.push(v);
+                                        } else {
+                                            nextParams.push({ key: k, values: [v] });
+                                        }
+                                    });
+                                    queryParams.value = nextParams;
+                                } catch (err) {
+                                    console.error("Failed to parse query from input", err);
+                                }
+                            } else {
+                                url.value = val;
+                            }
+                        }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="https://api.example.com/v1/users"
+                        style={{
+                            width: '100%',
+                            padding: '8px',
+                            backgroundColor: 'var(--bg-input)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-sm)',
+                            color: 'var(--text-primary)',
+                            outline: 'none',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.9rem'
+                        }}
+                    />
+                    <div style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        paddingLeft: '4px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }} title={finalUrlPreview.value}>
+                        Preview: {finalUrlPreview.value}
                     </div>
                 </div>
             </div>

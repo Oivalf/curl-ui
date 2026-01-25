@@ -25,7 +25,29 @@ export function ExecutionEditor() {
 
     // Local state for editing - use execution override or inherit from parent
     const name = useSignal(currentExecution.name);
-    const url = useSignal(currentExecution.url ?? parentRequest.url);
+    // Helper to separate URL and Query Params
+    const parseUrl = (fullUrl: string) => {
+        try {
+            if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
+            const dummy = fullUrl.includes('://') ? fullUrl : 'http://dummy/' + fullUrl;
+            const urlObj = new URL(dummy);
+            const params: { key: string, values: string[] }[] = [];
+            const processedKeys = new Set<string>();
+            urlObj.searchParams.forEach((_, key) => {
+                if (processedKeys.has(key)) return;
+                processedKeys.add(key);
+                params.push({ key, values: urlObj.searchParams.getAll(key) });
+            });
+            const base = fullUrl.split('?')[0];
+            return { base, params };
+        } catch {
+            return { base: fullUrl || '', params: [] };
+        }
+    };
+
+    const { base: initialBase, params: initialParams } = parseUrl(currentExecution.url ?? parentRequest.url);
+
+    const url = useSignal(initialBase);
     const method = useSignal(currentExecution.method ?? parentRequest.method);
 
     // Convert headers object to array for easier editing
@@ -62,7 +84,9 @@ export function ExecutionEditor() {
         if (!cExec) return;
 
         if (cExec.url === undefined) {
-            url.value = pReq.url;
+            const { base, params } = parseUrl(pReq.url);
+            url.value = base;
+            queryParams.value = params;
         }
         if (cExec.method === undefined) {
             method.value = pReq.method;
@@ -104,58 +128,14 @@ export function ExecutionEditor() {
     const isLoading = useSignal(false);
 
     // Params State
-    const queryParams = useSignal<{ key: string, values: string[] }[]>([]);
+    const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
 
-    // Sync Query Params from URL on init
-    useSignalEffect(() => {
-        try {
-            const urlObj = new URL(url.value);
-            const params: { key: string, values: string[] }[] = [];
-            const processedKeys = new Set<string>();
-
-            urlObj.searchParams.forEach((_, key) => {
-                if (processedKeys.has(key)) return;
-                processedKeys.add(key);
-                const values = urlObj.searchParams.getAll(key);
-                params.push({ key, values });
-            });
-
-            if (JSON.stringify(params) !== JSON.stringify(queryParams.peek())) {
-                queryParams.value = params;
-            }
-        } catch {
-            // Invalid URL, ignore
-        }
-    });
+    // URL sync effect removed - handled by sync logic and internal params management
 
     const updateUrlFromParams = (newParams: { key: string, values: string[] }[]) => {
-        try {
-            const currentUrlStr = url.value.includes('://') ? url.value : 'http://dummy/' + url.value;
-            const urlObj = new URL(currentUrlStr);
-
-            const keys = Array.from(urlObj.searchParams.keys());
-            keys.forEach(k => urlObj.searchParams.delete(k));
-
-            newParams.forEach(p => {
-                if (p.key) {
-                    p.values.forEach(v => {
-                        urlObj.searchParams.append(p.key, v);
-                    });
-                }
-            });
-
-            let newUrl = urlObj.toString();
-            if (!url.value.includes('://')) {
-                newUrl = newUrl.replace('http://dummy/', '');
-            }
-
-            url.value = newUrl;
-            queryParams.value = newParams;
-        } catch (e) {
-            queryParams.value = newParams;
-        }
+        queryParams.value = newParams;
     };
 
     const detectedPathKeys = useComputed(() => {
@@ -164,13 +144,26 @@ export function ExecutionEditor() {
         return matches.map(m => m.slice(1, -1));
     });
 
-    const getFinalUrl = () => {
+    const getFinalUrl = (includeQuery = true) => {
         let finalUrl = url.value;
         detectedPathKeys.value.forEach(key => {
             if (pathParams.value[key]) {
                 finalUrl = finalUrl.replace(`{${key}}`, pathParams.value[key]);
             }
         });
+
+        if (includeQuery && queryParams.value.length > 0) {
+            const searchParams = new URLSearchParams();
+            queryParams.value.forEach(p => {
+                if (p.key) {
+                    p.values.forEach(v => searchParams.append(p.key, v));
+                }
+            });
+            const qs = searchParams.toString();
+            if (qs) {
+                finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs;
+            }
+        }
         return finalUrl;
     };
 
@@ -701,38 +694,36 @@ export function ExecutionEditor() {
             />
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <MethodSelect value={method.value} onChange={() => { }} disabled={true} />
-                <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        <span style={{
-                            position: 'absolute',
-                            left: '8px',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-muted)',
-                            pointerEvents: 'none'
-                        }}>
-                            {finalUrlPreview.value.split(url.value)[0]}
-                        </span>
-                        <input
-                            type="text"
-                            value={url.value}
-                            readOnly={true}
-                            onInput={() => { }} // Read-only
-                            onKeyDown={handleKeyDown}
-                            placeholder="https://api.example.com/v1/users"
-                            style={{
-                                flex: 1,
-                                padding: '8px',
-                                paddingLeft: '8px',
-                                backgroundColor: 'transparent',
-                                border: '1px solid transparent',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--text-primary)',
-                                outline: 'none',
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: '0.9rem',
-                                cursor: 'default'
-                            }}
-                        />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <input
+                        type="text"
+                        value={url.value}
+                        readOnly={true}
+                        onInput={() => { }} // Read-only
+                        onKeyDown={handleKeyDown}
+                        placeholder="https://api.example.com/v1/users"
+                        style={{
+                            width: '100%',
+                            padding: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid transparent',
+                            borderRadius: 'var(--radius-sm)',
+                            color: 'var(--text-primary)',
+                            outline: 'none',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.9rem',
+                            cursor: 'default'
+                        }}
+                    />
+                    <div style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        paddingLeft: '4px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }} title={finalUrlPreview.value}>
+                        Preview: {finalUrlPreview.value}
                     </div>
                 </div>
                 <button
