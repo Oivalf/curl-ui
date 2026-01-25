@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download } from 'lucide-preact';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, Zap } from 'lucide-preact';
 import { parseCurl } from '../utils/curlParser';
+import { parseSwagger } from '../utils/swaggerParser';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
@@ -220,6 +221,71 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
+    const handleImportSwagger = () => {
+        const content = prompt("Paste Swagger/OpenAPI JSON or YAML content:");
+        if (!content) return;
+
+        try {
+            const parsed = parseSwagger(content);
+            const collectionId = menu.collectionId;
+            const tagFolders: Record<string, string> = {};
+
+            // Batch create folders for tags
+            const newFolders = [...folders.value];
+            const allRequests = [...requests.value];
+
+            // Extract all tags used
+            const uniqueTags = Array.from(new Set(parsed.requests.flatMap(r => r.tags)));
+
+            uniqueTags.forEach(tag => {
+                const folderId = crypto.randomUUID();
+                tagFolders[tag] = folderId;
+                newFolders.push({
+                    id: folderId,
+                    name: tag,
+                    collectionId,
+                    parentId: null,
+                    collapsed: false
+                });
+            });
+
+            // Add requests
+            const newRequestIds: string[] = [];
+            parsed.requests.forEach(pr => {
+                const newId = crypto.randomUUID();
+                newRequestIds.push(newId);
+
+                // Assign to the first tag's folder if available
+                const parentId = pr.tags.length > 0 ? tagFolders[pr.tags[0]] : null;
+
+                allRequests.push({
+                    id: newId,
+                    collectionId,
+                    name: pr.name,
+                    method: pr.method,
+                    url: pr.url,
+                    headers: pr.headers,
+                    body: pr.body,
+                    parentId
+                });
+            });
+
+            folders.value = newFolders;
+            requests.value = allRequests;
+
+            // Auto-create sample executions
+            import('../store').then(({ ensureDefaultExecutions }) => {
+                ensureDefaultExecutions(newRequestIds);
+            });
+
+            alert(`Successfully imported ${parsed.requests.length} requests into "${parsed.title}".`);
+        } catch (e) {
+            alert("Failed to parse Swagger spec: " + e);
+        }
+
+        contextMenu.value = null;
+    };
+
     const handleAddExecution = () => {
         const name = prompt("Enter execution name:", "New Execution");
         if (name === null) return;
@@ -363,6 +429,13 @@ export function SidebarContextMenu() {
                         style={itemStyle}
                     >
                         <FilePlus size={14} /> New Request
+                    </div>
+                    <div
+                        className="context-menu-item"
+                        onClick={handleImportSwagger}
+                        style={itemStyle}
+                    >
+                        <Zap size={14} /> Import Swagger
                     </div>
                     <div
                         className="context-menu-item"
