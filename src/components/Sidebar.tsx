@@ -105,7 +105,6 @@ export function Sidebar({ width = 250 }: SidebarProps) {
             collections.value = [...collections.value, {
                 id: newId,
                 name: name,
-                projectName: activeProjectName.value,
                 path: undefined // Not saved yet
             }];
 
