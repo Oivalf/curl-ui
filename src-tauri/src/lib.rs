@@ -1,12 +1,23 @@
 mod commands;
+use std::collections::HashMap;
+use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem, Submenu};
 use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
+use tokio::sync::oneshot;
+use tokio::sync::Mutex;
+
+pub struct MockServerState {
+    pub handles: Arc<Mutex<HashMap<String, oneshot::Sender<()>>>>,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(MockServerState {
+            handles: Arc::new(Mutex::new(HashMap::new())),
+        })
         .setup(|app| {
             let handle = app.handle();
 
@@ -85,6 +96,8 @@ pub fn run() {
             commands::git_push,
             commands::git_add_file,
             commands::git_reset,
+            commands::start_mock_server,
+            commands::stop_mock_server,
             refresh_projects_menu,
             enable_window_menu
         ])

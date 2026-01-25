@@ -9,6 +9,19 @@ export interface Collection {
     id: string;
     name: string;
     path?: string; // File path if saved
+    mockConfig?: CollectionMockConfig;
+}
+
+export interface CollectionMockConfig {
+    port: number;
+    enabled: boolean;
+}
+
+export interface MockResponse {
+    statusCode: number;
+    headers: Record<string, string>;
+    body: string;
+    enabled: boolean;
 }
 
 export type AuthType = 'none' | 'inherit' | 'basic' | 'bearer';
@@ -87,6 +100,7 @@ export interface RequestItem {
     parentId?: string | null;
     auth?: AuthConfig;
     collapsed?: boolean;
+    mockResponse?: MockResponse;
 }
 
 export interface Folder {
@@ -122,7 +136,7 @@ export interface Environment {
 
 export interface Tab {
     id: string;
-    type: 'request' | 'folder' | 'execution';
+    type: 'request' | 'folder' | 'execution' | 'collection';
     name: string;
 }
 

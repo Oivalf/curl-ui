@@ -7,6 +7,7 @@ import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { UserGuideView } from "./components/UserGuideView";
 import { ImportModal } from "./components/ImportModal";
+import { CollectionMockEditor } from "./components/CollectionMockEditor";
 
 function App() {
   // Simple "Routing" for separate windows
@@ -44,6 +45,8 @@ function App() {
             <RequestEditor key={activeTab.id} />
           ) : activeTab.type === 'execution' ? (
             <ExecutionEditor key={activeTab.id} />
+          ) : activeTab.type === 'collection' ? (
+            <CollectionMockEditor key={activeTab.id} />
           ) : (
             <FolderEditor key={activeTab.id} />
           )

@@ -7,7 +7,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "Get Todos",
       "method": "GET",
-      "url": "https://jsonplaceholder.{{gvar}}.com/todos/{id}?lalala=blablabla&uff=",
+      "url": "http://localhost:3000/todos/{id}?lalala=blablabla&uff=",
       "headers": {
         "head1": "",
         "head2": ""
@@ -45,7 +45,13 @@
           "content": "console.log('post-Script p1');",
           "enabled": true
         }
-      ]
+      ],
+      "mockResponse": {
+        "statusCode": 200,
+        "headers": {},
+        "body": "{\n\"ciao\": \"dal mock\"\n}",
+        "enabled": true
+      }
     },
     {
       "id": "c8af9e83-8989-4829-b72c-d7e0dd074f40",

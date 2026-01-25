@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download } from 'lucide-preact';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections } from '../store';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, Settings } from 'lucide-preact';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
@@ -190,6 +190,22 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
+    const handleOpenMockManager = () => {
+        const collection = collections.value.find(c => c.id === menu.collectionId);
+        if (collection) {
+            const tabId = collection.id;
+            if (!openTabs.value.find(t => t.id === tabId)) {
+                openTabs.value = [...openTabs.value, {
+                    id: tabId,
+                    type: 'collection',
+                    name: `Mock: ${collection.name}`
+                }];
+            }
+            activeTabId.value = tabId;
+        }
+        contextMenu.value = null;
+    };
+
     const handleAddExecution = () => {
         const name = prompt("Enter execution name:", "New Execution");
         if (name === null) return;
@@ -340,6 +356,13 @@ export function SidebarContextMenu() {
                         style={itemStyle}
                     >
                         <Download size={14} /> Import...
+                    </div>
+                    <div
+                        className="context-menu-item"
+                        onClick={handleOpenMockManager}
+                        style={itemStyle}
+                    >
+                        <Settings size={14} /> Mock Manager
                     </div>
                     <div
                         className="context-menu-item"

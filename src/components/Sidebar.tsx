@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical } from 'lucide-preact';
-import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions } from '../store';
+import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { ExecutionSidebarItem } from './ExecutionSidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -395,6 +395,57 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         {/* Collection Items */}
                         {isCollectionExpanded(collection.id) && (
                             <div style={{ marginLeft: '12px', borderLeft: '1px solid var(--border-color)', paddingLeft: '4px' }}>
+                                {/* Mock Manager node at the top */}
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const tabId = collection.id;
+                                        if (!openTabs.value.find(t => t.id === tabId)) {
+                                            openTabs.value = [...openTabs.value, {
+                                                id: tabId,
+                                                type: 'collection',
+                                                name: `Mock: ${collection.name}`
+                                            }];
+                                        }
+                                        activeTabId.value = tabId;
+                                    }}
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        import('../store').then(({ contextMenu }) => {
+                                            contextMenu.value = {
+                                                x: e.clientX,
+                                                y: e.clientY,
+                                                itemId: collection.id,
+                                                type: 'collection',
+                                                collectionId: collection.id
+                                            };
+                                        });
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '6px 8px',
+                                        cursor: 'pointer',
+                                        borderRadius: 'var(--radius-sm)',
+                                        color: activeTabId.value === collection.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                        backgroundColor: activeTabId.value === collection.id ? 'var(--bg-surface)' : 'transparent',
+                                        transition: 'background-color 0.1s',
+                                        marginBottom: '4px'
+                                    }}
+                                    onMouseEnter={(e) => !(activeTabId.value === collection.id) && (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+                                    onMouseLeave={(e) => !(activeTabId.value === collection.id) && (e.currentTarget.style.backgroundColor = 'transparent')}
+                                >
+                                    <div style={{ display: 'flex', color: 'var(--text-muted)' }}>
+                                        <SettingsIcon size={14} />
+                                    </div>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>Mock Manager</span>
+                                    {collection.mockConfig?.enabled && (
+                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)', boxShadow: '0 0 4px var(--success)' }} />
+                                    )}
+                                </div>
+
                                 {folders.value
                                     .filter(f => f.collectionId === collection.id && !f.parentId)
                                     .map(f => (

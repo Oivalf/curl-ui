@@ -1,10 +1,20 @@
+use crate::MockServerState;
+use axum::{
+    http::{HeaderMap, Method as HttpMethod, StatusCode},
+    response::IntoResponse,
+    routing::any,
+    Router,
+};
 use git2::{IndexAddOption, Repository, Signature, StatusOptions};
 use reqwest::{multipart, Method};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 use tauri::{command, path::BaseDirectory, Manager};
 use tokio::fs;
+use tokio::net::TcpListener;
+use tokio::sync::oneshot;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpResponse {
@@ -403,4 +413,103 @@ pub async fn delete_project(app_handle: tauri::AppHandle, name: String) -> Resul
     }
 
     Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MockResponseDefinition {
+    pub status_code: u16,
+    pub headers: HashMap<String, String>,
+    pub body: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MockRequestDefinition {
+    pub method: String,
+    pub path: String,
+    pub response: MockResponseDefinition,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StartMockArgs {
+    pub collection_id: String,
+    pub port: u16,
+    pub requests: Vec<MockRequestDefinition>,
+}
+
+#[command]
+pub async fn start_mock_server(
+    state: tauri::State<'_, MockServerState>,
+    args: StartMockArgs,
+) -> Result<(), String> {
+    let mut handles = state.handles.lock().await;
+    if let Some(tx) = handles.remove(&args.collection_id) {
+        let _ = tx.send(());
+    }
+
+    let mock_data = Arc::new(args.requests);
+
+    let app = Router::new().fallback(any(move |method: HttpMethod, uri: axum::http::Uri| {
+        let mock_data = Arc::clone(&mock_data);
+        async move {
+            let target_path = uri.path();
+            let target_method = method.as_str().to_uppercase();
+
+            let matching = mock_data.iter().find(|m| {
+                let m_path = if m.path.starts_with('/') {
+                    m.path.clone()
+                } else {
+                    format!("/{}", m.path)
+                };
+                m.method.to_uppercase() == target_method && m_path == target_path
+            });
+
+            if let Some(m) = matching {
+                let mut hm = HeaderMap::new();
+                for (k, v) in &m.response.headers {
+                    if let (Ok(name), Ok(val)) = (
+                        axum::http::HeaderName::from_bytes(k.as_bytes()),
+                        axum::http::HeaderValue::from_bytes(v.as_bytes()),
+                    ) {
+                        hm.insert(name, val);
+                    }
+                }
+
+                let status = StatusCode::from_u16(m.response.status_code).unwrap_or(StatusCode::OK);
+                (status, hm, m.response.body.clone()).into_response()
+            } else {
+                StatusCode::NOT_FOUND.into_response()
+            }
+        }
+    }));
+
+    let (tx, rx) = oneshot::channel::<()>();
+    handles.insert(args.collection_id.clone(), tx);
+
+    let addr = format!("0.0.0.0:{}", args.port);
+    let listener = TcpListener::bind(&addr).await.map_err(|e| e.to_string())?;
+
+    tokio::spawn(async move {
+        let server = axum::serve(listener, app).with_graceful_shutdown(async move {
+            let _ = rx.await;
+        });
+        if let Err(e) = server.await {
+            eprintln!("Mock server error: {}", e);
+        }
+    });
+
+    Ok(())
+}
+
+#[command]
+pub async fn stop_mock_server(
+    state: tauri::State<'_, MockServerState>,
+    collection_id: String,
+) -> Result<(), String> {
+    let mut handles = state.handles.lock().await;
+    if let Some(tx) = handles.remove(&collection_id) {
+        let _ = tx.send(());
+        Ok(())
+    } else {
+        Err("No mock server running for this collection".into())
+    }
 }
