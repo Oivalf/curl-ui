@@ -1,5 +1,5 @@
 import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds } from "../store";
-import { X, FileJson, Folder, ChevronDown, Play, Settings } from 'lucide-preact';
+import { X, FileJson, Folder, ChevronDown, Play, Settings, ServerCog } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 
@@ -127,7 +127,7 @@ export function TabBar() {
                                 height: '100%'
                             }}
                         >
-                            {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : tab.type === 'collection' ? <Settings size={14} /> : <Folder size={14} />}
+                            {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : tab.type === 'collection' ? <ServerCog size={14} /> : <Folder size={14} />}
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, fontSize: '0.9rem' }}>
                                 {freshName}
                                 {unsavedItemIds.value.has(tab.id) && (

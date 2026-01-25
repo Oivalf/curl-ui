@@ -1,0 +1,146 @@
+{
+  "id": "19b1819c-1cc6-4e84-9b24-8786da8242fa",
+  "name": "La mia collection",
+  "requests": [
+    {
+      "id": "780dcf5f-7db9-4db4-bab4-5a3aecd33ee7",
+      "name": "posecreq",
+      "method": "GET",
+      "url": "https://google.com",
+      "headers": [
+        {
+          "key": "ghjru",
+          "value": "gggg",
+          "selected": false
+        },
+        {
+          "key": "thyrrew",
+          "value": "ttttt",
+          "selected": false
+        }
+      ],
+      "queryParams": [
+        {
+          "id": "c0f69338-e953-4d1d-a4a3-5934b671a777",
+          "key": "ciao",
+          "value": "zì",
+          "selected": true
+        },
+        {
+          "id": "24f197ea-cfd4-4219-b7db-d24cb059eb4e",
+          "key": "bella",
+          "value": "secco",
+          "selected": true
+        }
+      ],
+      "parentId": "e7b78ba0-6fff-486e-a51b-5bfeca2e7f9a",
+      "collectionId": "19b1819c-1cc6-4e84-9b24-8786da8242fa",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": [],
+      "mockResponse": {
+        "statusCode": 200,
+        "headers": [],
+        "body": "",
+        "enabled": true
+      }
+    }
+  ],
+  "folders": [
+    {
+      "id": "4bccde79-5ce7-4a89-b1cb-acef57ec0787",
+      "name": "pippolo",
+      "parentId": null,
+      "collectionId": "19b1819c-1cc6-4e84-9b24-8786da8242fa",
+      "collapsed": false,
+      "headers": [
+        {
+          "key": "pippoloheader",
+          "value": "fsfsdfds",
+          "selected": true
+        }
+      ],
+      "variables": {},
+      "auth": {
+        "type": "inherit"
+      }
+    },
+    {
+      "id": "e7b78ba0-6fff-486e-a51b-5bfeca2e7f9a",
+      "name": "secondf",
+      "parentId": "4bccde79-5ce7-4a89-b1cb-acef57ec0787",
+      "collectionId": "19b1819c-1cc6-4e84-9b24-8786da8242fa",
+      "collapsed": false,
+      "headers": [
+        {
+          "key": "secondfheader",
+          "value": "sec",
+          "selected": true
+        }
+      ],
+      "variables": {},
+      "auth": {
+        "type": "inherit"
+      }
+    }
+  ],
+  "executions": [
+    {
+      "id": "2e75b8f9-c79e-47cb-932b-aaea7cf865fc",
+      "requestId": "780dcf5f-7db9-4db4-bab4-5a3aecd33ee7",
+      "collectionId": "19b1819c-1cc6-4e84-9b24-8786da8242fa",
+      "name": "sample",
+      "headers": [
+        {
+          "key": "ghjru",
+          "value": "gggg",
+          "selected": true
+        },
+        {
+          "key": "thyrrew",
+          "value": "ttttt",
+          "selected": true
+        }
+      ],
+      "queryParams": [
+        {
+          "id": "c0f69338-e953-4d1d-a4a3-5934b671a777",
+          "key": "ciao",
+          "value": "zì",
+          "selected": true
+        },
+        {
+          "id": "24f197ea-cfd4-4219-b7db-d24cb059eb4e",
+          "key": "bella",
+          "value": "secco",
+          "selected": false
+        }
+      ]
+    }
+  ],
+  "environments": [
+    {
+      "name": "Global",
+      "variables": []
+    },
+    {
+      "name": "Local",
+      "variables": []
+    },
+    {
+      "name": "Dev",
+      "variables": []
+    },
+    {
+      "name": "Test",
+      "variables": []
+    },
+    {
+      "name": "Prod",
+      "variables": []
+    }
+  ]
+}

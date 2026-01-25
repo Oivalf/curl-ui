@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical } from 'lucide-preact';
+import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog } from 'lucide-preact';
 import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { ExecutionSidebarItem } from './ExecutionSidebarItem';
@@ -438,7 +438,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     onMouseLeave={(e) => !(activeTabId.value === collection.id) && (e.currentTarget.style.backgroundColor = 'transparent')}
                                 >
                                     <div style={{ display: 'flex', color: 'var(--text-muted)' }}>
-                                        <SettingsIcon size={14} />
+                                        <ServerCog size={14} />
                                     </div>
                                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>Mock Manager</span>
                                     {collection.mockConfig?.enabled && (
