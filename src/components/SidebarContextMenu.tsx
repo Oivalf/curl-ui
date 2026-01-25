@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId } from '../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play } from 'lucide-preact';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download } from 'lucide-preact';
+import { parseCurl } from '../utils/curlParser';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
@@ -180,6 +181,45 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
+    const handleImportCurl = () => {
+        const curlCommand = prompt("Paste cURL command:");
+        if (!curlCommand) return;
+
+        try {
+            const parsed = parseCurl(curlCommand);
+            const newId = crypto.randomUUID();
+
+            // Try to extract a name from the URL or fallback
+            let name = "Imported Request";
+            try {
+                const url = new URL(parsed.url);
+                name = url.pathname.split('/').pop() || url.hostname;
+                if (name.length > 30) name = name.substring(0, 27) + "...";
+            } catch { /* ignore */ }
+
+            requests.value = [...requests.value, {
+                id: newId,
+                name: name,
+                method: parsed.method,
+                url: parsed.url,
+                headers: parsed.headers,
+                body: parsed.body,
+                parentId: menu.type === 'folder' ? menu.itemId : null,
+                collectionId: menu.collectionId
+            }];
+            activeRequestId.value = newId;
+
+            // Auto-create sample execution
+            import('../store').then(({ ensureDefaultExecutions }) => {
+                ensureDefaultExecutions([newId]);
+            });
+        } catch (e) {
+            alert("Failed to parse cURL command: " + e);
+        }
+
+        contextMenu.value = null;
+    };
+
     const handleAddExecution = () => {
         const name = prompt("Enter execution name:", "New Execution");
         if (name === null) return;
@@ -326,6 +366,13 @@ export function SidebarContextMenu() {
                     </div>
                     <div
                         className="context-menu-item"
+                        onClick={handleImportCurl}
+                        style={itemStyle}
+                    >
+                        <Download size={14} /> Import cURL
+                    </div>
+                    <div
+                        className="context-menu-item"
                         onClick={() => {
                             const name = prompt("Enter folder name:", "New Folder");
                             if (name) {
@@ -413,6 +460,13 @@ export function SidebarContextMenu() {
                                 style={itemStyle}
                             >
                                 <FolderPlus size={14} /> Add Folder
+                            </div>
+                            <div
+                                className="context-menu-item"
+                                onClick={handleImportCurl}
+                                style={itemStyle}
+                            >
+                                <Download size={14} /> Import cURL
                             </div>
                         </>
                     )}
