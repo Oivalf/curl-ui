@@ -134,6 +134,13 @@ export interface ContextMenuState {
     collectionId: string;
 }
 
+export interface ImportModalState {
+    isOpen: boolean;
+    type: 'curl' | 'swagger';
+    collectionId: string;
+    folderId?: string | null;
+}
+
 export interface CollectionData {
     id: string;
     name: string;
@@ -258,6 +265,13 @@ export const confirmationState = signal<ConfirmationState>({
     title: '',
     message: '',
     onConfirm: () => { }
+});
+
+export const importModalState = signal<ImportModalState>({
+    isOpen: false,
+    type: 'curl',
+    collectionId: '',
+    folderId: null
 });
 
 export const isAboutOpen = signal(false);

@@ -3,9 +3,10 @@ import { RequestEditor } from "./components/RequestEditor";
 import { FolderEditor } from "./components/FolderEditor";
 import { ExecutionEditor } from "./components/ExecutionEditor";
 import { TabBar } from "./components/TabBar";
-import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing, activeExecutionId } from "./store";
+import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing } from "./store";
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { UserGuideView } from "./components/UserGuideView";
+import { ImportModal } from "./components/ImportModal";
 
 function App() {
   // Simple "Routing" for separate windows
@@ -52,6 +53,7 @@ function App() {
           </div>
         )}
       </div>
+      <ImportModal />
     </MainLayout>
   );
 }
