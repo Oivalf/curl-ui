@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Play, Trash2 } from 'lucide-preact';
-import { activeExecutionId, activeRequestId, activeFolderId, executions, ExecutionItem, contextMenu, openTabs, activeTabId, unsavedItemIds, requests } from '../store';
+import { activeExecutionId, activeRequestId, activeFolderId, executions, ExecutionItem, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
 
 interface ExecutionSidebarItemProps {
     execution: ExecutionItem;
@@ -10,9 +10,7 @@ interface ExecutionSidebarItemProps {
 export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemProps) {
     const [isHovered, setIsHovered] = useState(false);
 
-    // Get parent request for display info
-    const parentRequest = requests.value.find(r => r.id === execution.requestId);
-    const displayMethod = execution.method || parentRequest?.method || 'GET';
+
 
     const handleSelect = () => {
         const tabId = execution.id;

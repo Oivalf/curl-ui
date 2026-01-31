@@ -114,6 +114,12 @@ export interface Folder {
     auth?: AuthConfig;
 }
 
+export interface KeyValueItem {
+    key: string;
+    value: string;
+    enabled: boolean;
+}
+
 export interface ExecutionItem {
     id: string;
     requestId: string;        // Parent request ID
@@ -121,8 +127,9 @@ export interface ExecutionItem {
     name: string;
     // Override fields (if undefined, inherit from parent request)
     method?: string;
-    url?: string;
-    headers?: Record<string, string>;
+    url?: string; // Legacy/Reference. Actual params are in queryParams
+    headers?: KeyValueItem[]; // CHANGED: Now a list with enabled flag
+    queryParams?: KeyValueItem[]; // NEW: Specific query params overrides
     body?: string;
     auth?: AuthConfig;
     preScripts?: ScriptItem[];
@@ -472,7 +479,22 @@ export const loadCollectionFromPath = async (path: string) => {
 
     requests.value = [...requests.value, ...data.requests];
     folders.value = [...folders.value, ...data.folders];
-    executions.value = [...executions.value, ...(data.executions || [])];
+
+    // Migration: Convert legacy executions
+    const migratedExecutions = (data.executions || []).map(e => {
+        // Convert legacy headers Record<string,string> to KeyValueItem[]
+        if (e.headers && !Array.isArray(e.headers)) {
+            const legacyHeaders = e.headers as unknown as Record<string, string>;
+            e.headers = Object.entries(legacyHeaders).map(([key, value]) => ({
+                key,
+                value,
+                enabled: true
+            }));
+        }
+        return e;
+    });
+
+    executions.value = [...executions.value, ...migratedExecutions];
 
     if (data.environments) {
         const loadedEnvs = data.environments;

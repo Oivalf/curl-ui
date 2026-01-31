@@ -3,7 +3,7 @@ import { useRef, useEffect, useCallback } from "preact/hooks";
 import { Play, ArrowLeft } from 'lucide-preact';
 import { invoke } from '@tauri-apps/api/core';
 import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, responseData, ScriptItem, addLog, openTabs, activeTabId, activeFolderId } from "../store";
-import { RequestPanel } from "./RequestPanel";
+import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ResponsePanel } from "./ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
 
@@ -30,17 +30,24 @@ export function ExecutionEditor() {
         if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
         const [base, query] = fullUrl.split('?', 2);
         const searchParams = new URLSearchParams(query);
-        const params: { key: string, values: string[] }[] = [];
-        const processedKeys = new Set<string>();
-        searchParams.forEach((_, key) => {
-            if (processedKeys.has(key)) return;
-            processedKeys.add(key);
-            params.push({ key, values: searchParams.getAll(key) });
+        const params: { key: string, value: string, enabled: boolean }[] = [];
+        searchParams.forEach((value, key) => {
+            params.push({ key, value, enabled: true });
         });
         return { base, params };
     };
 
-    const { base: initialBase, params: initialParams } = parseUrl(currentExecution.url ?? parentRequest.url);
+    const { base: initialBase, params: derivedParams } = parseUrl(currentExecution.url ?? parentRequest.url);
+
+    // Logic: 
+    // 1. If execution has `queryParams`, use them.
+    // 2. Else parse `currentExecution.url` (if set) or `parentRequest.url`.
+    const initialParams = currentExecution.queryParams && currentExecution.queryParams.length > 0
+        ? currentExecution.queryParams
+        : derivedParams;
+
+    // Re-parsing parent just to have clean start if needed (actually just need parseUrl logic available)
+    // We don't need to call it here if we don't use the result immediately, but overriddenQueryParams uses it.
 
     const url = useSignal(initialBase);
     const method = useSignal(currentExecution.method ?? parentRequest.method);
@@ -49,14 +56,32 @@ export function ExecutionEditor() {
     // Merge parent headers with execution overrides
     const getMergedHeaders = () => {
         const parentHeaders = Object.entries(parentRequest.headers || {});
-        const execOverrides = currentExecution.headers || {};
-        return parentHeaders.map(([k, v]) => ({
+        // e.headers is now KeyValueItem[] | undefined
+        const execOverrides = currentExecution.headers || [];
+
+        // Start with parent headers (defaults)
+        const merged: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(([k, v]) => ({
             key: k,
-            value: execOverrides[k] !== undefined ? execOverrides[k] : v
+            value: v,
+            enabled: true // Inherited default
         }));
+
+        // Apply overrides
+        execOverrides.forEach(override => {
+            const index = merged.findIndex(m => m.key === override.key);
+            if (index !== -1) {
+                // Update existing
+                merged[index] = { ...override };
+            } else {
+                // Add new
+                merged.push({ ...override });
+            }
+        });
+
+        return merged;
     };
 
-    const headers = useSignal<{ key: string, value: string }[]>(getMergedHeaders());
+    const headers = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedHeaders());
     const body = useSignal(currentExecution.body ?? parentRequest.body ?? '');
     const bodyType = useComputed<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(() => {
         // Body type is inherited from parent request, but we derive it from the content if parent doesn't specify?
@@ -123,13 +148,13 @@ export function ExecutionEditor() {
     const isLoading = useSignal(false);
 
     // Params State
-    const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
+    const queryParams = useSignal<{ key: string, value: string, enabled: boolean }[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
 
     // URL sync effect removed - handled by sync logic and internal params management
 
-    const updateUrlFromParams = (newParams: { key: string, values: string[] }[]) => {
+    const updateUrlFromParams = (newParams: { key: string, value: string, enabled: boolean }[]) => {
         queryParams.value = newParams;
     };
 
@@ -150,8 +175,8 @@ export function ExecutionEditor() {
         if (includeQuery && queryParams.value.length > 0) {
             const searchParams = new URLSearchParams();
             queryParams.value.forEach(p => {
-                if (p.key) {
-                    p.values.forEach(v => searchParams.append(p.key, v));
+                if (p.key && p.enabled) {
+                    searchParams.append(p.key, p.value);
                 }
             });
             const qs = searchParams.toString();
@@ -175,10 +200,15 @@ export function ExecutionEditor() {
     const overriddenQueryParams = useComputed(() => {
         const { params: parentParams } = parseUrl(parentRequest.url);
         const overriddenKeys = new Set<string>();
+        // Simple override check: if key exists in execution but value diffs from parent's *first* occurrence?
+        // Or if the whole set for that key differs?
+        // Since we moved to flat list for Execution, let's just check if p is strictly equal to any parent param.
+        // Actually, highlighting might be complex with duplicates.
+        // Let's simplify: Mark as overridden if it doesn't exist exactly in parent.
+
         queryParams.value.forEach(p => {
-            const parentP = parentParams.find(pp => pp.key === p.key);
-            const parentValues = parentP ? parentP.values : [];
-            if (JSON.stringify(p.values) !== JSON.stringify(parentValues)) {
+            const inParent = parentParams.some(pp => pp.key === p.key && pp.value === p.value);
+            if (!inParent) {
                 overriddenKeys.add(p.key);
             }
         });
@@ -213,13 +243,34 @@ export function ExecutionEditor() {
             const exec = allExecutions[idx];
 
             // Determine if values should be saved as overrides or remain inherited (undefined)
-            const headersObj: Record<string, string> = {};
-            currentHeaders.forEach(h => { if (h.key) headersObj[h.key] = h.value; });
-
             // Comparison for headers inheritance
+            // We only inherit if:
+            // 1. All parent headers are present and enabled and have same value
+            // 2. No extra headers vs parent
+            // 3. All items enabled (since parent is simple Record, implicitly enabled)
+
             const parentHeaders = parentRequest.headers || {};
-            const matchesParentHeaders = JSON.stringify(headersObj) === JSON.stringify(parentHeaders);
-            const finalHeaders = matchesParentHeaders ? undefined : headersObj;
+            const parentKeys = Object.keys(parentHeaders);
+
+            let matchesParentHeaders = true;
+            if (currentHeaders.length !== parentKeys.length) {
+                matchesParentHeaders = false;
+            } else {
+                for (const h of currentHeaders) {
+                    if (!h.enabled) { matchesParentHeaders = false; break; } // If any disabled, it's an override
+                    if (parentHeaders[h.key] !== h.value) { matchesParentHeaders = false; break; }
+                }
+                // Also check if we missed any parent keys (length check covers count, but duplicates could fool it?)
+                // KeyValueItem allows duplicates? Parent Record doesn't.
+                // If parent has {A:1}, execution has {A:1}. Match.
+                // If parent has {A:1}, execution has {A:1, A:1}. Mismatch.
+                // If currentHeaders.length == parentKeys.length and every currentHeader matches a parent entry...
+                // Actually simpler:
+                // If we convert currentHeaders (only enabled) to Record and it matches parent Record AND no duplicates...
+                // But disabled items matter.
+            }
+
+            const finalHeaders: { key: string, value: string, enabled: boolean }[] | undefined = matchesParentHeaders ? undefined : currentHeaders;
 
             // Comparison for body inheritance
             const parentBody = parentRequest.body ?? '';
@@ -416,9 +467,8 @@ export function ExecutionEditor() {
                 }
             });
 
-            // Apply execution-specific headers on top
             headers.value.forEach(h => {
-                if (h.key && h.value) {
+                if (h.key && h.value && h.enabled) {
                     finalHeaders[h.key] = substituteVariables(h.value);
                 }
             });
@@ -555,7 +605,7 @@ export function ExecutionEditor() {
         });
 
         headers.value.forEach(h => {
-            if (h.key && h.value) {
+            if (h.key && h.value && h.enabled) {
                 finalHeaders[h.key] = substituteVariables(h.value);
             }
         });
@@ -614,7 +664,7 @@ export function ExecutionEditor() {
         });
 
         headers.value.forEach(h => {
-            if (h.key && h.value) {
+            if (h.key && h.value && h.enabled) {
                 finalHeaders[h.key] = substituteVariables(h.value);
             }
         });
@@ -820,7 +870,7 @@ export function ExecutionEditor() {
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-                    <RequestPanel
+                    <ExecutionRequestPanel
                         headers={headers}
                         bodyType={bodyType}
                         body={body}
@@ -834,7 +884,6 @@ export function ExecutionEditor() {
                         inheritedHeaders={inheritedHeaders.value}
                         preScripts={preScripts}
                         postScripts={postScripts}
-                        isReadOnly={true}
                         overriddenHeaders={overriddenHeaders.value}
                         overriddenQueryParams={overriddenQueryParams.value}
                         isBodyOverridden={isBodyOverridden.value}

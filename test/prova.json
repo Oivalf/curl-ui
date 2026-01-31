@@ -7,7 +7,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "Get Todos",
       "method": "GET",
-      "url": "{{baseUrl}}/todos/{id}?lalala=blablabla&uff=",
+      "url": "{{baseUrl}}/todos/{id}?lalala=blablabla&uffi=",
       "headers": {
         "head1": "",
         "head2": ""
