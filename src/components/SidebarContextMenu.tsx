@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections } from '../store';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt } from '../store';
 import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog } from 'lucide-preact';
 
 const SaveIcon = Save as any;
@@ -86,14 +86,14 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
-    const handleRename = () => {
+    const handleRename = async () => {
         const item = menu.type === 'folder'
             ? folders.value.find(f => f.id === menu.itemId)
             : requests.value.find(r => r.id === menu.itemId);
 
         if (!item) return;
 
-        const newName = prompt("Rename to:", item.name);
+        const newName = await showPrompt("Rename to:", item.name);
         if (newName && newName !== item.name) {
             if (menu.type === 'folder') {
                 folders.value = folders.value.map(f => f.id === menu.itemId ? { ...f, name: newName } : f);
@@ -141,8 +141,8 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
-    const handleAddRequest = () => {
-        const name = prompt("Enter request name:", "New Request");
+    const handleAddRequest = async () => {
+        const name = await showPrompt("Enter request name:", "New Request");
         if (name === null) return;
 
         const newId = crypto.randomUUID();
@@ -165,8 +165,8 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
-    const handleAddFolder = () => {
-        const name = prompt("Enter folder name:", "New Folder");
+    const handleAddFolder = async () => {
+        const name = await showPrompt("Enter folder name:", "New Folder");
         if (name === null) return;
 
         const newId = crypto.randomUUID();
@@ -206,8 +206,8 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
-    const handleAddExecution = () => {
-        const name = prompt("Enter execution name:", "New Execution");
+    const handleAddExecution = async () => {
+        const name = await showPrompt("Enter execution name:", "New Execution");
         if (name === null) return;
 
         const parentRequest = requests.value.find(r => r.id === menu.itemId);
@@ -236,11 +236,11 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
-    const handleRenameExecution = () => {
+    const handleRenameExecution = async () => {
         const execution = executions.value.find(e => e.id === menu.itemId);
         if (!execution) return;
 
-        const newName = prompt("Rename to:", execution.name);
+        const newName = await showPrompt("Rename to:", execution.name);
         if (newName && newName !== execution.name) {
             executions.value = executions.value.map(e =>
                 e.id === menu.itemId ? { ...e, name: newName } : e
@@ -324,8 +324,8 @@ export function SidebarContextMenu() {
                     </div>
                     <div
                         className="context-menu-item"
-                        onClick={() => {
-                            const name = prompt("Enter request name:", "New Request");
+                        onClick={async () => {
+                            const name = await showPrompt("Enter request name:", "New Request");
                             if (name) {
                                 const newId = crypto.randomUUID();
                                 requests.value = [...requests.value, {
@@ -366,8 +366,8 @@ export function SidebarContextMenu() {
                     </div>
                     <div
                         className="context-menu-item"
-                        onClick={() => {
-                            const name = prompt("Enter folder name:", "New Folder");
+                        onClick={async () => {
+                            const name = await showPrompt("Enter folder name:", "New Folder");
                             if (name) {
                                 const newId = crypto.randomUUID();
                                 folders.value = [...folders.value, {

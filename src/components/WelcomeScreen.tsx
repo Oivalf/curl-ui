@@ -1,5 +1,5 @@
 import { Plus, Layout, BookOpen, FolderOpen } from 'lucide-preact';
-import { activeProjectName, knownProjects, openProject } from '../store';
+import { activeProjectName, knownProjects, openProject, showPrompt } from '../store';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'preact/hooks';
 import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
@@ -21,7 +21,7 @@ export function WelcomeScreen() {
     }, []);
 
     const openNewProjectWindow = async () => {
-        const projectName = prompt("Enter Project Name:", "New Project");
+        const projectName = await showPrompt("Enter Project Name:", "New Project");
         if (!projectName) return;
 
         // Transitions current window to the new project

@@ -288,6 +288,34 @@ export const importModalState = signal<ImportModalState>({
     folderId: null
 });
 
+export interface PromptState {
+    isOpen: boolean;
+    title: string;
+    defaultValue: string;
+    resolve: (value: string | null) => void;
+}
+
+export const promptState = signal<PromptState>({
+    isOpen: false,
+    title: '',
+    defaultValue: '',
+    resolve: () => { }
+});
+
+export const showPrompt = (title: string, defaultValue: string = ''): Promise<string | null> => {
+    return new Promise((resolve) => {
+        promptState.value = {
+            isOpen: true,
+            title,
+            defaultValue,
+            resolve: (val) => {
+                promptState.value = { ...promptState.value, isOpen: false };
+                resolve(val);
+            }
+        };
+    });
+};
+
 export const isAboutOpen = signal(false);
 
 // Track modified request/folder IDs

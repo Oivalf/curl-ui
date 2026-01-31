@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog } from 'lucide-preact';
-import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId } from '../store';
+import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId, showPrompt } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { ExecutionSidebarItem } from './ExecutionSidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -68,7 +68,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     };
 
     const openNewProjectWindow = async () => {
-        const projectName = prompt("Enter Project Name:", "New Project");
+        const projectName = await showPrompt("Enter Project Name:", "New Project");
         if (!projectName) return;
 
         // Open a new window for a new project/workspace
@@ -98,8 +98,8 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     }, []);
 
 
-    const createNewCollection = () => {
-        const name = prompt("New Collection Name:", "New Collection");
+    const createNewCollection = async () => {
+        const name = await showPrompt("New Collection Name:", "New Collection");
         if (name) {
             const newId = crypto.randomUUID();
             collections.value = [...collections.value, {
@@ -309,10 +309,10 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                             </button>
                                             <button
                                                 className="menu-item"
-                                                onClick={(e) => {
+                                                onClick={async (e) => {
                                                     e.stopPropagation();
                                                     setOpenMenuCollectionId(null);
-                                                    const name = prompt("Request Name:", "New Request");
+                                                    const name = await showPrompt("Request Name:", "New Request");
                                                     if (name) {
                                                         const newId = crypto.randomUUID();
                                                         requests.value = [...requests.value, {
@@ -335,10 +335,10 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                             </button>
                                             <button
                                                 className="menu-item"
-                                                onClick={(e) => {
+                                                onClick={async (e) => {
                                                     e.stopPropagation();
                                                     setOpenMenuCollectionId(null);
-                                                    const name = prompt("Folder Name:", "New Folder");
+                                                    const name = await showPrompt("Folder Name:", "New Folder");
                                                     if (name) {
                                                         const newId = crypto.randomUUID();
                                                         folders.value = [...folders.value, {

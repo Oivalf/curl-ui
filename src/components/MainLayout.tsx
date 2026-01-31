@@ -254,6 +254,7 @@ export function MainLayout({ children }: LayoutProps) {
                     </div>
                 </div>
             </Modal>
+
         </div>
     );
 }
