@@ -9,12 +9,10 @@ interface EnvironmentManagerProps {
 }
 
 export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps) {
-    // If no environment is selected, select the first one or create one?
-    // We can use a side effect to ensure selection
+    // If no environment is selected, select the first one
     if (isOpen && !selectedEnvironmentInManager.value && environments.value.length > 0) {
         selectedEnvironmentInManager.value = environments.value[0].name;
     }
-
     // Alias for easier refactoring, though valid to use signal directly
     const selectedEnvName = selectedEnvironmentInManager;
 
@@ -76,7 +74,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
             return;
         }
 
-        // Add to all non-Global environments
+        // Add to all non-Global environments to maintain synchronized indices
         environments.value = environments.value.map(e => {
             if (e.name !== 'Global') {
                 return { ...e, variables: [...e.variables, { key: '', value: '' }] };
@@ -86,12 +84,16 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
     };
 
     const updateVariable = (envName: string, index: number, field: 'key' | 'value', val: string) => {
-        if (envName === 'Global' || field === 'value') {
-            // Update only the current environment
+        const targetEnv = environments.peek().find(e => e.name === envName);
+        if (!targetEnv || !targetEnv.variables[index]) return;
+        const oldKey = targetEnv.variables[index].key;
+
+        if (field === 'value') {
+            // Value updates are ALWAYS local to the current environment
             environments.value = environments.value.map(e => {
                 if (e.name === envName) {
                     const newVars = [...e.variables];
-                    newVars[index] = { ...newVars[index], [field]: val };
+                    newVars[index] = { ...newVars[index], value: val };
                     return { ...e, variables: newVars };
                 }
                 return e;
@@ -99,49 +101,104 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
             return;
         }
 
-        // Field is 'key' and NOT Global: update across all non-Global environments
-        environments.value = environments.value.map(e => {
-            if (e.name !== 'Global') {
+        // Key updates (field === 'key')
+        if (envName === 'Global') {
+            // Renaming a Global key updates it in Global AND renames matching overrides in other envs
+            environments.value = environments.value.map(e => {
                 const newVars = [...e.variables];
-                if (newVars[index]) {
+                if (e.name === 'Global') {
                     newVars[index] = { ...newVars[index], key: val };
+                } else {
+                    const matchIdx = newVars.findIndex(v => v.key === oldKey);
+                    if (matchIdx !== -1) {
+                        newVars[matchIdx] = { ...newVars[matchIdx], key: val };
+                    }
                 }
                 return { ...e, variables: newVars };
-            }
-            return e;
-        });
+            });
+        } else {
+            // Renaming a Local key in a non-Global environment
+            // If this key is an override of a Global variable, it's local (though UI disables editing it)
+            // If it's a Normal variable, sync the name to all other non-Global envs by OLD KEY
+            const allEnvs = environments.peek();
+            const gEnv = allEnvs.find(e => e.name === 'Global');
+            const isOverride = gEnv?.variables.some(gv => gv.key === oldKey && oldKey !== '');
+
+            environments.value = allEnvs.map(e => {
+                if (e.name === 'Global') return e; // Don't touch Global
+                if (isOverride && e.name !== envName) return e; // Don't touch other envs if it's a local override
+
+                const newVars = [...e.variables];
+                const matchIdx = (e.name === envName) ? index : newVars.findIndex(v => v.key === oldKey);
+
+                if (matchIdx !== -1) {
+                    newVars[matchIdx] = { ...newVars[matchIdx], key: val };
+                }
+                return { ...e, variables: newVars };
+            });
+        }
     };
 
     const removeVariable = (envName: string, index: number) => {
+        const targetEnv = environments.peek().find(e => e.name === envName);
+        if (!targetEnv || !targetEnv.variables[index]) return;
+        const keyToRemove = targetEnv.variables[index].key;
+
         if (envName === 'Global') {
-            environments.value = environments.value.map(e => {
-                if (e.name === 'Global') {
-                    const newVars = e.variables.filter((_, i) => i !== index);
-                    return { ...e, variables: newVars };
-                }
-                return e;
-            });
+            // Removing from Global: remove from Global AND remove any overrides in other environments
+            environments.value = environments.value.map(e => ({
+                ...e,
+                variables: e.variables.filter(v => e.name === 'Global' ? e.variables.indexOf(v) !== index : v.key !== keyToRemove)
+            }));
             return;
         }
 
-        // Remove from all non-Global environments
-        environments.value = environments.value.map(e => {
-            if (e.name !== 'Global') {
-                const newVars = e.variables.filter((_, i) => i !== index);
-                return { ...e, variables: newVars };
+        // Removing from a non-Global environment
+        const allEnvs = environments.peek();
+        const gEnv = allEnvs.find(e => e.name === 'Global');
+        const isOverride = gEnv?.variables.some(gv => gv.key === keyToRemove && keyToRemove !== '');
+
+        if (isOverride) {
+            // It's an override: only remove from the current environment
+            environments.value = allEnvs.map(e => {
+                if (e.name === envName) {
+                    return { ...e, variables: e.variables.filter((_, i) => i !== index) };
+                }
+                return e;
+            });
+        } else {
+            // It's a Normal variable: remove by key from all non-Global environments
+            if (keyToRemove === '') {
+                // If key is empty, we must use index for the current env and can't reliably sync to others
+                environments.value = allEnvs.map(e => {
+                    if (e.name === 'Global') return e;
+                    if (e.name === envName) return { ...e, variables: e.variables.filter((_, i) => i !== index) };
+                    return e;
+                });
+            } else {
+                environments.value = allEnvs.map(e => {
+                    if (e.name === 'Global') return e;
+                    return { ...e, variables: e.variables.filter(v => v.key !== keyToRemove) };
+                });
             }
-            return e;
-        });
+        }
     };
 
     const overrideGlobalVariable = (key: string, value: string) => {
         if (!selectedEnvName.value || selectedEnvName.value === 'Global') return;
 
         environments.value = environments.value.map(e => {
-            if (e.name === selectedEnvName.value) {
-                return { ...e, variables: [...e.variables, { key, value }] };
+            if (e.name !== selectedEnvName.value) return e;
+
+            const newVars = [...e.variables];
+            const existingIdx = newVars.findIndex(v => v.key === key);
+
+            if (existingIdx !== -1) {
+                newVars[existingIdx] = { ...newVars[existingIdx], value };
+            } else {
+                newVars.push({ key, value });
             }
-            return e;
+            return { ...e, variables: newVars };
         });
     };
 
