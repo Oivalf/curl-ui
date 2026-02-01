@@ -19,26 +19,6 @@ export function ResponsePanel() {
                         <span style={{ color: responseData.value.status > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: 'bold' }}>
                             {responseData.value.status === 0 ? '...' : responseData.value.status}
                         </span>
-                        {responseData.value.requestUrl && (
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', maxWidth: '100%', overflow: 'hidden' }}>
-                                {responseData.value.requestMethod && (
-                                    <span style={{
-                                        fontSize: '0.75rem',
-                                        fontWeight: 'bold',
-                                        color: responseData.value.requestMethod === 'GET' ? 'var(--success)' :
-                                            responseData.value.requestMethod === 'POST' ? 'var(--warning)' :
-                                                responseData.value.requestMethod === 'PUT' ? 'var(--accent-primary)' :
-                                                    responseData.value.requestMethod === 'PATCH' ? 'var(--yellow)' :
-                                                        responseData.value.requestMethod === 'DELETE' ? 'var(--error)' : 'var(--text-muted)'
-                                    }}>
-                                        {responseData.value.requestMethod}
-                                    </span>
-                                )}
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={responseData.value.requestUrl}>
-                                    {responseData.value.requestUrl}
-                                </span>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
