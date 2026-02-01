@@ -395,6 +395,28 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         {/* Collection Items */}
                         {isCollectionExpanded(collection.id) && (
                             <div style={{ marginLeft: '12px', borderLeft: '1px solid var(--border-color)', paddingLeft: '4px' }}>
+                                {folders.value.filter(f => f.collectionId === collection.id && !f.parentId).length === 0 &&
+                                    requests.value.filter(r => r.collectionId === collection.id && !r.parentId).length === 0 && (
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>Empty</div>
+                                    )}
+                                {folders.value
+                                    .filter(f => f.collectionId === collection.id && !f.parentId)
+                                    .map(f => (
+                                        <SidebarItem key={f.id} item={f} type="folder" />
+                                    ))}
+                                {requests.value
+                                    .filter(r => r.collectionId === collection.id && !r.parentId)
+                                    .map(r => {
+                                        const childExecutions = executions.value.filter(e => e.requestId === r.id);
+                                        return (
+                                            <div key={r.id}>
+                                                <SidebarItem item={r} type="request" />
+                                                {childExecutions.map(ex => (
+                                                    <ExecutionSidebarItem key={ex.id} execution={ex} depth={1} />
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
                                 {/* Mock Manager node at the top */}
                                 <div
                                     onClick={(e) => {
@@ -440,35 +462,15 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     <div style={{ display: 'flex', color: 'var(--text-muted)' }}>
                                         <ServerCog size={14} />
                                     </div>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>Mock Manager</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>Collection Mocks</span>
                                     {collection.mockConfig?.enabled && (
                                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)', boxShadow: '0 0 4px var(--success)' }} />
                                     )}
                                 </div>
 
-                                {folders.value
-                                    .filter(f => f.collectionId === collection.id && !f.parentId)
-                                    .map(f => (
-                                        <SidebarItem key={f.id} item={f} type="folder" />
-                                    ))}
-                                {requests.value
-                                    .filter(r => r.collectionId === collection.id && !r.parentId)
-                                    .map(r => {
-                                        const childExecutions = executions.value.filter(e => e.requestId === r.id);
-                                        return (
-                                            <div key={r.id}>
-                                                <SidebarItem item={r} type="request" />
-                                                {childExecutions.map(ex => (
-                                                    <ExecutionSidebarItem key={ex.id} execution={ex} depth={1} />
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
 
-                                {folders.value.filter(f => f.collectionId === collection.id && !f.parentId).length === 0 &&
-                                    requests.value.filter(r => r.collectionId === collection.id && !r.parentId).length === 0 && (
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>Empty</div>
-                                    )}
+
+
                             </div>
                         )}
                     </div>
