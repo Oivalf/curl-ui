@@ -12,15 +12,26 @@ The **Mock Manager** allows you to create local HTTP servers that simulate API r
     - Select a request from the list and toggle the checkbox to enable it for mocking.
     - Expand the request to configure the simulated **Status Code**, **Headers**, and **Response Body**.
 
-## 📍 Path Matching
+## 🌐 External Mocks
 
-The mock server matches incoming requests by **Method** and **Path**. 
-- If your request URL is `https://api.example.com/v1/users`, the mock server will match `/v1/users`.
-- If the URL is just a path like `/health`, it will match `/health`.
+**External Mocks** are independent of your collections. They allow you to simulate 3rd party services or external APIs that you don't necessarily want to define as requests in your project.
+
+1.  **Create an External Mock**: Click the **+** (Plus) button in the **External Mocks** section of the sidebar.
+2.  **Autonomous Management**: Each External Mock has its own configuration for Port and endpoints.
+3.  **Persistence**: They are saved as individual JSON files and referenced in the project manifest.
+
+## 📍 Path & Query Matching
+
+The mock server uses a priority-based matching system:
+
+1.  **Exact Match (Path + Query)**: If you define a mock path with query parameters (e.g., `/api/check?id=123`), the server will first try to match the full URI exactly.
+2.  **Generic Match (Path Only)**: If no exact match is found, the server fallbacks to matching only the path (Method + Path), provided the mock definition itself doesn't contain a query string.
+
+This allows you to create specific responses for specific query combinations while having a "catch-all" response for the base path.
 
 ## 🟢 Status Tracking
 
-When a mock server is active, a green dot appears next to the **Mock Manager** node in the sidebar, providing instant confirmation that the endpoints are live.
+When a mock server is active (Collection or External), a green dot appears next to its name in the sidebar.
 
 ---
 © 2026 Oivalf

@@ -29,6 +29,11 @@
 - **Environment Access**: Use `env.get()` and `env.set()` to manage variables dynamically.
 - **Post-script Filtering**: Execution of scripts can be restricted to specific HTTP status codes.
 - **Console**: Log panel for script debugging via standard `console` methods.
+### 🎭 Mocking & Simulation
+- **Collection Mocks**: Simulate responses for requests defined within your collections.
+- **External Mocks**: Create independent mock servers for 3rd party APIs not defined in your collections.
+- **Port Control**: Run multiple mock servers simultaneously on different ports.
+- **Smart Matching**: Priority-based matching for paths and query parameters.
 
 ### 🌍 Environments
 - **Scoped Variables**: Manage sets of variables for different environments (e.g., Development, Production).
