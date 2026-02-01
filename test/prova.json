@@ -154,6 +154,21 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "3fb20f96-9be9-49ac-95e8-3bcd89249f74",
+      "name": "get provamock",
+      "method": "GET",
+      "url": "{{provamockUrl}}/new-endpoint?ciao=ciccio",
+      "headers": {},
+      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
     }
   ],
   "folders": [
@@ -239,7 +254,7 @@
       "name": "mkji",
       "method": "GET",
       "url": "https://example.com",
-      "headers": {},
+      "headers": [],
       "body": "",
       "auth": {
         "type": "inherit"
@@ -252,10 +267,18 @@
       "requestId": "1",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "New Execution2",
-      "headers": {
-        "head1": "",
-        "head2": "ciao"
-      }
+      "headers": [
+        {
+          "key": "head1",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "key": "head2",
+          "value": "ciao",
+          "enabled": true
+        }
+      ]
     },
     {
       "id": "09aa0146-b235-4396-8d74-b7b447362af5",
@@ -274,6 +297,18 @@
       "requestId": "8a177af0-0f5c-470e-b0be-b041f6f19c8b",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "sample"
+    },
+    {
+      "id": "15fb15d3-b713-4a3c-9a95-f1460234662b",
+      "requestId": "3fb20f96-9be9-49ac-95e8-3bcd89249f74",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample"
+    },
+    {
+      "id": "4b72d0c4-c167-4bba-8cd9-fdd7560d11ce",
+      "requestId": "3fb20f96-9be9-49ac-95e8-3bcd89249f74",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "bad request"
     }
   ],
   "environments": [
@@ -308,6 +343,10 @@
         {
           "key": "baseUrl",
           "value": "http://localhost:8080"
+        },
+        {
+          "key": "provamockUrl",
+          "value": "http://localhost:4000"
         }
       ]
     },

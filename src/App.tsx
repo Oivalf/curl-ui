@@ -8,6 +8,7 @@ import { WelcomeScreen } from "./components/WelcomeScreen";
 import { UserGuideView } from "./components/UserGuideView";
 import { ImportModal } from "./components/ImportModal";
 import { CollectionMockEditor } from "./components/CollectionMockEditor";
+import { ExternalMockEditor } from "./components/ExternalMockEditor";
 import { PromptModal } from "./components/PromptModal";
 
 function App() {
@@ -54,6 +55,8 @@ function App() {
               <ExecutionEditor key={activeTab.id} />
             ) : activeTab.type === 'collection' ? (
               <CollectionMockEditor key={activeTab.id} />
+            ) : activeTab.type === 'external-mock' ? (
+              <ExternalMockEditor key={activeTab.id} />
             ) : (
               <FolderEditor key={activeTab.id} />
             )

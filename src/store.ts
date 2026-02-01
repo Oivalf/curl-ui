@@ -143,7 +143,7 @@ export interface Environment {
 
 export interface Tab {
     id: string;
-    type: 'request' | 'folder' | 'execution' | 'collection';
+    type: 'request' | 'folder' | 'execution' | 'collection' | 'external-mock';
     name: string;
 }
 
@@ -178,9 +178,25 @@ export interface ConfirmationState {
     onConfirm: () => void;
 }
 
+export interface ExternalMockEndpoint {
+    method: string;
+    path: string;
+    response: MockResponse;
+}
+
+export interface ExternalMock {
+    id: string;
+    name: string;
+    port: number; // Default port
+    endpoints: ExternalMockEndpoint[];
+    path?: string;
+    serverStatus?: 'running' | 'stopped';
+}
+
 // --- Signals ---
 
 export const collections = signal<Collection[]>([]);
+export const externalMocks = signal<ExternalMock[]>([]);
 export const requests = signal<RequestItem[]>([]);
 export const folders = signal<Folder[]>([]);
 export const executions = signal<ExecutionItem[]>([]);
@@ -189,6 +205,7 @@ export const environments = signal<Environment[]>([]);
 export const activeRequestId = signal<string | null>(null);
 export const activeFolderId = signal<string | null>(null);
 export const activeExecutionId = signal<string | null>(null);
+export const activeExternalMockId = signal<string | null>(null);
 export const activeEnvironmentName = signal<string | null>(null);
 export const activeTabId = signal<string | null>(null);
 export const activeProjectName = signal<string>("Default Project");
@@ -331,6 +348,7 @@ export const unsavedItemIds = signal<Set<string>>(new Set());
 // --- Initialization ---
 
 collections.value = [];
+externalMocks.value = [];
 environments.value = [
     { name: 'Global', variables: [] },
     { name: 'Local', variables: [] },
@@ -356,8 +374,16 @@ export const syncProjectManifest = async (projectName: string) => {
     try {
         const projectCollections = collections.value.filter(c => c.path);
         const paths = projectCollections.map(c => c.path!);
-        if (paths.length > 0) {
-            await invoke('sync_project_manifest', { name: projectName, collectionPaths: paths });
+
+        const projectMocks = externalMocks.value.filter(m => m.path);
+        const mockPaths = projectMocks.map(m => m.path!);
+
+        if (paths.length > 0 || mockPaths.length > 0) {
+            await invoke('sync_project_manifest', {
+                name: projectName,
+                collectionPaths: paths,
+                externalMockPaths: mockPaths
+            });
             await refreshMenu();
         }
     } catch (err) {
@@ -372,14 +398,22 @@ export const openProject = async (name: string) => {
 
         // Clear current state to avoid mixing projects in the same window
         collections.value = [];
+        externalMocks.value = [];
         requests.value = [];
         folders.value = [];
         openTabs.value = [];
         activeRequestId.value = null;
         activeFolderId.value = null;
+        activeExternalMockId.value = null;
 
         for (const path of manifest.collections) {
             await loadCollectionFromPath(path);
+        }
+
+        if (manifest.external_mocks) {
+            for (const path of manifest.external_mocks) {
+                await loadExternalMockFromPath(path);
+            }
         }
 
         // Enable the native menu for this window
@@ -450,6 +484,108 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
         if (!suppressAlert) alert(errMsg);
         return { success: false, message: errMsg };
     }
+};
+
+export const saveExternalMockToDisk = async (mockId: string, saveAs: boolean = false, suppressAlert: boolean = false): Promise<{ success: boolean, message: string }> => {
+    try {
+        const mock = externalMocks.value.find(m => m.id === mockId);
+        if (!mock) return { success: false, message: 'External Mock not found' };
+
+        let path: string | null | undefined = mock.path;
+
+        if (!path || saveAs) {
+            path = await save({
+                defaultPath: mock.path || `${mock.name}.json`,
+                filters: [{
+                    name: 'External Mock',
+                    extensions: ['json']
+                }]
+            });
+        }
+
+        if (path) {
+            externalMocks.value = externalMocks.value.map(m =>
+                m.id === mockId ? { ...m, path: path! } : m
+            );
+
+            // Re-fetch to get updated object
+            const updatedMock = externalMocks.value.find(m => m.id === mockId)!;
+
+            const data = {
+                id: updatedMock.id,
+                name: updatedMock.name,
+                port: updatedMock.port,
+                endpoints: updatedMock.endpoints
+            };
+
+            await invoke('save_workspace', { path, data: JSON.stringify(data, null, 2) });
+
+            // Sync manifest
+            await syncProjectManifest(activeProjectName.peek());
+
+            const msg = `External Mock "${updatedMock.name}" saved!`;
+            if (!suppressAlert) alert(msg);
+            return { success: true, message: msg };
+        }
+        return { success: false, message: 'Save cancelled' };
+    } catch (err) {
+        console.error('Failed to save external mock:', err);
+        const errMsg = 'Error saving external mock: ' + err;
+        if (!suppressAlert) alert(errMsg);
+        return { success: false, message: errMsg };
+    }
+};
+
+export const loadExternalMockFromPath = async (path: string) => {
+    try {
+        const dataStr = await invoke<string>('load_workspace', { path });
+        const data: ExternalMock = JSON.parse(dataStr);
+
+        const existingIdx = externalMocks.value.findIndex(m => m.id === data.id);
+        const newMock: ExternalMock = {
+            ...data,
+            path,
+            serverStatus: 'stopped'
+        };
+
+        if (existingIdx !== -1) {
+            const newMocks = [...externalMocks.value];
+            newMocks[existingIdx] = newMock;
+            externalMocks.value = newMocks;
+        } else {
+            externalMocks.value = [...externalMocks.value, newMock];
+        }
+
+        // Sync manifest
+        await syncProjectManifest(activeProjectName.peek());
+    } catch (err) {
+        console.error("Failed to load external mock from path:", path, err);
+    }
+};
+
+export const createExternalMock = async () => {
+    const name = await showPrompt("Enter Mock Name", "New Mock");
+    if (!name) return;
+
+    const newMock: ExternalMock = {
+        id: crypto.randomUUID(),
+        name,
+        port: 4000,
+        endpoints: [],
+        serverStatus: 'stopped'
+    };
+
+    externalMocks.value = [...externalMocks.value, newMock];
+    await saveExternalMockToDisk(newMock.id, true);
+};
+
+export const deleteExternalMock = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this External Mock?")) return;
+
+    // Stop server if running (implementation needed)
+
+    externalMocks.value = externalMocks.value.filter(m => m.id !== id);
+    await syncProjectManifest(activeProjectName.peek());
 };
 
 export const loadCollectionFromPath = async (path: string) => {

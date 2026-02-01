@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog } from 'lucide-preact';
-import { activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId, showPrompt } from '../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock } from '../store';
 import { SidebarItem } from './SidebarItem';
 import { ExecutionSidebarItem } from './ExecutionSidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -37,6 +37,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     const [expandedCollections, setExpandedCollections] = useState<Record<string, boolean>>({});
 
     const [collectionGitStatus, setCollectionGitStatus] = useState<Record<string, boolean>>({});
+    const [isExternalMocksExpanded, setExternalMocksExpanded] = useState(true);
 
     useEffect(() => {
         const checkGitStatus = async () => {
@@ -476,6 +477,101 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                     </div>
                 ))}
             </nav>
+
+            {/* External Mocks Section */}
+            <div style={{ padding: '8px 0', borderTop: '1px solid var(--border-color)', marginBottom: '8px' }}>
+                <div
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', cursor: 'pointer', color: 'var(--text-primary)' }}
+                    onClick={() => setExternalMocksExpanded(!isExternalMocksExpanded)}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isExternalMocksExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
+                        <span style={{ fontWeight: 'bold' }}>External Mocks</span>
+                    </div>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); createExternalMock(); }}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        title="New External Mock"
+                    >
+                        <PlusIcon size={14} />
+                    </button>
+                    {/* Load button for mocks not yet implemented */}
+                </div>
+
+                {isExternalMocksExpanded && (
+                    <div style={{ marginLeft: '12px' }}>
+                        {externalMocks.value.length === 0 && (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>No External Mocks</div>
+                        )}
+                        {externalMocks.value.map(mock => (
+                            <div
+                                key={mock.id}
+                                onClick={() => {
+                                    activeExternalMockId.value = mock.id;
+                                    activeRequestId.value = null;
+                                    activeFolderId.value = null;
+
+                                    // Add to tabs if not present (optional, we might treating mocks as tabs?)
+                                    // The ExternalMockEditor uses activeTabId OR activeExternalMockId.
+                                    // Let's treat it as a tab to be consistent.
+                                    if (!openTabs.value.find(t => t.id === mock.id)) {
+                                        openTabs.value = [...openTabs.value, {
+                                            id: mock.id,
+                                            type: 'external-mock',
+                                            name: mock.name
+                                        }];
+                                    }
+                                    activeTabId.value = mock.id;
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '6px 8px',
+                                    cursor: 'pointer',
+                                    borderRadius: 'var(--radius-sm)',
+                                    color: (activeTabId.value === mock.id) ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                    backgroundColor: (activeTabId.value === mock.id) ? 'var(--bg-surface)' : 'transparent',
+                                    transition: 'background-color 0.1s',
+                                    marginBottom: '4px'
+                                }}
+                            >
+                                <div style={{ display: 'flex', color: 'var(--text-muted)' }}>
+                                    <ServerCog size={14} />
+                                </div>
+                                <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontSize: '0.85rem' }}>{mock.name}</span>
+                                    <div
+                                        style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                        title={mock.path || "Not saved"}
+                                    >
+                                        {mock.path ? mock.path.split('/').pop() : "Not saved"}
+                                    </div>
+                                </div>
+
+                                {mock.serverStatus === 'running' && (
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)', boxShadow: '0 0 4px var(--success)' }} />
+                                )}
+
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); deleteExternalMock(mock.id); }}
+                                    className="delete-btn"
+                                    style={{
+                                        background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', opacity: 0
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--error)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                                <style>{`
+                                    div:hover > .delete-btn { opacity: 1 !important; }
+                                `}</style>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             <div style={{
                 marginTop: 'auto',

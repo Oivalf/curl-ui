@@ -292,6 +292,8 @@ pub async fn load_workspace(path: String) -> Result<String, String> {
 pub struct ProjectManifest {
     pub name: String,
     pub collections: Vec<String>,
+    #[serde(default)]
+    pub external_mocks: Vec<String>,
 }
 
 #[command]
@@ -299,6 +301,7 @@ pub async fn sync_project_manifest(
     app_handle: tauri::AppHandle,
     name: String,
     collection_paths: Vec<String>,
+    external_mock_paths: Vec<String>,
 ) -> Result<(), String> {
     use tauri::Manager;
 
@@ -314,6 +317,7 @@ pub async fn sync_project_manifest(
     let manifest = ProjectManifest {
         name,
         collections: collection_paths,
+        external_mocks: external_mock_paths,
     };
 
     let data = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
@@ -453,15 +457,51 @@ pub async fn start_mock_server(
         async move {
             let target_path = uri.path();
             let target_method = method.as_str().to_uppercase();
+            let target_full_uri = uri
+                .path_and_query()
+                .map(|pq| pq.as_str())
+                .unwrap_or(target_path);
 
-            let matching = mock_data.iter().find(|m| {
+            // Debug logs
+            eprintln!(
+                "Mock Server: Received {} {}",
+                target_method, target_full_uri
+            );
+
+            // Pass 1: Try exact match (Method + Path + Query)
+            let exact_match = mock_data.iter().find(|m| {
                 let m_path = if m.path.starts_with('/') {
                     m.path.clone()
                 } else {
                     format!("/{}", m.path)
                 };
-                m.method.to_uppercase() == target_method && m_path == target_path
+                m.method.to_uppercase() == target_method && m_path == target_full_uri
             });
+
+            let matching = if let Some(m) = exact_match {
+                eprintln!("Mock Server: Matched Exact: {}", m.path);
+                Some(m)
+            } else {
+                // Pass 2: Fallback to path-only match (Method + Path), ignoring query params in request
+                // BUT only if the mock definition ITSELF doesn't have a query string (is generic)
+                let fuzzy_match = mock_data.iter().find(|m| {
+                    let m_path = if m.path.starts_with('/') {
+                        m.path.clone()
+                    } else {
+                        format!("/{}", m.path)
+                    };
+                    !m_path.contains('?')
+                        && m.method.to_uppercase() == target_method
+                        && m_path == target_path
+                });
+                if let Some(m) = fuzzy_match {
+                    eprintln!("Mock Server: Matched Generic: {}", m.path);
+                    Some(m)
+                } else {
+                    eprintln!("Mock Server: No match found");
+                    None
+                }
+            };
 
             if let Some(m) = matching {
                 let mut hm = HeaderMap::new();

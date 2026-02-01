@@ -1,0 +1,31 @@
+{
+  "id": "cf08e233-36ce-4282-a334-73ded6bb9c8d",
+  "name": "provamock",
+  "port": 4000,
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/new-endpoint",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"message\": \"Hello World\"\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/new-endpoint?ciao=ciccio",
+      "response": {
+        "statusCode": 400,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"message\": \"hai sbagliato\"\n}",
+        "enabled": true
+      }
+    }
+  ]
+}
