@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, executions, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock } from '../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock } from '../store';
 import { SidebarItem } from './SidebarItem';
-import { ExecutionSidebarItem } from './ExecutionSidebarItem';
+
 import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from './Modal';
 import { GitPanel } from './GitPanel';
@@ -407,17 +407,9 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     ))}
                                 {requests.value
                                     .filter(r => r.collectionId === collection.id && !r.parentId)
-                                    .map(r => {
-                                        const childExecutions = executions.value.filter(e => e.requestId === r.id);
-                                        return (
-                                            <div key={r.id}>
-                                                <SidebarItem item={r} type="request" />
-                                                {childExecutions.map(ex => (
-                                                    <ExecutionSidebarItem key={ex.id} execution={ex} depth={1} />
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
+                                    .map(r => (
+                                        <SidebarItem key={r.id} item={r} type="request" />
+                                    ))}
                                 {/* Mock Manager node at the top */}
                                 <div
                                     onClick={(e) => {
@@ -463,7 +455,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     <div style={{ display: 'flex', color: 'var(--text-muted)' }}>
                                         <ServerCog size={14} />
                                     </div>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>Collection Mocks</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>{collection.name} Mocks</span>
                                     {collection.mockConfig?.enabled && (
                                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)', boxShadow: '0 0 4px var(--success)' }} />
                                     )}
