@@ -9,7 +9,7 @@
       "method": "GET",
       "url": "{{baseUrl}}/todos/{id}?lalala=blablabla&uffi=",
       "headers": {
-        "head1": "",
+        "head1": "ma perché",
         "head2": ""
       },
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
@@ -245,7 +245,41 @@
       "requestId": "1",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "New Execution",
-      "body": "{\nfdfsdfds\n}"
+      "body": "{\nfdfsdfds\n}",
+      "headers": [
+        {
+          "key": "head1",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "key": "head2",
+          "value": "mmm",
+          "enabled": true
+        },
+        {
+          "key": "nnnkk",
+          "value": "juiii",
+          "enabled": true
+        }
+      ],
+      "queryParams": [
+        {
+          "key": "lalala",
+          "value": "blablablajuikkk",
+          "enabled": true
+        },
+        {
+          "key": "uffi",
+          "value": "hggll",
+          "enabled": true
+        },
+        {
+          "key": "jukill",
+          "value": "",
+          "enabled": true
+        }
+      ]
     },
     {
       "id": "7436372c-394c-4a4a-a103-279582ce934e",

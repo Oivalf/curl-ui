@@ -96,37 +96,34 @@ export function ExecutionEditor() {
     // Auth State - use execution auth or inherit from parent
     const auth = useSignal<AuthConfig>(currentExecution.auth ?? parentRequest.auth ?? { type: 'inherit' });
 
-    // Sync from parent when parent changes and no override exists
-    useSignalEffect(() => {
-        // This effect reacts to parentRequest changes
-        const pReq = parentRequest;
-        const cExec = executions.value.find(e => e.id === activeExecutionId.value);
-        if (!cExec) return;
+    // Track last loaded ID to avoid re-sync loops
+    const lastLoadedId = useRef<string | null>(null);
 
-        if (cExec.url === undefined) {
-            const { base, params } = parseUrl(pReq.url);
-            url.value = base;
-            queryParams.value = params;
-        }
-        if (cExec.method === undefined) {
-            method.value = pReq.method;
-        }
-        if (cExec.headers === undefined) {
-            headers.value = getMergedHeaders();
-        }
-        if (cExec.body === undefined) {
-            body.value = pReq.body ?? '';
-        }
-        if (cExec.auth === undefined) {
-            auth.value = pReq.auth ?? { type: 'inherit' };
-        }
-        if (cExec.preScripts === undefined) {
-            preScripts.value = pReq.preScripts ?? [];
-        }
-        if (cExec.postScripts === undefined) {
-            postScripts.value = pReq.postScripts ?? [];
-        }
-    });
+    // Initial load / Switch execution
+    useEffect(() => {
+        if (activeExecutionId.value === lastLoadedId.current) return;
+
+        const cExec = executions.peek().find(e => e.id === activeExecutionId.value);
+        if (!cExec || !parentRequest) return;
+
+        lastLoadedId.current = activeExecutionId.value;
+
+        // Initialize from override or inherit base
+        const { base, params: pParams } = parseUrl(cExec.url ?? parentRequest.url);
+
+        url.value = base;
+        method.value = cExec.method ?? parentRequest.method;
+        body.value = cExec.body ?? parentRequest.body ?? '';
+        auth.value = cExec.auth ?? parentRequest.auth ?? { type: 'inherit' };
+        preScripts.value = cExec.preScripts ?? parentRequest.preScripts ?? [];
+        postScripts.value = cExec.postScripts ?? parentRequest.postScripts ?? [];
+
+        // Params initialization
+        queryParams.value = cExec.queryParams && cExec.queryParams.length > 0 ? cExec.queryParams : pParams;
+
+        // Headers initialization
+        headers.value = getMergedHeaders();
+    }, [activeExecutionId.value, parentRequest?.id]);
 
     // Inherited Auth
     const inheritedAuth = useComputed(() => {
@@ -234,13 +231,14 @@ export function ExecutionEditor() {
     useSignalEffect(() => {
         const currentName = name.value;
         const currentHeaders = headers.value;
+        const currentQueryParams = queryParams.value;
         const currentBody = body.value;
         const currentAuth = auth.value;
         const currentPreScripts = preScripts.value;
         const currentPostScripts = postScripts.value;
 
         const execId = activeExecutionId.value;
-        if (!execId) return;
+        if (!execId || execId !== lastLoadedId.current) return;
 
         const allExecutions = executions.peek();
         const idx = allExecutions.findIndex(e => e.id === execId);
@@ -248,55 +246,53 @@ export function ExecutionEditor() {
         if (idx !== -1) {
             const exec = allExecutions[idx];
 
-            // Determine if values should be saved as overrides or remain inherited (undefined)
-            // Comparison for headers inheritance
-            // We only inherit if:
-            // 1. All parent headers are present and enabled and have same value
-            // 2. No extra headers vs parent
-            // 3. All items enabled (since parent is simple Record, implicitly enabled)
-
+            // 1. Headers Inheritance Check
             const parentHeaders = parentRequest.headers || {};
             const parentKeys = Object.keys(parentHeaders);
-
             let matchesParentHeaders = true;
             if (currentHeaders.length !== parentKeys.length) {
                 matchesParentHeaders = false;
             } else {
                 for (const h of currentHeaders) {
-                    if (!h.enabled) { matchesParentHeaders = false; break; } // If any disabled, it's an override
-                    if (parentHeaders[h.key] !== h.value) { matchesParentHeaders = false; break; }
+                    if (!h.enabled || parentHeaders[h.key] !== h.value) {
+                        matchesParentHeaders = false;
+                        break;
+                    }
                 }
-                // Also check if we missed any parent keys (length check covers count, but duplicates could fool it?)
-                // KeyValueItem allows duplicates? Parent Record doesn't.
-                // If parent has {A:1}, execution has {A:1}. Match.
-                // If parent has {A:1}, execution has {A:1, A:1}. Mismatch.
-                // If currentHeaders.length == parentKeys.length and every currentHeader matches a parent entry...
-                // Actually simpler:
-                // If we convert currentHeaders (only enabled) to Record and it matches parent Record AND no duplicates...
-                // But disabled items matter.
             }
+            const finalHeaders = matchesParentHeaders ? undefined : currentHeaders;
 
-            const finalHeaders: { key: string, value: string, enabled: boolean }[] | undefined = matchesParentHeaders ? undefined : currentHeaders;
+            // 2. Query Params Inheritance Check
+            const { params: parentParams } = parseUrl(parentRequest.url);
+            let matchesParentParams = true;
+            if (currentQueryParams.length !== parentParams.length) {
+                matchesParentParams = false;
+            } else {
+                for (let i = 0; i < currentQueryParams.length; i++) {
+                    const c = currentQueryParams[i];
+                    const p = parentParams[i];
+                    if (!c.enabled || c.key !== p.key || c.value !== p.value) {
+                        matchesParentParams = false;
+                        break;
+                    }
+                }
+            }
+            const finalQueryParams = matchesParentParams ? undefined : currentQueryParams;
 
-            // Comparison for body inheritance
-            const parentBody = parentRequest.body ?? '';
-            const finalBody = currentBody === parentBody ? undefined : currentBody;
-
-            // Comparison for auth inheritance
-            const parentAuth = parentRequest.auth ?? { type: 'inherit' };
-            const finalAuth = JSON.stringify(currentAuth) === JSON.stringify(parentAuth) ? undefined : currentAuth;
-
-            // Comparison for scripts inheritance
+            // 3. Other fields
+            const finalBody = currentBody === (parentRequest.body ?? '') ? undefined : currentBody;
+            const finalAuth = JSON.stringify(currentAuth) === JSON.stringify(parentRequest.auth ?? { type: 'inherit' }) ? undefined : currentAuth;
             const finalPreScripts = JSON.stringify(currentPreScripts) === JSON.stringify(parentRequest.preScripts ?? []) ? undefined : currentPreScripts;
             const finalPostScripts = JSON.stringify(currentPostScripts) === JSON.stringify(parentRequest.postScripts ?? []) ? undefined : currentPostScripts;
 
-            // Checks for changes compared to CURRENT store state to avoid infinite loops and unnecessary updates
+            // Diff check to avoid noisy updates
             const headersChanged = JSON.stringify(exec.headers) !== JSON.stringify(finalHeaders);
+            const paramsChanged = JSON.stringify(exec.queryParams) !== JSON.stringify(finalQueryParams);
             const authChanged = JSON.stringify(exec.auth) !== JSON.stringify(finalAuth);
             const preScriptsChanged = JSON.stringify(exec.preScripts) !== JSON.stringify(finalPreScripts);
             const postScriptsChanged = JSON.stringify(exec.postScripts) !== JSON.stringify(finalPostScripts);
 
-            if (exec.name !== currentName || headersChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
+            if (exec.name !== currentName || headersChanged || paramsChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
                 const newExecutions = [...allExecutions];
                 newExecutions[idx] = {
                     ...exec,
@@ -304,6 +300,7 @@ export function ExecutionEditor() {
                     method: undefined, // Always follow parent
                     url: undefined,    // Always follow parent
                     headers: finalHeaders,
+                    queryParams: finalQueryParams,
                     body: finalBody,
                     auth: finalAuth,
                     preScripts: finalPreScripts,

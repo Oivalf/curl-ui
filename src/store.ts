@@ -563,6 +563,30 @@ export const loadExternalMockFromPath = async (path: string) => {
     }
 };
 
+export const loadExternalMockFromDisk = async () => {
+    try {
+        const path = await open({
+            multiple: false,
+            directory: false,
+            filters: [{
+                name: 'External Mock JSON',
+                extensions: ['json']
+            }]
+        });
+
+        if (path) {
+            await loadExternalMockFromPath(path);
+            const mock = externalMocks.peek().find(m => m.path === path);
+            if (mock) {
+                alert(`External Mock "${mock.name}" loaded!`);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load external mock:', err);
+        alert('Error loading external mock: ' + err);
+    }
+};
+
 export const createExternalMock = async () => {
     const name = await showPrompt("Enter Mock Name", "New Mock");
     if (!name) return;
@@ -603,7 +627,7 @@ export const loadCollectionFromPath = async (path: string) => {
         collections.value = newColls;
 
         requests.value = requests.value.filter(r => r.collectionId !== data.id);
-        folders.value = folders.value.filter(f => f.collectionId !== data.id);
+        folders.value = folders.value.filter(f => f.id.startsWith(data.id + ':') || f.collectionId !== data.id); // Fix: safeguard folder filtering
         executions.value = executions.value.filter(e => e.collectionId !== data.id);
     } else {
         collections.value = [...collections.value, {
@@ -723,12 +747,14 @@ export const loadCollectionFromDisk = async () => {
 };
 
 export const saveActiveItemCollection = async () => {
-    let itemId = activeRequestId.peek() || activeFolderId.peek();
+    let itemId = activeRequestId.peek() || activeFolderId.peek() || activeExecutionId.peek();
     if (!itemId) return;
 
     const req = requests.value.find(r => r.id === itemId);
     const fold = folders.value.find(f => f.id === itemId);
-    const collectionId = req?.collectionId || fold?.collectionId;
+    const exec = executions.value.find(e => e.id === itemId);
+
+    const collectionId = req?.collectionId || fold?.collectionId || exec?.collectionId;
 
     if (collectionId) {
         await saveCollectionToDisk(collectionId);

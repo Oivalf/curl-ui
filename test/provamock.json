@@ -26,6 +26,18 @@
         "body": "{\n  \"message\": \"hai sbagliato\"\n}",
         "enabled": true
       }
+    },
+    {
+      "method": "GET",
+      "path": "/new-secco",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"message\": \"Hello World\"\n}",
+        "enabled": true
+      }
     }
   ]
 }

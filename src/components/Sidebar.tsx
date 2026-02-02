@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock } from '../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk } from '../store';
 import { SidebarItem } from './SidebarItem';
 
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -480,14 +480,22 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         {isExternalMocksExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                         <span style={{ fontWeight: 'bold' }}>External Mocks</span>
                     </div>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); createExternalMock(); }}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                        title="New External Mock"
-                    >
-                        <PlusIcon size={14} />
-                    </button>
-                    {/* Load button for mocks not yet implemented */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); loadExternalMockFromDisk(); }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            title="Load External Mock"
+                        >
+                            <FolderOpen size={14} />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); createExternalMock(); }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            title="New External Mock"
+                        >
+                            <PlusIcon size={14} />
+                        </button>
+                    </div>
                 </div>
 
                 {isExternalMocksExpanded && (

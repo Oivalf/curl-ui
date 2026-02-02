@@ -17,8 +17,9 @@ The **Mock Manager** allows you to create local HTTP servers that simulate API r
 **External Mocks** are independent of your collections. They allow you to simulate 3rd party services or external APIs that you don't necessarily want to define as requests in your project.
 
 1.  **Create an External Mock**: Click the **+** (Plus) button in the **External Mocks** section of the sidebar.
-2.  **Autonomous Management**: Each External Mock has its own configuration for Port and endpoints.
-3.  **Persistence**: They are saved as individual JSON files and referenced in the project manifest.
+2.  **Load from Disk**: Click the **Load** (Folder) button in the same section to select an existing mock JSON file. This allows you to import configurations shared by other teammates or from previous projects.
+3.  **Autonomous Management**: Each External Mock has its own configuration for Port and endpoints.
+4.  **Persistence**: They are saved as individual JSON files and referenced in the project manifest.
 
 ## 📍 Path & Query Matching
 
