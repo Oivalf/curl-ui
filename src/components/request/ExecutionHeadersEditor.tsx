@@ -7,9 +7,10 @@ interface ExecutionHeadersEditorProps {
     inheritedHeaders?: { key: string, value: string, source: string, sourceId?: string }[];
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
+    parentKeys?: Set<string>;
 }
 
-export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, overriddenKeys }: ExecutionHeadersEditorProps) {
+export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, overriddenKeys, parentKeys }: ExecutionHeadersEditorProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
 
@@ -32,31 +33,35 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                             disabled={isReadOnly}
                             onChange={(e) => {
                                 const newHeaders = [...headers.value];
-                                newHeaders[i].enabled = e.currentTarget.checked;
+                                newHeaders[i] = { ...newHeaders[i], enabled: e.currentTarget.checked };
                                 headers.value = newHeaders;
                             }}
                             style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
                         />
                     </div>
 
-                    <input
-                        placeholder="Key"
-                        value={h.key}
-                        readOnly={isReadOnly}
-                        onInput={(e) => {
-                            if (isReadOnly) return;
-                            const newHeaders = [...headers.value];
-                            newHeaders[i].key = e.currentTarget.value;
-                            headers.value = newHeaders;
-                        }}
-                        style={{
-                            flex: 1,
-                            minWidth: 0,
-                            backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                            border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                            cursor: isReadOnly ? 'default' : 'text'
-                        }}
-                    />
+                    {/* Key Input */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <input
+                            placeholder="Key"
+                            value={h.key}
+                            readOnly={isReadOnly}
+                            onInput={(e) => {
+                                if (isReadOnly) return;
+                                const newHeaders = [...headers.value];
+                                newHeaders[i] = { ...newHeaders[i], key: e.currentTarget.value };
+                                headers.value = newHeaders;
+                            }}
+                            style={{
+                                width: '100%',
+                                backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                cursor: isReadOnly ? 'default' : 'text'
+                            }}
+                        />
+                    </div>
+
+                    {/* Value Input */}
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
                         {overriddenKeys?.has(h.key) && <OverrideIndicator />}
                         <input
@@ -64,20 +69,30 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                             value={h.value}
                             onInput={(e) => {
                                 const newHeaders = [...headers.value];
-                                newHeaders[i].value = e.currentTarget.value;
+                                newHeaders[i] = { ...newHeaders[i], value: e.currentTarget.value };
                                 headers.value = newHeaders;
                             }}
                             style={{ flex: 1, minWidth: 0 }}
                         />
                     </div>
-                    {!isReadOnly && (
-                        <button onClick={() => {
-                            const newHeaders = headers.value.filter((_, idx) => idx !== i);
-                            headers.value = newHeaders;
-                        }} style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+
+                    {/* Delete Button - Hidden for inherited keys */}
+                    {!isReadOnly && !parentKeys?.has(h.key) && (
+                        <button
+                            onClick={() => {
+                                const newHeaders = headers.value.filter((_, idx) => idx !== i);
+                                headers.value = newHeaders;
+                            }}
+                            style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                            ×
+                        </button>
                     )}
+                    {/* Placeholder for alignment if the × button is missing */}
+                    {!isReadOnly && parentKeys?.has(h.key) && <div style={{ width: '24px' }}></div>}
                 </div>
             ))}
+
             {!isReadOnly && (
                 <button
                     onClick={() => headers.value = [...headers.value, { key: '', value: '', enabled: true }]}
@@ -96,8 +111,8 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                         <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Value</div>
                         <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Source</div>
 
-                        {inheritedHeaders.map((h) => (
-                            <>
+                        {inheritedHeaders.map((h, i) => (
+                            <div key={i} style={{ display: 'contents' }}>
                                 <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{h.key}</div>
                                 <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.value}>{h.value}</div>
                                 <div
@@ -112,7 +127,7 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                                 >
                                     {h.source}
                                 </div>
-                            </>
+                            </div>
                         ))}
                     </div>
                 </div>

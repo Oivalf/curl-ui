@@ -8,9 +8,28 @@ interface ExecutionParamsEditorProps {
     updateUrlFromParams: (newParams: { key: string, value: string, enabled: boolean }[]) => void;
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
+    parentKeys?: Set<string>;
 }
 
-export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys }: ExecutionParamsEditorProps) {
+export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys, parentKeys }: ExecutionParamsEditorProps) {
+    // Group the flat queryParams by key for rendering
+    const groupParams = () => {
+        const groups: { key: string, items: { value: string, enabled: boolean, originalIndex: number }[] }[] = [];
+        const keyToGroupIdx = new Map<string, number>();
+
+        queryParams.value.forEach((p, i) => {
+            if (keyToGroupIdx.has(p.key)) {
+                groups[keyToGroupIdx.get(p.key)!].items.push({ ...p, originalIndex: i });
+            } else {
+                keyToGroupIdx.set(p.key, groups.length);
+                groups.push({ key: p.key, items: [{ ...p, originalIndex: i }] });
+            }
+        });
+        return groups;
+    };
+
+    const grouped = groupParams();
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Path Params Section */}
@@ -45,17 +64,20 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                     {!isReadOnly && <div style={{ width: '24px' }}></div>}
                 </div>
 
-                {queryParams.value.map((p, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {/* Enabled Toggle */}
-                        <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
+                {grouped.map((group, groupIdx) => (
+                    <div key={groupIdx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                        {/* Enabled Toggle - Key Level */}
+                        <div style={{ width: '24px', marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
                             <input
                                 type="checkbox"
-                                checked={p.enabled}
+                                checked={group.items.every(it => it.enabled)}
                                 disabled={isReadOnly}
                                 onChange={(e) => {
+                                    const newEnabled = e.currentTarget.checked;
                                     const newParams = [...queryParams.value];
-                                    newParams[i] = { ...p, enabled: e.currentTarget.checked };
+                                    group.items.forEach(item => {
+                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], enabled: newEnabled };
+                                    });
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
@@ -63,15 +85,18 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                         </div>
 
                         {/* Key Input */}
-                        <div style={{ width: '150px' }}>
+                        <div style={{ width: '150px', marginTop: '4px' }}>
                             <input
                                 placeholder="Key"
-                                value={p.key}
+                                value={group.key}
                                 readOnly={isReadOnly}
                                 onInput={(e) => {
                                     if (isReadOnly) return;
+                                    const newKey = e.currentTarget.value;
                                     const newParams = [...queryParams.value];
-                                    newParams[i] = { ...p, key: e.currentTarget.value };
+                                    group.items.forEach(item => {
+                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: newKey };
+                                    });
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{
@@ -83,35 +108,79 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                             />
                         </div>
 
-                        {/* Value Input */}
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {overriddenKeys?.has(p.key) && <OverrideIndicator />}
-                            <input
-                                placeholder="Value"
-                                value={p.value}
-                                readOnly={isReadOnly}
-                                onInput={(e) => {
-                                    if (isReadOnly) return;
-                                    const newParams = [...queryParams.value];
-                                    newParams[i] = { ...p, value: e.currentTarget.value };
-                                    updateUrlFromParams(newParams);
-                                }}
-                                style={{
-                                    flex: 1,
-                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                    cursor: isReadOnly ? 'default' : 'text'
-                                }}
-                            />
+                        {/* Values List */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {group.items.map((item, itemIdx) => (
+                                <div key={itemIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    {/* Value Input */}
+                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        {overriddenKeys?.has(group.key) && itemIdx === 0 && <OverrideIndicator />}
+                                        <input
+                                            placeholder="Value"
+                                            value={item.value}
+                                            readOnly={isReadOnly}
+                                            onInput={(e) => {
+                                                if (isReadOnly) return;
+                                                const newParams = [...queryParams.value];
+                                                newParams[item.originalIndex] = { ...newParams[item.originalIndex], value: e.currentTarget.value };
+                                                updateUrlFromParams(newParams);
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                                border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
+                                                cursor: isReadOnly ? 'default' : 'text'
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Individual Value Remove Button */}
+                                    {!isReadOnly && (
+                                        <button
+                                            onClick={() => {
+                                                const newParams = queryParams.value.filter((_, idx) => idx !== item.originalIndex);
+                                                updateUrlFromParams(newParams);
+                                            }}
+                                            style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            -
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Add Value Button */}
+                            {!isReadOnly && (
+                                <button
+                                    onClick={() => {
+                                        const newParams = [...queryParams.value];
+                                        // Insert after the last item of this group for better UX? 
+                                        // Simple append for now.
+                                        newParams.push({ key: group.key, value: '', enabled: true });
+                                        updateUrlFromParams(newParams);
+                                    }}
+                                    style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    +
+                                </button>
+                            )}
                         </div>
 
-                        {/* Delete Button */}
-                        {!isReadOnly && (
-                            <button onClick={() => {
-                                const newParams = queryParams.value.filter((_, idx) => idx !== i);
-                                updateUrlFromParams(newParams);
-                            }} style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                        {/* Whole Group Delete Button - Hidden for inherited keys */}
+                        {!isReadOnly && !parentKeys?.has(group.key) && (
+                            <button
+                                onClick={() => {
+                                    const indexesToRemove = new Set(group.items.map(it => it.originalIndex));
+                                    const newParams = queryParams.value.filter((_, idx) => !indexesToRemove.has(idx));
+                                    updateUrlFromParams(newParams);
+                                }}
+                                style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'center' }}
+                            >
+                                ×
+                            </button>
                         )}
+                        {/* Placeholder for alignment if the × button is missing */}
+                        {!isReadOnly && parentKeys?.has(group.key) && <div style={{ width: '24px' }}></div>}
                     </div>
                 ))}
 

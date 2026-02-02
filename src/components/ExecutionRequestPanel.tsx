@@ -23,6 +23,8 @@ interface ExecutionRequestPanelProps {
     isReadOnly?: boolean;
     overriddenHeaders?: Set<string>;
     overriddenQueryParams?: Set<string>;
+    parentHeaderKeys?: Set<string>;
+    parentQueryParamKeys?: Set<string>;
     isBodyOverridden?: boolean;
     isAuthOverridden?: boolean;
 }
@@ -44,6 +46,8 @@ export function ExecutionRequestPanel({
     isReadOnly,
     overriddenHeaders,
     overriddenQueryParams,
+    parentHeaderKeys,
+    parentQueryParamKeys,
     isBodyOverridden,
     isAuthOverridden
 }: ExecutionRequestPanelProps) {
@@ -71,6 +75,7 @@ export function ExecutionRequestPanel({
                             updateUrlFromParams={updateUrlFromParams}
                             isReadOnly={isReadOnly}
                             overriddenKeys={overriddenQueryParams}
+                            parentKeys={parentQueryParamKeys}
                         />
                     )}
                     {activeRequestTab.value === 'body' && (
@@ -88,6 +93,7 @@ export function ExecutionRequestPanel({
                             inheritedHeaders={inheritedHeaders}
                             isReadOnly={isReadOnly}
                             overriddenKeys={overriddenHeaders}
+                            parentKeys={parentHeaderKeys}
                         />
                     )}
                     {activeRequestTab.value === 'auth' && (

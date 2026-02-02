@@ -215,6 +215,12 @@ export function ExecutionEditor() {
         return overriddenKeys;
     });
 
+    const parentHeaderKeys = useComputed(() => new Set(Object.keys(parentRequest.headers || {})));
+    const parentQueryParamKeys = useComputed(() => {
+        const { params } = parseUrl(parentRequest.url);
+        return new Set(params.map(p => p.key));
+    });
+
     const isBodyOverridden = useComputed(() => body.value !== (parentRequest.body ?? ''));
     const isAuthOverridden = useComputed(() => JSON.stringify(auth.value) !== JSON.stringify(parentRequest.auth ?? { type: 'inherit' }));
 
@@ -886,6 +892,8 @@ export function ExecutionEditor() {
                         postScripts={postScripts}
                         overriddenHeaders={overriddenHeaders.value}
                         overriddenQueryParams={overriddenQueryParams.value}
+                        parentHeaderKeys={parentHeaderKeys.value}
+                        parentQueryParamKeys={parentQueryParamKeys.value}
                         isBodyOverridden={isBodyOverridden.value}
                         isAuthOverridden={isAuthOverridden.value}
                     />
