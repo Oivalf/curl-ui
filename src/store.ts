@@ -217,14 +217,19 @@ export const isInitializing = signal<boolean>(true);
 
 import { computed } from "@preact/signals";
 
-export const getScopedVariables = (parentId?: string | null) => {
-    const keys = new Set<string>();
+export interface VariableInfo {
+    name: string;
+    source: string;
+}
+
+export const getScopedVariables = (parentId?: string | null): VariableInfo[] => {
+    const varsMap = new Map<string, string>(); // name -> source
 
     // 1. Global
     const globalEnv = environments.value.find(e => e.name === 'Global');
     if (globalEnv) {
         globalEnv.variables.forEach(v => {
-            if (v.key) keys.add(v.key);
+            if (v.key) varsMap.set(v.key, 'Global');
         });
     }
 
@@ -232,7 +237,7 @@ export const getScopedVariables = (parentId?: string | null) => {
     const activeEnv = environments.value.find(e => e.name === activeEnvironmentName.value);
     if (activeEnv && activeEnv.name !== 'Global') {
         activeEnv.variables.forEach(v => {
-            if (v.key) keys.add(v.key);
+            if (v.key) varsMap.set(v.key, `Env: ${activeEnv.name || 'Environment'}`);
         });
     }
 
@@ -242,7 +247,9 @@ export const getScopedVariables = (parentId?: string | null) => {
         const folder = folders.value.find(f => f.id === currentId);
         if (folder) {
             if (folder.variables) {
-                Object.keys(folder.variables).forEach(k => keys.add(k));
+                Object.keys(folder.variables).forEach(k => {
+                    varsMap.set(k, `Folder: ${folder.name || 'Folder'}`);
+                });
             }
             currentId = folder.parentId;
         } else {
@@ -250,7 +257,9 @@ export const getScopedVariables = (parentId?: string | null) => {
         }
     }
 
-    return Array.from(keys).sort();
+    return Array.from(varsMap.entries())
+        .map(([name, source]) => ({ name, source }))
+        .sort((a, b) => a.name.localeCompare(b.name));
 };
 
 export const allVariableNames = computed(() => getScopedVariables(null));

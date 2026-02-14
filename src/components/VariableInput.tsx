@@ -24,9 +24,9 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
     const [suggestionsPos, setSuggestionsPos] = useState({ top: 0, left: 0 });
 
     const suggestions = useMemo(() => {
-        const allNames = getScopedVariables(parentId);
-        if (!filterText) return allNames;
-        return allNames.filter(n => n.toLowerCase().includes(filterText.toLowerCase()));
+        const allVars = getScopedVariables(parentId);
+        if (!filterText) return allVars;
+        return allVars.filter(v => v.name.toLowerCase().includes(filterText.toLowerCase()));
     }, [filterText, parentId, activeEnvironmentName.value]);
 
     const highlight = (text: string) => {
@@ -90,7 +90,7 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
             if (e.key === 'Enter' || e.key === 'Tab') {
                 if (suggestions.length > 0) {
                     e.preventDefault();
-                    handleSelect(suggestions[selectedIndex]);
+                    handleSelect(suggestions[selectedIndex].name);
                 } else {
                     setShowSuggestions(false);
                 }
@@ -218,10 +218,10 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
                     minWidth: '200px',
                     marginTop: '4px'
                 }}>
-                    {suggestions.map((name, idx) => (
+                    {suggestions.map((sug, idx) => (
                         <div
-                            key={name}
-                            onClick={() => handleSelect(name)}
+                            key={sug.name}
+                            onClick={() => handleSelect(sug.name)}
                             onMouseEnter={() => setSelectedIndex(idx)}
                             style={{
                                 padding: 'var(--spacing-sm) var(--spacing-md)',
@@ -235,8 +235,18 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
                             }}
                         >
                             <span style={{ color: 'var(--accent-primary)', opacity: 0.7 }}>{"{{"}</span>
-                            <span>{name}</span>
+                            <span style={{ flex: 1 }}>{sug.name}</span>
                             <span style={{ color: 'var(--accent-primary)', opacity: 0.7 }}>{"}}"}</span>
+                            <span style={{
+                                fontSize: '0.7rem',
+                                color: 'var(--text-muted)',
+                                backgroundColor: 'var(--bg-base)',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                marginLeft: '8px'
+                            }}>
+                                {sug.source}
+                            </span>
                         </div>
                     ))}
                 </div>
