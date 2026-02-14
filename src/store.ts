@@ -161,6 +161,8 @@ export interface ImportModalState {
     type: 'curl' | 'swagger';
     collectionId: string;
     folderId?: string | null;
+    targetType?: 'collection' | 'external-mock';
+    targetId?: string;
 }
 
 export interface CollectionData {

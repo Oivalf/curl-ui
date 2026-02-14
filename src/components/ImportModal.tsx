@@ -81,50 +81,80 @@ export function ImportModal() {
 
             } else if (importType === 'swagger') {
                 const parsed = parseSwagger(content);
-                const collectionId = state.collectionId;
-                const tagFolders: Record<string, string> = {};
 
-                const newFolders = [...folders.value];
-                const allRequests = [...requests.value];
+                if (state.targetType === 'external-mock') {
+                    const { externalMocks, saveExternalMockToDisk } = await import('../store');
+                    const mockId = state.targetId;
+                    const mock = externalMocks.peek().find(m => m.id === mockId);
 
-                const uniqueTags = Array.from(new Set(parsed.requests.flatMap(r => r.tags)));
+                    if (!mock) throw new Error("Target External Mock not found.");
 
-                uniqueTags.forEach(tag => {
-                    const folderId = crypto.randomUUID();
-                    tagFolders[tag] = folderId;
-                    newFolders.push({
-                        id: folderId,
-                        name: tag,
-                        collectionId,
-                        parentId: state.folderId || null,
-                        collapsed: false
+                    const newEndpoints = [...mock.endpoints];
+                    parsed.requests.forEach(pr => {
+                        newEndpoints.push({
+                            method: pr.method,
+                            path: pr.path,
+                            response: {
+                                statusCode: pr.responseStatus || 200,
+                                headers: { ...pr.headers, 'Content-Type': 'application/json' },
+                                body: pr.body || '{}',
+                                enabled: true
+                            }
+                        });
                     });
-                });
 
-                const newRequestIds: string[] = [];
-                parsed.requests.forEach(pr => {
-                    const newId = crypto.randomUUID();
-                    newRequestIds.push(newId);
+                    externalMocks.value = externalMocks.value.map(m =>
+                        m.id === mockId ? { ...m, endpoints: newEndpoints } : m
+                    );
 
-                    const parentId = pr.tags.length > 0 ? tagFolders[pr.tags[0]] : (state.folderId || null);
+                    saveExternalMockToDisk(mockId!, false, true);
 
-                    allRequests.push({
-                        id: newId,
-                        collectionId,
-                        name: pr.name,
-                        method: pr.method,
-                        url: pr.url,
-                        headers: pr.headers,
-                        body: pr.body,
-                        parentId
+                } else {
+                    const collectionId = state.collectionId;
+                    const tagFolders: Record<string, string> = {};
+
+                    const newFolders = [...folders.value];
+                    const allRequests = [...requests.value];
+
+                    const uniqueTags = Array.from(new Set(parsed.requests.flatMap(r => r.tags)));
+
+                    uniqueTags.forEach(tag => {
+                        const folderId = crypto.randomUUID();
+                        tagFolders[tag] = folderId;
+                        newFolders.push({
+                            id: folderId,
+                            name: tag,
+                            collectionId,
+                            parentId: state.folderId || null,
+                            collapsed: false
+                        });
                     });
-                });
 
-                folders.value = newFolders;
-                requests.value = allRequests;
+                    const newRequestIds: string[] = [];
+                    parsed.requests.forEach(pr => {
+                        const newId = crypto.randomUUID();
+                        newRequestIds.push(newId);
 
-                const { ensureDefaultExecutions } = await import('../store');
-                ensureDefaultExecutions(newRequestIds);
+                        const parentId = pr.tags.length > 0 ? tagFolders[pr.tags[0]] : (state.folderId || null);
+
+                        allRequests.push({
+                            id: newId,
+                            collectionId,
+                            name: pr.name,
+                            method: pr.method,
+                            url: pr.url,
+                            headers: pr.headers,
+                            body: pr.body,
+                            parentId
+                        });
+                    });
+
+                    folders.value = newFolders;
+                    requests.value = allRequests;
+
+                    const { ensureDefaultExecutions } = await import('../store');
+                    ensureDefaultExecutions(newRequestIds);
+                }
             }
 
             handleClose();

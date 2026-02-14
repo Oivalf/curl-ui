@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'preact/hooks';
-import { Play, Square, Search, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-preact';
-import { externalMocks, activeTabId, saveExternalMockToDisk, ExternalMockEndpoint, activeExternalMockId } from '../store';
+import { Play, Square, Search, ChevronDown, ChevronRight, Plus, Trash2, FileJson } from 'lucide-preact';
+import { externalMocks, activeTabId, saveExternalMockToDisk, ExternalMockEndpoint, activeExternalMockId, importModalState } from '../store';
 import { invoke } from '@tauri-apps/api/core';
 import { MethodSelect } from './MethodSelect';
 
@@ -163,22 +163,48 @@ export function ExternalMockEditor() {
                         style={{ width: '100%', padding: '8px 8px 8px 32px', backgroundColor: 'var(--bg-sidebar)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
                     />
                 </div>
-                <button
-                    onClick={addEndpoint}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        backgroundColor: 'var(--bg-element)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-md)',
-                        cursor: 'pointer'
-                    }}
-                >
-                    <Plus size={16} /> New Endpoint
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => {
+                            importModalState.value = {
+                                isOpen: true,
+                                type: 'swagger',
+                                collectionId: '', // Not used for external mock
+                                targetType: 'external-mock',
+                                targetId: mockId || undefined
+                            };
+                        }}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 16px',
+                            backgroundColor: 'var(--bg-element)',
+                            color: 'var(--accent-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <FileJson size={16} /> Import Swagger
+                    </button>
+                    <button
+                        onClick={addEndpoint}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 16px',
+                            backgroundColor: 'var(--bg-element)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <Plus size={16} /> New Endpoint
+                    </button>
+                </div>
             </div>
 
             {/* Endpoints List */}
