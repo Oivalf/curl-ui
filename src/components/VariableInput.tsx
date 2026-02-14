@@ -148,6 +148,7 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
         border: '1px solid var(--border-color)',
         borderRadius: 'var(--radius-sm)',
         width: '100%',
+        height: multiline ? '100%' : 'auto',
         margin: 0,
         boxSizing: 'border-box',
         whiteSpace: multiline ? 'pre-wrap' : 'nowrap',
@@ -183,7 +184,13 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
     const InputTag = multiline ? 'textarea' : 'input';
 
     return (
-        <div ref={containerRef} style={{ position: 'relative', width: style.width || '100%', flex: style.flex }}>
+        <div ref={containerRef} style={{
+            ...style,
+            position: 'relative',
+            width: style.width || '100%',
+            flex: style.flex,
+            height: multiline ? (style.height || '100%') : 'auto'
+        }}>
             <div
                 ref={highlighterRef}
                 style={highlighterStyles}
