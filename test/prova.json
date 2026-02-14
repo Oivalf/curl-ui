@@ -293,7 +293,9 @@
       "parentId": null,
       "collapsed": true,
       "headers": {},
-      "variables": {},
+      "variables": {
+        "basevar": "basevar-value"
+      },
       "auth": {
         "type": "basic",
         "basic": {
@@ -319,7 +321,14 @@
       "name": "sample",
       "parentId": null,
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "collapsed": false
+      "collapsed": false,
+      "headers": {},
+      "variables": {
+        "samplevar": "samplevar-value"
+      },
+      "auth": {
+        "type": "inherit"
+      }
     }
   ],
   "executions": [

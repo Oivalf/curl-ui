@@ -25,6 +25,7 @@ interface RequestPanelProps {
     overriddenQueryParams?: Set<string>;
     isBodyOverridden?: boolean;
     isAuthOverridden?: boolean;
+    parentId?: string | null;
 }
 
 export function RequestPanel({
@@ -45,7 +46,8 @@ export function RequestPanel({
     overriddenHeaders,
     overriddenQueryParams,
     isBodyOverridden,
-    isAuthOverridden
+    isAuthOverridden,
+    parentId
 }: RequestPanelProps) {
     const activeRequestTab = useSignal<'params' | 'body' | 'headers' | 'auth' | 'scripts'>('params');
     const activeScriptTab = useSignal<'pre' | 'post'>('pre');
@@ -71,6 +73,7 @@ export function RequestPanel({
                             updateUrlFromParams={updateUrlFromParams}
                             isReadOnly={isReadOnly}
                             overriddenKeys={overriddenQueryParams}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab.value === 'body' && (
@@ -81,6 +84,7 @@ export function RequestPanel({
                             isReadOnly={isReadOnly}
                             isOverridden={isBodyOverridden}
                             isTypeReadOnly={false}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab.value === 'headers' && (
@@ -89,6 +93,7 @@ export function RequestPanel({
                             inheritedHeaders={inheritedHeaders}
                             isReadOnly={isReadOnly}
                             overriddenKeys={overriddenHeaders}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab.value === 'auth' && (

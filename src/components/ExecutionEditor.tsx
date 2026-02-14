@@ -978,6 +978,7 @@ export function ExecutionEditor() {
                         readOnly={true}
                         onInput={() => { }} // Read-only
                         placeholder="https://api.example.com/v1/users"
+                        parentId={parentRequest.parentId}
                         style={{
                             padding: '8px',
                             background: 'transparent',
@@ -1119,6 +1120,7 @@ export function ExecutionEditor() {
                         parentQueryParamKeys={parentQueryParamKeys.value}
                         isBodyOverridden={isBodyOverridden.value}
                         isAuthOverridden={isAuthOverridden.value}
+                        parentId={parentRequest.parentId}
                     />
                 </div>
                 {/* Resizer Handle */}

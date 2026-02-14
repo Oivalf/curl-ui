@@ -10,9 +10,10 @@ interface ExecutionParamsEditorProps {
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
     parentKeys?: Set<string>;
+    parentId?: string | null;
 }
 
-export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys, parentKeys }: ExecutionParamsEditorProps) {
+export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys, parentKeys, parentId }: ExecutionParamsEditorProps) {
     // Group the flat queryParams by key for rendering
     const groupParams = () => {
         const groups: { key: string, items: { value: string, enabled: boolean, originalIndex: number }[] }[] = [];
@@ -47,6 +48,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                     pathParams.value = { ...pathParams.value, [key]: val };
                                 }}
                                 style={{ flex: 1 }}
+                                parentId={parentId}
                             />
                         </div>
                     ))}
@@ -91,6 +93,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                 placeholder="Key"
                                 value={group.key}
                                 readOnly={isReadOnly}
+                                parentId={parentId}
                                 onInput={(val) => {
                                     if (isReadOnly) return;
                                     const newParams = [...queryParams.value];
@@ -127,6 +130,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                                 flex: 1,
                                                 background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                             }}
+                                            parentId={parentId}
                                         />
                                     </div>
 

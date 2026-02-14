@@ -9,9 +9,10 @@ interface RequestParamsEditorProps {
     updateUrlFromParams: (newParams: { key: string, values: string[] }[]) => void;
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
+    parentId?: string | null;
 }
 
-export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys }: RequestParamsEditorProps) {
+export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys, parentId }: RequestParamsEditorProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Path Params Section */}
@@ -28,6 +29,7 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                                     pathParams.value = { ...pathParams.value, [key]: val };
                                 }}
                                 style={{ flex: 1 }}
+                                parentId={parentId}
                             />
                         </div>
                     ))}
@@ -44,6 +46,7 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                                 placeholder="Key"
                                 value={p.key}
                                 readOnly={isReadOnly}
+                                parentId={parentId}
                                 onInput={(val) => {
                                     if (isReadOnly) return;
                                     const newParams = queryParams.value.map((param, idx) =>
@@ -87,6 +90,7 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                                         }}
                                         style={{ flex: 1 }}
                                         readOnly={isReadOnly}
+                                        parentId={parentId}
                                     />
                                     {!isReadOnly && (
                                         <button

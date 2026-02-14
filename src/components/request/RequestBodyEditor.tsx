@@ -11,9 +11,10 @@ interface RequestBodyEditorProps {
     isReadOnly?: boolean;
     isOverridden?: boolean;
     isTypeReadOnly?: boolean;
+    parentId?: string | null;
 }
 
-export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden, isTypeReadOnly }: RequestBodyEditorProps) {
+export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden, isTypeReadOnly, parentId }: RequestBodyEditorProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minHeight: 0, height: '100%' }}>
             <select
@@ -108,6 +109,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                                 placeholder={row.type === 'file' ? "File path..." : "Value"}
                                                 style={{ flex: 1 }}
                                                 readOnly={isReadOnly}
+                                                parentId={parentId}
                                             />
                                             {row.type === 'file' && (
                                                 <button
@@ -205,6 +207,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                             }}
                             placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
                             readOnly={isReadOnly}
+                            parentId={parentId}
                         />
                     </div>
                 )

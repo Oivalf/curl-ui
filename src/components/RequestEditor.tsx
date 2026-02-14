@@ -250,6 +250,7 @@ export function RequestEditor() {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <VariableInput
                         value={url.value}
+                        parentId={currentRequest.parentId}
                         onInput={(val) => {
                             if (val.includes('?')) {
                                 const [base, query] = val.split('?', 2);
@@ -311,6 +312,7 @@ export function RequestEditor() {
                         inheritedHeaders={inheritedHeaders.value}
                         preScripts={preScripts}
                         postScripts={postScripts}
+                        parentId={currentRequest.parentId}
                     />
                 </div>
             </div>

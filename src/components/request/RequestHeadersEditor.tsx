@@ -8,9 +8,10 @@ interface RequestHeadersEditorProps {
     inheritedHeaders?: { key: string, value: string, source: string, sourceId?: string }[];
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
+    parentId?: string | null;
 }
 
-export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, overriddenKeys }: RequestHeadersEditorProps) {
+export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, overriddenKeys, parentId }: RequestHeadersEditorProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {/* Own Headers */}
@@ -31,6 +32,7 @@ export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, ov
                             minWidth: 0,
                             background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                         }}
+                        parentId={parentId}
                     />
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
                         {overriddenKeys?.has(h.key) && <OverrideIndicator />}
@@ -44,6 +46,7 @@ export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, ov
                             }}
                             style={{ flex: 1, minWidth: 0 }}
                             readOnly={isReadOnly}
+                            parentId={parentId}
                         />
                     </div>
                     {!isReadOnly && (

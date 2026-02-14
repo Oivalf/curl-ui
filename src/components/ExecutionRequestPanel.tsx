@@ -27,6 +27,7 @@ interface ExecutionRequestPanelProps {
     parentQueryParamKeys?: Set<string>;
     isBodyOverridden?: boolean;
     isAuthOverridden?: boolean;
+    parentId?: string | null;
 }
 
 export function ExecutionRequestPanel({
@@ -49,7 +50,8 @@ export function ExecutionRequestPanel({
     parentHeaderKeys,
     parentQueryParamKeys,
     isBodyOverridden,
-    isAuthOverridden
+    isAuthOverridden,
+    parentId
 }: ExecutionRequestPanelProps) {
     const activeRequestTab = useSignal<'params' | 'body' | 'headers' | 'auth' | 'scripts'>('params');
     const activeScriptTab = useSignal<'pre' | 'post'>('pre');
@@ -76,6 +78,7 @@ export function ExecutionRequestPanel({
                             isReadOnly={isReadOnly}
                             overriddenKeys={overriddenQueryParams}
                             parentKeys={parentQueryParamKeys}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab.value === 'body' && (
@@ -86,6 +89,7 @@ export function ExecutionRequestPanel({
                             isReadOnly={isReadOnly}
                             isOverridden={isBodyOverridden}
                             isTypeReadOnly={true}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab.value === 'headers' && (
@@ -95,6 +99,7 @@ export function ExecutionRequestPanel({
                             isReadOnly={isReadOnly}
                             overriddenKeys={overriddenHeaders}
                             parentKeys={parentHeaderKeys}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab.value === 'auth' && (

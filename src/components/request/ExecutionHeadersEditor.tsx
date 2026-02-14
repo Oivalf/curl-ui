@@ -9,9 +9,10 @@ interface ExecutionHeadersEditorProps {
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
     parentKeys?: Set<string>;
+    parentId?: string | null;
 }
 
-export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, overriddenKeys, parentKeys }: ExecutionHeadersEditorProps) {
+export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, overriddenKeys, parentKeys, parentId }: ExecutionHeadersEditorProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
 
@@ -57,6 +58,7 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                                 width: '100%',
                                 background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                             }}
+                            parentId={parentId}
                         />
                     </div>
 
@@ -73,6 +75,7 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                             }}
                             style={{ flex: 1, minWidth: 0 }}
                             readOnly={isReadOnly}
+                            parentId={parentId}
                         />
                     </div>
 

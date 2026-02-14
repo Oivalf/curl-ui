@@ -215,6 +215,46 @@ export const activeProjectName = signal<string>("Default Project");
 export const knownProjects = signal<string[]>([]);
 export const isInitializing = signal<boolean>(true);
 
+import { computed } from "@preact/signals";
+
+export const getScopedVariables = (parentId?: string | null) => {
+    const keys = new Set<string>();
+
+    // 1. Global
+    const globalEnv = environments.value.find(e => e.name === 'Global');
+    if (globalEnv) {
+        globalEnv.variables.forEach(v => {
+            if (v.key) keys.add(v.key);
+        });
+    }
+
+    // 2. Active Environment
+    const activeEnv = environments.value.find(e => e.name === activeEnvironmentName.value);
+    if (activeEnv && activeEnv.name !== 'Global') {
+        activeEnv.variables.forEach(v => {
+            if (v.key) keys.add(v.key);
+        });
+    }
+
+    // 3. Parent Hierarchy
+    let currentId = parentId;
+    while (currentId) {
+        const folder = folders.value.find(f => f.id === currentId);
+        if (folder) {
+            if (folder.variables) {
+                Object.keys(folder.variables).forEach(k => keys.add(k));
+            }
+            currentId = folder.parentId;
+        } else {
+            break;
+        }
+    }
+
+    return Array.from(keys).sort();
+};
+
+export const allVariableNames = computed(() => getScopedVariables(null));
+
 // Initialize activeProjectName from URL search params (set by Sidebar.tsx when opening new window)
 const urlParams = new URLSearchParams(window.location.search);
 const pName = urlParams.get('projectName');
