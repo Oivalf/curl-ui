@@ -130,6 +130,7 @@ export interface ExecutionItem {
     url?: string; // Legacy/Reference. Actual params are in queryParams
     headers?: KeyValueItem[]; // CHANGED: Now a list with enabled flag
     queryParams?: KeyValueItem[]; // NEW: Specific query params overrides
+    pathParams?: Record<string, string>; // NEW: Path variables overrides
     body?: string;
     auth?: AuthConfig;
     preScripts?: ScriptItem[];

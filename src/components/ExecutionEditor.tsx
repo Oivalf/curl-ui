@@ -1,4 +1,4 @@
-import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
+import { useSignal, useSignalEffect, useComputed, batch } from "@preact/signals";
 import { useRef, useEffect, useCallback } from "preact/hooks";
 import { Play, ArrowLeft } from 'lucide-preact';
 import { invoke } from '@tauri-apps/api/core';
@@ -107,7 +107,7 @@ export function ExecutionEditor() {
         if (!cExec || !parentRequest) return;
 
         lastLoadedId.current = activeExecutionId.value;
-
+        const initialPathParams = cExec.pathParams ?? {};
         // Initialize from override or inherit base
         const { base, params: pParams } = parseUrl(cExec.url ?? parentRequest.url);
 
@@ -120,6 +120,7 @@ export function ExecutionEditor() {
 
         // Params initialization
         queryParams.value = cExec.queryParams && cExec.queryParams.length > 0 ? cExec.queryParams : pParams;
+        pathParams.value = initialPathParams;
 
         // Headers initialization
         headers.value = getMergedHeaders();
@@ -232,6 +233,7 @@ export function ExecutionEditor() {
         const currentName = name.value;
         const currentHeaders = headers.value;
         const currentQueryParams = queryParams.value;
+        const currentPathParams = pathParams.value;
         const currentBody = body.value;
         const currentAuth = auth.value;
         const currentPreScripts = preScripts.value;
@@ -248,9 +250,9 @@ export function ExecutionEditor() {
 
             // 1. Headers Inheritance Check
             const parentHeaders = parentRequest.headers || {};
-            const parentKeys = Object.keys(parentHeaders);
+            const parentHeaderKeysList = Object.keys(parentHeaders);
             let matchesParentHeaders = true;
-            if (currentHeaders.length !== parentKeys.length) {
+            if (currentHeaders.length !== parentHeaderKeysList.length) {
                 matchesParentHeaders = false;
             } else {
                 for (const h of currentHeaders) {
@@ -279,7 +281,10 @@ export function ExecutionEditor() {
             }
             const finalQueryParams = matchesParentParams ? undefined : currentQueryParams;
 
-            // 3. Other fields
+            // 3. Path Params Inheritance Check (new)
+            const finalPathParams = Object.keys(currentPathParams).length === 0 ? undefined : currentPathParams;
+
+            // 4. Other fields
             const finalBody = currentBody === (parentRequest.body ?? '') ? undefined : currentBody;
             const finalAuth = JSON.stringify(currentAuth) === JSON.stringify(parentRequest.auth ?? { type: 'inherit' }) ? undefined : currentAuth;
             const finalPreScripts = JSON.stringify(currentPreScripts) === JSON.stringify(parentRequest.preScripts ?? []) ? undefined : currentPreScripts;
@@ -288,29 +293,33 @@ export function ExecutionEditor() {
             // Diff check to avoid noisy updates
             const headersChanged = JSON.stringify(exec.headers) !== JSON.stringify(finalHeaders);
             const paramsChanged = JSON.stringify(exec.queryParams) !== JSON.stringify(finalQueryParams);
+            const pathParamsChanged = JSON.stringify(exec.pathParams) !== JSON.stringify(finalPathParams);
             const authChanged = JSON.stringify(exec.auth) !== JSON.stringify(finalAuth);
             const preScriptsChanged = JSON.stringify(exec.preScripts) !== JSON.stringify(finalPreScripts);
             const postScriptsChanged = JSON.stringify(exec.postScripts) !== JSON.stringify(finalPostScripts);
 
-            if (exec.name !== currentName || headersChanged || paramsChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
-                const newExecutions = [...allExecutions];
-                newExecutions[idx] = {
-                    ...exec,
-                    name: currentName,
-                    method: undefined, // Always follow parent
-                    url: undefined,    // Always follow parent
-                    headers: finalHeaders,
-                    queryParams: finalQueryParams,
-                    body: finalBody,
-                    auth: finalAuth,
-                    preScripts: finalPreScripts,
-                    postScripts: finalPostScripts
-                };
-                executions.value = newExecutions;
+            if (exec.name !== currentName || headersChanged || paramsChanged || pathParamsChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
+                batch(() => {
+                    const newExecutions = [...allExecutions];
+                    newExecutions[idx] = {
+                        ...exec,
+                        name: currentName,
+                        method: undefined, // Always follow parent
+                        url: undefined,    // Always follow parent
+                        headers: finalHeaders,
+                        queryParams: finalQueryParams,
+                        pathParams: finalPathParams,
+                        body: finalBody,
+                        auth: finalAuth,
+                        preScripts: finalPreScripts,
+                        postScripts: finalPostScripts
+                    };
+                    executions.value = newExecutions;
 
-                const newUnsaved = new Set(unsavedItemIds.peek());
-                newUnsaved.add(execId);
-                unsavedItemIds.value = newUnsaved;
+                    const newUnsaved = new Set(unsavedItemIds.peek());
+                    newUnsaved.add(execId);
+                    unsavedItemIds.value = newUnsaved;
+                });
             }
         }
     });

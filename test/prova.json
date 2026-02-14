@@ -153,7 +153,8 @@
           "content": "console.log('post-Script p1');",
           "enabled": true
         }
-      ]
+      ],
+      "collapsed": true
     },
     {
       "id": "3fb20f96-9be9-49ac-95e8-3bcd89249f74",
@@ -164,6 +165,81 @@
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
+      "name": "sample get",
+      "method": "GET",
+      "url": "{{sampleURL}}/12",
+      "headers": {},
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "9ff2c3c4-fd7d-411d-a15f-c84dccda6338",
+      "name": "sample post",
+      "method": "POST",
+      "url": "{{sampleURL}}",
+      "headers": {},
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "{ \n\"ftr\":{ \"bho\": \"ll\"},\n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "0db90b3b-22d1-4765-a944-6772479a358f",
+      "name": "sample patch",
+      "method": "PATCH",
+      "url": "{{sampleURL}}/{id}",
+      "headers": {},
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "{ \n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "2cd6d1da-df51-461f-bd14-6cba867266fd",
+      "name": "sample delete",
+      "method": "DELETE",
+      "url": "{{sampleURL}}/{id}",
+      "headers": {},
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "{ \n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
+    },
+    {
+      "id": "781f9f29-e08b-40ca-83c9-c1734f0b137c",
+      "name": "sample put",
+      "method": "PUT",
+      "url": "{{sampleURL}}/{id}",
+      "headers": {},
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "{ \n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
       "auth": {
         "type": "inherit"
       },
@@ -215,7 +291,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "base",
       "parentId": null,
-      "collapsed": false,
+      "collapsed": true,
       "headers": {},
       "variables": {},
       "auth": {
@@ -237,6 +313,13 @@
       "auth": {
         "type": "inherit"
       }
+    },
+    {
+      "id": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "name": "sample",
+      "parentId": null,
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "collapsed": false
     }
   ],
   "executions": [
@@ -343,6 +426,51 @@
       "requestId": "3fb20f96-9be9-49ac-95e8-3bcd89249f74",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "bad request"
+    },
+    {
+      "id": "857608cc-180c-4b56-b7c3-5a3e92145b0c",
+      "requestId": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample"
+    },
+    {
+      "id": "f5951d74-1252-4beb-b024-1aac9c9184a5",
+      "requestId": "9ff2c3c4-fd7d-411d-a15f-c84dccda6338",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample",
+      "body": "{ \n\"ftr\":{ \"bho\": \"ll\"},\n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"],\n\"gino\": \"pino\"\n}"
+    },
+    {
+      "id": "7ea2f0ee-4c1f-43eb-bf2e-d9b4c1ca8298",
+      "requestId": "0db90b3b-22d1-4765-a944-6772479a358f",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample"
+    },
+    {
+      "id": "005329e7-cb8d-49ed-bc7e-e31d3b17c7ab",
+      "requestId": "2cd6d1da-df51-461f-bd14-6cba867266fd",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample",
+      "body": ""
+    },
+    {
+      "id": "6220c6e5-ea2d-44d7-9e7c-3f7538475278",
+      "requestId": "781f9f29-e08b-40ca-83c9-c1734f0b137c",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample",
+      "body": "{ \n\"name\": \"ffds\",\n\"h\":\"v\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "postScripts": [
+        {
+          "id": "bf62357d-c13e-4b12-96f1-a9aad03cd65f",
+          "name": "New Script",
+          "content": "console.log(response.body);\nconst obj = JSON.parse(response.body);\nenv.set(\"test_insert\", obj.name)\n",
+          "enabled": true,
+          "executeOnStatusCodes": "200"
+        }
+      ],
+      "pathParams": {
+        "id": "11"
+      }
     }
   ],
   "environments": [
@@ -381,6 +509,14 @@
         {
           "key": "provamockUrl",
           "value": "http://localhost:4000"
+        },
+        {
+          "key": "test_insert",
+          "value": "kfPAjvyKPihCrCmzoRxLcQsxVLytaE"
+        },
+        {
+          "key": "sampleURL",
+          "value": "http://localhost:8080/sample"
         }
       ]
     },
@@ -394,6 +530,10 @@
         {
           "key": "strega",
           "value": ""
+        },
+        {
+          "key": "sampleURL",
+          "value": ""
         }
       ]
     },
@@ -403,6 +543,10 @@
         {
           "key": "bianca",
           "value": "nera"
+        },
+        {
+          "key": "sampleURL",
+          "value": ""
         }
       ]
     },
@@ -412,6 +556,10 @@
         {
           "key": "bianca",
           "value": "luce"
+        },
+        {
+          "key": "sampleURL",
+          "value": ""
         }
       ]
     }

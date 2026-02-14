@@ -64,8 +64,8 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                     {!isReadOnly && <div style={{ width: '24px' }}></div>}
                 </div>
 
-                {grouped.map((group, groupIdx) => (
-                    <div key={groupIdx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                {grouped.map((group) => (
+                    <div key={group.key} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                         {/* Enabled Toggle - Key Level */}
                         <div style={{ width: '24px', marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
                             <input
@@ -110,11 +110,11 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
 
                         {/* Values List */}
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {group.items.map((item, itemIdx) => (
-                                <div key={itemIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {group.items.map((item) => (
+                                <div key={item.originalIndex} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     {/* Value Input */}
                                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        {overriddenKeys?.has(group.key) && itemIdx === 0 && <OverrideIndicator />}
+                                        {overriddenKeys?.has(group.key) && item.originalIndex === group.items[0].originalIndex && <OverrideIndicator />}
                                         <input
                                             placeholder="Value"
                                             value={item.value}
