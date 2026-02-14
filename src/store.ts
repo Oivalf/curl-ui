@@ -196,10 +196,17 @@ export interface ExternalMock {
     serverStatus?: 'running' | 'stopped';
 }
 
+export interface UpdateInfo {
+    is_available: boolean;
+    latest_version: string;
+    release_url: string;
+}
+
 // --- Signals ---
 
 export const collections = signal<Collection[]>([]);
 export const externalMocks = signal<ExternalMock[]>([]);
+export const updateInfo = signal<UpdateInfo | null>(null);
 export const requests = signal<RequestItem[]>([]);
 export const folders = signal<Folder[]>([]);
 export const executions = signal<ExecutionItem[]>([]);

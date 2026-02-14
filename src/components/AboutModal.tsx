@@ -1,7 +1,8 @@
 import { Modal } from './Modal';
-import { isAboutOpen } from '../store';
-import { getVersion } from '@tauri-apps/api/app';
+import { isAboutOpen, updateInfo } from '../store';
+import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
 import { useSignal, useSignalEffect } from '@preact/signals';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export function AboutModal() {
     const appVersion = useSignal('Loading...');
@@ -10,9 +11,7 @@ export function AboutModal() {
     useSignalEffect(() => {
         if (isAboutOpen.value) {
             getVersion().then(v => appVersion.value = v).catch(() => appVersion.value = 'Unknown');
-            import('@tauri-apps/api/app').then(api => {
-                api.getTauriVersion().then(v => tauriVersion.value = v).catch(() => tauriVersion.value = 'Unknown');
-            }).catch(() => tauriVersion.value = 'Unknown');
+            getTauriVersion().then(v => tauriVersion.value = v).catch(() => tauriVersion.value = 'Unknown');
         }
     });
 
@@ -40,6 +39,38 @@ export function AboutModal() {
                     <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>License:</div>
                     <div>MIT</div>
                 </div>
+
+                {updateInfo.value?.is_available && (
+                    <div style={{
+                        marginTop: '16px',
+                        padding: '12px',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px',
+                        border: '1px solid var(--accent-primary)'
+                    }}>
+                        <div style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                            New version available: {updateInfo.value.latest_version}
+                        </div>
+                        <button
+                            onClick={() => openUrl(updateInfo.value!.release_url)}
+                            style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'var(--accent-primary)',
+                                color: 'var(--bg-base)',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                cursor: 'pointer',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            View on GitHub
+                        </button>
+                    </div>
+                )}
 
                 <div style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     © 2025 Oivalf

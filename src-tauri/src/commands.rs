@@ -589,3 +589,75 @@ pub async fn stop_mock_server(
         Err("No mock server running for this collection".into())
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateInfo {
+    pub is_available: bool,
+    pub latest_version: String,
+    pub release_url: String,
+}
+
+#[command]
+pub async fn check_for_updates(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
+    let current_version_str = app.package_info().version.to_string();
+    let current_version = semver::Version::parse(&current_version_str).map_err(|e| {
+        format!(
+            "Failed to parse current version '{}': {}",
+            current_version_str, e
+        )
+    })?;
+
+    let client = reqwest::Client::builder()
+        .user_agent("curl-ui")
+        .build()
+        .map_err(|e| e.to_string())?;
+    let response = client
+        .get("https://api.github.com/repos/Oivalf/curl-ui/releases/latest")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch latest release: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("GitHub API returned error: {}", response.status()));
+    }
+
+    let release_data: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse release data: {}", e))?;
+
+    let latest_version_tag = release_data["tag_name"]
+        .as_str()
+        .ok_or("Missing tag_name in release data")?;
+
+    // Find the start of the version number (first digit)
+    let start_index = latest_version_tag
+        .find(|c: char| c.is_ascii_digit())
+        .unwrap_or(0);
+    let latest_version_str = &latest_version_tag[start_index..];
+
+    let latest_version = semver::Version::parse(latest_version_str).map_err(|e| {
+        format!(
+            "Failed to parse latest version '{}' (from tag '{}'): {}",
+            latest_version_str, latest_version_tag, e
+        )
+    })?;
+
+    let release_url = release_data["html_url"]
+        .as_str()
+        .ok_or("Missing html_url in release data")?
+        .to_string();
+
+    println!("Current version: {}", current_version);
+    println!("Latest version: {}", latest_version);
+    println!("Release url: {}", release_url);
+
+    // Semantic comparison
+    let is_available = latest_version > current_version;
+
+    Ok(UpdateInfo {
+        is_available,
+        latest_version: latest_version.to_string(),
+        release_url,
+    })
+}

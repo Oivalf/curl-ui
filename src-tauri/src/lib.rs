@@ -106,6 +106,7 @@ pub fn run() {
             commands::start_mock_server,
             commands::stop_mock_server,
             commands::cancel_http_request,
+            commands::check_for_updates,
             refresh_projects_menu,
             enable_window_menu
         ])

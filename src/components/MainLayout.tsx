@@ -1,6 +1,6 @@
 import { ComponentChildren } from 'preact';
 import { Sidebar } from './Sidebar';
-import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject } from '../store';
+import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject, updateInfo, UpdateInfo } from '../store';
 import { useSignalEffect, useSignal } from '@preact/signals';
 import { Modal } from './Modal';
 import { EnvironmentManager } from './EnvironmentManager';
@@ -9,6 +9,7 @@ import { AboutModal } from './AboutModal';
 import { Settings, Terminal } from 'lucide-preact';
 import { useEffect } from 'preact/hooks';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 
 interface LayoutProps {
     children: ComponentChildren;
@@ -75,8 +76,16 @@ export function MainLayout({ children }: LayoutProps) {
             }
         };
 
-        // Check for active environment validity
-        // ... useSignalEffect handled separately if using hooks, but here useSignalEffect is fine inside component if correctly imported
+        const checkUpdates = async () => {
+            try {
+                const info = await invoke<UpdateInfo>('check_for_updates');
+                updateInfo.value = info;
+            } catch (err) {
+                console.error('Failed to check for updates:', err);
+            }
+        };
+
+        checkUpdates();
 
         window.addEventListener('keydown', handleKeyDown);
 
@@ -122,6 +131,52 @@ export function MainLayout({ children }: LayoutProps) {
             />
 
             <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {updateInfo.value?.is_available && (
+                    <div style={{
+                        backgroundColor: 'var(--accent-primary)',
+                        color: 'var(--bg-base)',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        zIndex: 100
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>🚀</span>
+                            <span>A new version ({updateInfo.value.latest_version}) is available!</span>
+                        </div>
+                        <a
+                            href={updateInfo.value.release_url}
+                            target="_blank"
+                            style={{ color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                import('@tauri-apps/plugin-opener').then(m => m.openUrl(updateInfo.value!.release_url));
+                            }}
+                        >
+                            Download from GitHub
+                        </a>
+                        <button
+                            onClick={() => updateInfo.value = { ...updateInfo.value!, is_available: false }}
+                            style={{
+                                background: 'rgba(255,255,255,0.2)',
+                                border: 'none',
+                                color: 'inherit',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                marginLeft: '8px'
+                            }}
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                )}
                 <div style={{
                     height: '40px',
                     borderBottom: '1px solid var(--border-color)',

@@ -37,7 +37,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     const [expandedCollections, setExpandedCollections] = useState<Record<string, boolean>>({});
 
     const [collectionGitStatus, setCollectionGitStatus] = useState<Record<string, boolean>>({});
-    const [isExternalMocksExpanded, setExternalMocksExpanded] = useState(true);
+    const [isExternalMocksExpanded, setExternalMocksExpanded] = useState(false);
     const [isMockMenuOpen, setMockMenuOpen] = useState(false);
 
     useEffect(() => {
@@ -480,6 +480,19 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {isExternalMocksExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                         <span style={{ fontWeight: 'bold' }}>External Mocks</span>
+                        {externalMocks.value.length > 0 && (
+                            <span style={{
+                                fontSize: '0.7rem',
+                                backgroundColor: 'var(--bg-tertiary)',
+                                color: 'var(--text-primary)',
+                                padding: '1px 6px',
+                                borderRadius: '10px',
+                                marginLeft: '6px',
+                                fontWeight: 'normal'
+                            }}>
+                                {externalMocks.value.length}
+                            </span>
+                        )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
                         <button
