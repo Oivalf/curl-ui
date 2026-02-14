@@ -224,7 +224,7 @@
       "headers": {},
       "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "body": "{ \n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "body": "{ \n\"name\": \"ffds\",\n\"surname\": \"{{gvar}}\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
       "auth": {
         "type": "inherit"
       },
@@ -458,7 +458,7 @@
       "requestId": "781f9f29-e08b-40ca-83c9-c1734f0b137c",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "sample",
-      "body": "{ \n\"name\": \"ffds\",\n\"h\":\"v\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "body": "{ \n\"name\": \"ffds\",\n\"h\":\"v\",\n\"surname\": \"{{gvar}}\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
       "postScripts": [
         {
           "id": "bf62357d-c13e-4b12-96f1-a9aad03cd65f",
@@ -469,12 +469,17 @@
         }
       ],
       "pathParams": {
-        "id": "11"
+        "id": "{{gvar}}"
       },
       "headers": [
         {
           "key": "ciao",
           "value": "secco",
+          "enabled": true
+        },
+        {
+          "key": "unaltra",
+          "value": "{{gvar}}",
           "enabled": true
         }
       ],
@@ -492,6 +497,13 @@
           "content": "io sono rotto",
           "enabled": false,
           "executeOnStatusCodes": ""
+        }
+      ],
+      "queryParams": [
+        {
+          "key": "fddd",
+          "value": "{{gvar}}",
+          "enabled": true
         }
       ]
     }

@@ -2,6 +2,7 @@ import { Signal } from "@preact/signals";
 import { FolderOpen } from 'lucide-preact';
 import { open } from '@tauri-apps/plugin-dialog';
 import { OverrideIndicator } from "../OverrideIndicator";
+import { VariableInput } from "../VariableInput";
 
 interface RequestBodyEditorProps {
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
@@ -97,15 +98,16 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                         {isOverridden && <OverrideIndicator />}
                                         {/* Value Input */}
                                         <div style={{ flex: 1, display: 'flex', gap: '4px' }}>
-                                            <input
-                                                placeholder={row.type === 'file' ? "File path..." : "Value"}
+                                            <VariableInput
                                                 value={val}
-                                                onInput={(e) => {
+                                                onInput={(newVal) => {
                                                     const newData = [...formData.value];
-                                                    newData[i].values[valIdx] = e.currentTarget.value;
+                                                    newData[i].values[valIdx] = newVal;
                                                     formData.value = newData;
                                                 }}
+                                                placeholder={row.type === 'file' ? "File path..." : "Value"}
                                                 style={{ flex: 1 }}
+                                                readOnly={isReadOnly}
                                             />
                                             {row.type === 'file' && (
                                                 <button
@@ -193,21 +195,16 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                 <span style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>Body overridden</span>
                             </div>
                         )}
-                        <textarea
+                        <VariableInput
                             value={body.value}
-                            onInput={(e) => body.value = e.currentTarget.value}
+                            onInput={(val) => body.value = val}
+                            multiline={true}
                             style={{
                                 flex: 1,
                                 width: '100%',
-                                resize: 'none',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: 'var(--radius-sm)',
-                                backgroundColor: 'var(--bg-input)',
-                                color: 'var(--text-primary)',
-                                padding: '8px',
-                                fontFamily: 'var(--font-mono)'
                             }}
                             placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
+                            readOnly={isReadOnly}
                         />
                     </div>
                 )

@@ -3,6 +3,7 @@ import { useRef } from "preact/hooks";
 import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem } from "../store";
 import { RequestPanel } from "./RequestPanel";
 import { MethodSelect } from "./MethodSelect";
+import { VariableInput } from "./VariableInput";
 
 export function RequestEditor() {
     const currentRequest = requests.value.find(r => r.id === activeRequestId.value);
@@ -247,11 +248,9 @@ export function RequestEditor() {
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <MethodSelect value={method.value} onChange={(v) => method.value = v} />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <input
-                        type="text"
+                    <VariableInput
                         value={url.value}
-                        onInput={(e) => {
-                            const val = e.currentTarget.value;
+                        onInput={(val) => {
                             if (val.includes('?')) {
                                 const [base, query] = val.split('?', 2);
                                 url.value = base;
@@ -279,15 +278,8 @@ export function RequestEditor() {
                         onKeyDown={handleKeyDown}
                         placeholder="https://api.example.com/v1/users"
                         style={{
-                            width: '100%',
                             padding: '8px',
-                            backgroundColor: 'var(--bg-input)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: 'var(--text-primary)',
-                            outline: 'none',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '0.9rem'
+                            background: 'var(--bg-input)',
                         }}
                     />
                     <div style={{

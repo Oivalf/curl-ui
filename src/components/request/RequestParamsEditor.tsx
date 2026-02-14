@@ -1,5 +1,6 @@
 import { Signal } from "@preact/signals";
 import { OverrideIndicator } from "../OverrideIndicator";
+import { VariableInput } from "../VariableInput";
 
 interface RequestParamsEditorProps {
     queryParams: Signal<{ key: string, values: string[] }[]>;
@@ -20,11 +21,11 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                     {detectedPathKeys.value.map(key => (
                         <div key={key} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <div style={{ width: '120px', fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{`{${key}}`}</div>
-                            <input
+                            <VariableInput
                                 placeholder="Value"
                                 value={pathParams.value[key] || ''}
-                                onInput={(e) => {
-                                    pathParams.value = { ...pathParams.value, [key]: e.currentTarget.value };
+                                onInput={(val) => {
+                                    pathParams.value = { ...pathParams.value, [key]: val };
                                 }}
                                 style={{ flex: 1 }}
                             />
@@ -39,21 +40,19 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                 {queryParams.value.map((p, i) => (
                     <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                         <div style={{ width: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <input
+                            <VariableInput
                                 placeholder="Key"
                                 value={p.key}
                                 readOnly={isReadOnly}
-                                onInput={(e) => {
+                                onInput={(val) => {
                                     if (isReadOnly) return;
                                     const newParams = queryParams.value.map((param, idx) =>
-                                        idx === i ? { ...param, key: e.currentTarget.value } : param
+                                        idx === i ? { ...param, key: val } : param
                                     );
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{
-                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                    cursor: isReadOnly ? 'default' : 'text'
+                                    background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                 }}
                             />
                         </div>
@@ -74,19 +73,20 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                             {p.values.map((val, valIdx) => (
                                 <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                     {overriddenKeys?.has(p.key) && <OverrideIndicator />}
-                                    <input
+                                    <VariableInput
                                         placeholder="Value"
                                         value={val}
-                                        onInput={(e) => {
+                                        onInput={(newVal) => {
                                             const newParams = queryParams.value.map((param, idx) => {
                                                 if (idx !== i) return param;
                                                 const newValues = [...param.values];
-                                                newValues[valIdx] = e.currentTarget.value;
+                                                newValues[valIdx] = newVal;
                                                 return { ...param, values: newValues };
                                             });
                                             updateUrlFromParams(newParams);
                                         }}
                                         style={{ flex: 1 }}
+                                        readOnly={isReadOnly}
                                     />
                                     {!isReadOnly && (
                                         <button

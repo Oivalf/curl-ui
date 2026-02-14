@@ -1,6 +1,7 @@
 import { Signal } from "@preact/signals";
 import { navigateToItem } from "../../store";
 import { OverrideIndicator } from "../OverrideIndicator";
+import { VariableInput } from "../VariableInput";
 
 interface RequestHeadersEditorProps {
     headers: Signal<{ key: string, value: string }[]>;
@@ -15,35 +16,34 @@ export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, ov
             {/* Own Headers */}
             {headers.value.map((h, i) => (
                 <div key={i} style={{ display: 'flex', gap: '8px' }}>
-                    <input
+                    <VariableInput
                         placeholder="Key"
                         value={h.key}
                         readOnly={isReadOnly}
-                        onInput={(e) => {
+                        onInput={(val) => {
                             if (isReadOnly) return;
                             const newHeaders = [...headers.value];
-                            newHeaders[i].key = e.currentTarget.value;
+                            newHeaders[i].key = val;
                             headers.value = newHeaders;
                         }}
                         style={{
                             flex: 1,
                             minWidth: 0,
-                            backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                            border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                            cursor: isReadOnly ? 'default' : 'text'
+                            background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                         }}
                     />
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
                         {overriddenKeys?.has(h.key) && <OverrideIndicator />}
-                        <input
+                        <VariableInput
                             placeholder="Value"
                             value={h.value}
-                            onInput={(e) => {
+                            onInput={(val) => {
                                 const newHeaders = [...headers.value];
-                                newHeaders[i].value = e.currentTarget.value;
+                                newHeaders[i].value = val;
                                 headers.value = newHeaders;
                             }}
                             style={{ flex: 1, minWidth: 0 }}
+                            readOnly={isReadOnly}
                         />
                     </div>
                     {!isReadOnly && (

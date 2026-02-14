@@ -1,5 +1,6 @@
 import { Signal } from "@preact/signals";
 import { OverrideIndicator } from "../OverrideIndicator";
+import { VariableInput } from "../VariableInput";
 
 interface ExecutionParamsEditorProps {
     queryParams: Signal<{ key: string, value: string, enabled: boolean }[]>;
@@ -39,11 +40,11 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                     {detectedPathKeys.value.map(key => (
                         <div key={key} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <div style={{ width: '120px', fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{`{${key}}`}</div>
-                            <input
+                            <VariableInput
                                 placeholder="Value"
                                 value={pathParams.value[key] || ''}
-                                onInput={(e) => {
-                                    pathParams.value = { ...pathParams.value, [key]: e.currentTarget.value };
+                                onInput={(val) => {
+                                    pathParams.value = { ...pathParams.value, [key]: val };
                                 }}
                                 style={{ flex: 1 }}
                             />
@@ -86,24 +87,21 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
 
                         {/* Key Input */}
                         <div style={{ width: '150px', marginTop: '4px' }}>
-                            <input
+                            <VariableInput
                                 placeholder="Key"
                                 value={group.key}
                                 readOnly={isReadOnly}
-                                onInput={(e) => {
+                                onInput={(val) => {
                                     if (isReadOnly) return;
-                                    const newKey = e.currentTarget.value;
                                     const newParams = [...queryParams.value];
                                     group.items.forEach(item => {
-                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: newKey };
+                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: val };
                                     });
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{
                                     width: '100%',
-                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                    cursor: isReadOnly ? 'default' : 'text'
+                                    background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                 }}
                             />
                         </div>
@@ -115,21 +113,19 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                     {/* Value Input */}
                                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         {overriddenKeys?.has(group.key) && item.originalIndex === group.items[0].originalIndex && <OverrideIndicator />}
-                                        <input
+                                        <VariableInput
                                             placeholder="Value"
                                             value={item.value}
                                             readOnly={isReadOnly}
-                                            onInput={(e) => {
+                                            onInput={(val) => {
                                                 if (isReadOnly) return;
                                                 const newParams = [...queryParams.value];
-                                                newParams[item.originalIndex] = { ...newParams[item.originalIndex], value: e.currentTarget.value };
+                                                newParams[item.originalIndex] = { ...newParams[item.originalIndex], value: val };
                                                 updateUrlFromParams(newParams);
                                             }}
                                             style={{
                                                 flex: 1,
-                                                backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                                border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                                cursor: isReadOnly ? 'default' : 'text'
+                                                background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                             }}
                                         />
                                     </div>

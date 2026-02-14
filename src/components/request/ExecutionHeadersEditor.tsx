@@ -1,6 +1,7 @@
 import { Signal } from "@preact/signals";
 import { navigateToItem } from "../../store";
 import { OverrideIndicator } from "../OverrideIndicator";
+import { VariableInput } from "../VariableInput";
 
 interface ExecutionHeadersEditorProps {
     headers: Signal<{ key: string, value: string, enabled: boolean }[]>;
@@ -42,21 +43,19 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
 
                     {/* Key Input */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <input
+                        <VariableInput
                             placeholder="Key"
                             value={h.key}
                             readOnly={isReadOnly}
-                            onInput={(e) => {
+                            onInput={(val) => {
                                 if (isReadOnly) return;
                                 const newHeaders = [...headers.value];
-                                newHeaders[i] = { ...newHeaders[i], key: e.currentTarget.value };
+                                newHeaders[i] = { ...newHeaders[i], key: val };
                                 headers.value = newHeaders;
                             }}
                             style={{
                                 width: '100%',
-                                backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                cursor: isReadOnly ? 'default' : 'text'
+                                background: isReadOnly ? 'transparent' : 'var(--bg-input)',
                             }}
                         />
                     </div>
@@ -64,15 +63,16 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                     {/* Value Input */}
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
                         {overriddenKeys?.has(h.key) && <OverrideIndicator />}
-                        <input
+                        <VariableInput
                             placeholder="Value"
                             value={h.value}
-                            onInput={(e) => {
+                            onInput={(val) => {
                                 const newHeaders = [...headers.value];
-                                newHeaders[i] = { ...newHeaders[i], value: e.currentTarget.value };
+                                newHeaders[i] = { ...newHeaders[i], value: val };
                                 headers.value = newHeaders;
                             }}
                             style={{ flex: 1, minWidth: 0 }}
+                            readOnly={isReadOnly}
                         />
                     </div>
 

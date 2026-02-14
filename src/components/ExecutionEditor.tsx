@@ -7,6 +7,7 @@ import { activeExecutionId, activeRequestId, executions, requests, folders, envi
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ResponsePanel } from "./ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
+import { VariableInput } from "./VariableInput";
 
 export function ExecutionEditor() {
     const currentExecution = executions.value.find(e => e.id === activeExecutionId.value);
@@ -184,11 +185,65 @@ export function ExecutionEditor() {
         detectedPathKeys.value = matches ? matches.map(m => m.slice(1, -1)) : [];
     });
 
+    const substituteVariables = (text: string): string => {
+        if (!text) return text;
+        const placeholders = Array.from(new Set(text.match(/{{\s*[\S]+?\s*}}/g) || []));
+        if (placeholders.length === 0) return text;
+
+        const env = environments.value.find(e => e.name === activeEnvironmentName.value);
+
+        const folderScopes: typeof folders.value[0][] = [];
+        let currentParentId = parentRequest?.parentId;
+
+        while (currentParentId) {
+            const f = folders.value.find(x => x.id === currentParentId);
+            if (f) {
+                folderScopes.push(f);
+                currentParentId = f.parentId;
+            } else break;
+        }
+
+        let result = text;
+        placeholders.forEach(placeholder => {
+            const key = placeholder.slice(2, -2).trim();
+            let value: string | null = null;
+
+            for (const folder of folderScopes) {
+                if (folder.variables) {
+                    const vars = folder.variables as Record<string, string>;
+                    if (typeof vars[key] === 'string') {
+                        value = vars[key];
+                        break;
+                    }
+                }
+            }
+
+            if (value === null && env) {
+                const envVar = env.variables.find(v => v.key === key);
+                if (envVar) value = envVar.value;
+            }
+
+            if (value === null) {
+                const globalEnv = environments.value.find(e => e.name === 'Global');
+                if (globalEnv) {
+                    const globalVar = globalEnv.variables.find(v => v.key === key);
+                    if (globalVar) value = globalVar.value;
+                }
+            }
+
+            if (value !== null) {
+                result = result.split(placeholder).join(value);
+            }
+        });
+
+        return result;
+    };
+
     const getFinalUrl = (includeQuery = true) => {
-        let finalUrl = url.value;
+        let finalUrl = substituteVariables(url.value);
         detectedPathKeys.value.forEach(key => {
             if (pathParams.value[key]) {
-                finalUrl = finalUrl.replace(`{${key}}`, pathParams.value[key]);
+                finalUrl = finalUrl.replace(`{${key}}`, substituteVariables(pathParams.value[key]));
             }
         });
 
@@ -196,7 +251,7 @@ export function ExecutionEditor() {
             const searchParams = new URLSearchParams();
             queryParams.value.forEach(p => {
                 if (p.key && p.enabled) {
-                    searchParams.append(p.key, p.value);
+                    searchParams.append(substituteVariables(p.key), substituteVariables(p.value));
                 }
             });
             const qs = searchParams.toString();
@@ -208,7 +263,7 @@ export function ExecutionEditor() {
     };
 
     const finalUrlPreview = useComputed(() => {
-        return substituteVariables(getFinalUrl());
+        return getFinalUrl();
     });
 
     // Detect Overrides for UI highlighting
@@ -244,11 +299,6 @@ export function ExecutionEditor() {
     const isBodyOverridden = useComputed(() => body.value !== (parentRequest.body ?? ''));
     const isAuthOverridden = useComputed(() => JSON.stringify(auth.value) !== JSON.stringify(parentRequest.auth ?? { type: 'inherit' }));
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleSend();
-        }
-    };
 
     // Sync Local State to Global Store
     useSignalEffect(() => {
@@ -319,7 +369,6 @@ export function ExecutionEditor() {
             const authChanged = JSON.stringify(exec.auth) !== JSON.stringify(finalAuth);
             const preScriptsChanged = JSON.stringify(exec.preScripts) !== JSON.stringify(finalPreScripts);
             const postScriptsChanged = JSON.stringify(exec.postScripts) !== JSON.stringify(finalPostScripts);
-
             if (exec.name !== currentName || headersChanged || paramsChanged || pathParamsChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
                 batch(() => {
                     const newExecutions = [...allExecutions];
@@ -345,60 +394,6 @@ export function ExecutionEditor() {
             }
         }
     });
-
-    const substituteVariables = (text: string): string => {
-        if (!text) return text;
-        const placeholders = Array.from(new Set(text.match(/{{\s*[\S]+?\s*}}/g) || []));
-        if (placeholders.length === 0) return text;
-
-        const env = environments.value.find(e => e.name === activeEnvironmentName.value);
-
-        const folderScopes: typeof folders.value[0][] = [];
-        let currentParentId = parentRequest?.parentId;
-
-        while (currentParentId) {
-            const f = folders.value.find(x => x.id === currentParentId);
-            if (f) {
-                folderScopes.push(f);
-                currentParentId = f.parentId;
-            } else break;
-        }
-
-        let result = text;
-        placeholders.forEach(placeholder => {
-            const key = placeholder.slice(2, -2).trim();
-            let value: string | null = null;
-
-            for (const folder of folderScopes) {
-                if (folder.variables) {
-                    const vars = folder.variables as Record<string, string>;
-                    if (typeof vars[key] === 'string') {
-                        value = vars[key];
-                        break;
-                    }
-                }
-            }
-
-            if (value === null && env) {
-                const envVar = env.variables.find(v => v.key === key);
-                if (envVar) value = envVar.value;
-            }
-
-            if (value === null) {
-                const globalEnv = environments.value.find(e => e.name === 'Global');
-                if (globalEnv) {
-                    const globalVar = globalEnv.variables.find(v => v.key === key);
-                    if (globalVar) value = globalVar.value;
-                }
-            }
-
-            if (value !== null) {
-                result = result.split(placeholder).join(value);
-            }
-        });
-
-        return result;
-    };
 
     const executeScript = async (scriptContent: string, context: any) => {
         try {
@@ -577,7 +572,7 @@ export function ExecutionEditor() {
             // Snapshot Request Data
             const requestRaw = generateRawRequest();
             const requestCurl = generateCurl();
-            const finalRequestUrl = substituteVariables(getFinalUrl(true));
+            const finalRequestUrl = getFinalUrl(true);
             const finalRequestMethod = method.value;
 
             responseData.value = {
@@ -618,7 +613,7 @@ export function ExecutionEditor() {
                 finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
             }
 
-            const finalUrl = substituteVariables(getFinalUrl());
+            const finalUrl = getFinalUrl();
             let finalBody = bodyType.value === 'none' ? null : substituteVariables(body.value);
             let formDataArgs: any = null;
 
@@ -755,7 +750,7 @@ export function ExecutionEditor() {
     };
 
     const generateRawRequest = () => {
-        const urlWithQuery = substituteVariables(getFinalUrl(true));
+        const urlWithQuery = getFinalUrl(true);
         const methodStr = method.value;
 
         const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
@@ -815,7 +810,7 @@ export function ExecutionEditor() {
     };
 
     const generateCurl = () => {
-        let cmd = `curl -X ${method.value} '${substituteVariables(getFinalUrl())}'`;
+        let cmd = `curl -X ${method.value} '${getFinalUrl()}'`;
 
         const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
         const finalHeaders: Record<string, string> = {};
@@ -978,23 +973,15 @@ export function ExecutionEditor() {
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <MethodSelect value={method.value} onChange={() => { }} disabled={true} />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <input
-                        type="text"
+                    <VariableInput
                         value={url.value}
                         readOnly={true}
                         onInput={() => { }} // Read-only
-                        onKeyDown={handleKeyDown}
                         placeholder="https://api.example.com/v1/users"
                         style={{
-                            width: '100%',
                             padding: '8px',
-                            backgroundColor: 'transparent',
+                            background: 'transparent',
                             border: '1px solid transparent',
-                            borderRadius: 'var(--radius-sm)',
-                            color: 'var(--text-primary)',
-                            outline: 'none',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '0.9rem',
                             cursor: 'default'
                         }}
                     />
