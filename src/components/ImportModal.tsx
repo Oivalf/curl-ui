@@ -82,10 +82,24 @@ export function ImportModal() {
             } else if (importType === 'swagger') {
                 const parsed = parseSwagger(content);
 
-                if (state.targetType === 'external-mock') {
+                if (state.targetType === 'external-mock' || state.targetType === 'new-external-mock') {
                     const { externalMocks, saveExternalMockToDisk } = await import('../store');
-                    const mockId = state.targetId;
-                    const mock = externalMocks.peek().find(m => m.id === mockId);
+                    let mockId = state.targetId;
+                    let mock: any;
+
+                    if (state.targetType === 'new-external-mock') {
+                        mockId = crypto.randomUUID();
+                        mock = {
+                            id: mockId,
+                            name: parsed.title || "Imported Mock",
+                            port: 4000,
+                            endpoints: [],
+                            serverStatus: 'stopped'
+                        };
+                        externalMocks.value = [...externalMocks.value, mock];
+                    } else {
+                        mock = externalMocks.peek().find(m => m.id === mockId);
+                    }
 
                     if (!mock) throw new Error("Target External Mock not found.");
 
@@ -107,7 +121,7 @@ export function ImportModal() {
                         m.id === mockId ? { ...m, endpoints: newEndpoints } : m
                     );
 
-                    saveExternalMockToDisk(mockId!, false, true);
+                    saveExternalMockToDisk(mockId!, true, true);
 
                 } else {
                     const collectionId = state.collectionId;

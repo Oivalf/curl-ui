@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk } from '../store';
+import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog, FileJson } from 'lucide-preact';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState } from '../store';
 import { SidebarItem } from './SidebarItem';
 
 import { SidebarContextMenu } from './SidebarContextMenu';
@@ -38,6 +38,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
 
     const [collectionGitStatus, setCollectionGitStatus] = useState<Record<string, boolean>>({});
     const [isExternalMocksExpanded, setExternalMocksExpanded] = useState(true);
+    const [isMockMenuOpen, setMockMenuOpen] = useState(false);
 
     useEffect(() => {
         const checkGitStatus = async () => {
@@ -480,7 +481,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         {isExternalMocksExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                         <span style={{ fontWeight: 'bold' }}>External Mocks</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
                         <button
                             onClick={(e) => { e.stopPropagation(); loadExternalMockFromDisk(); }}
                             style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -489,12 +490,66 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                             <FolderOpen size={14} />
                         </button>
                         <button
-                            onClick={(e) => { e.stopPropagation(); createExternalMock(); }}
+                            onClick={(e) => { e.stopPropagation(); setMockMenuOpen(!isMockMenuOpen); }}
                             style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             title="New External Mock"
                         >
                             <PlusIcon size={14} />
                         </button>
+
+                        {isMockMenuOpen && (
+                            <>
+                                <div
+                                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}
+                                    onClick={() => setMockMenuOpen(false)}
+                                />
+                                <div style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: '100%',
+                                    backgroundColor: 'var(--bg-surface)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+                                    zIndex: 101,
+                                    minWidth: '150px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    padding: '4px 0',
+                                    marginTop: '4px'
+                                }}>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMockMenuOpen(false);
+                                            createExternalMock();
+                                        }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        <PlusIcon size={14} /> From Scratch
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMockMenuOpen(false);
+                                            importModalState.value = {
+                                                isOpen: true,
+                                                type: 'swagger',
+                                                collectionId: '',
+                                                targetType: 'new-external-mock'
+                                            };
+                                        }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        <FileJson size={14} /> From Swagger
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 

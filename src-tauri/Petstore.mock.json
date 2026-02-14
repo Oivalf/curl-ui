@@ -1,0 +1,236 @@
+{
+  "id": "1428641c-b7f2-4f1e-8ad3-5af5e03c2ab8",
+  "name": "Swagger Petstore - OpenAPI 3.0",
+  "port": 4000,
+  "endpoints": [
+    {
+      "method": "PUT",
+      "path": "/pet",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/pet",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/pet/findByStatus",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "[\n  {\n    \"id\": 10,\n    \"name\": \"doggie\",\n    \"category\": {\n      \"id\": 1,\n      \"name\": \"Dogs\"\n    },\n    \"photoUrls\": [\n      \"string\"\n    ],\n    \"tags\": [\n      {\n        \"id\": 0,\n        \"name\": \"string\"\n      }\n    ],\n    \"status\": \"available\"\n  }\n]",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/pet/findByTags",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "[\n  {\n    \"id\": 10,\n    \"name\": \"doggie\",\n    \"category\": {\n      \"id\": 1,\n      \"name\": \"Dogs\"\n    },\n    \"photoUrls\": [\n      \"string\"\n    ],\n    \"tags\": [\n      {\n        \"id\": 0,\n        \"name\": \"string\"\n      }\n    ],\n    \"status\": \"available\"\n  }\n]",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/pet/{petId}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/pet/{petId}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/pet/{petId}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "api_key": "",
+          "Content-Type": "application/json"
+        },
+        "body": "{}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/pet/{petId}/uploadImage",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"code\": 0,\n  \"type\": \"string\",\n  \"message\": \"string\"\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/store/inventory",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/store/order",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"petId\": 198772,\n  \"quantity\": 7,\n  \"shipDate\": \"2026-02-14T09:57:42.915Z\",\n  \"status\": \"approved\",\n  \"complete\": true\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/store/order/{orderId}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"petId\": 198772,\n  \"quantity\": 7,\n  \"shipDate\": \"2026-02-14T09:57:42.916Z\",\n  \"status\": \"approved\",\n  \"complete\": true\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/store/order/{orderId}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/user",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"username\": \"theUser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"James\",\n  \"email\": \"john@email.com\",\n  \"password\": \"12345\",\n  \"phone\": \"12345\",\n  \"userStatus\": 1\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/user/createWithList",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"username\": \"theUser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"James\",\n  \"email\": \"john@email.com\",\n  \"password\": \"12345\",\n  \"phone\": \"12345\",\n  \"userStatus\": 1\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/user/login",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "\"string\"",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/user/logout",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/user/{username}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"id\": 10,\n  \"username\": \"theUser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"James\",\n  \"email\": \"john@email.com\",\n  \"password\": \"12345\",\n  \"phone\": \"12345\",\n  \"userStatus\": 1\n}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/user/{username}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{}",
+        "enabled": true
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/user/{username}",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{}",
+        "enabled": true
+      }
+    }
+  ]
+}
