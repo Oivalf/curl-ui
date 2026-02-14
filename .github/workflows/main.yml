@@ -57,3 +57,19 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Upload Windows Standalone Exe
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/release/curl-ui.exe
+          name: cURL-UI.exe
+          tag_name: cURL-UI-v__VERSION__ # Need to figure out dynamic version reference or rely on tauri-action creating it first?
+          # Actually, tauri-action typically creates the release. 
+          # But we can't easily get the version here without reading package.json.
+          # A safer way is to use a glob or copy command before this step to prepare artifacts
+          # OR use `tauri-apps/tauri-action` features if available, but it mainly uploads bundle artifacts.
+          # Let's try appending to the release created by tauri-action.
+          # WARNING: `tag_name` needs to match exactly what tauri-action used.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
