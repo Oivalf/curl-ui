@@ -32,4 +32,4 @@ if (response.status === 200) {
 ```
 
 ## Debugging
-Use `console.log()` to output information to the application's Console Panel.
+Use `console.log()`, `console.warn()`, or `console.error()` inside your scripts. All outputs are automatically redirected to the application's integrated **Console Panel** for easy inspection during debugging.

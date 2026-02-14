@@ -32,12 +32,13 @@ pub struct FormDataItem {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpRequestArgs {
-    method: String,
-    url: String,
-    headers: HashMap<String, String>,
-    body: Option<String>,
+    pub method: String,
+    pub url: String,
+    pub headers: HashMap<String, String>,
+    pub body: Option<String>,
     #[serde(default)]
-    form_data: Option<Vec<FormDataItem>>,
+    pub form_data: Option<Vec<FormDataItem>>,
+    pub request_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,70 +54,105 @@ pub struct GitCommitArgs {
 }
 
 #[command]
-pub async fn http_request(args: HttpRequestArgs) -> Result<HttpResponse, String> {
-    let client = reqwest::Client::new();
+pub async fn http_request(
+    state: tauri::State<'_, crate::HttpRequestState>,
+    args: HttpRequestArgs,
+) -> Result<HttpResponse, String> {
+    let (tx, rx) = oneshot::channel::<()>();
+    let request_id = args.request_id.clone();
 
-    let method = Method::from_str(&args.method.to_uppercase())
-        .map_err(|e| format!("Invalid method: {}", e))?;
-
-    let mut request_builder = client.request(method, &args.url);
-
-    for (key, value) in args.headers {
-        request_builder = request_builder.header(key, value);
+    if let Some(id) = &request_id {
+        let mut handles = state.handles.lock().await;
+        handles.insert(id.clone(), tx);
     }
 
-    if let Some(form_data) = args.form_data {
-        let mut form = multipart::Form::new();
-        for item in form_data {
-            if item.entry_type == "file" {
-                // For files, value is the path
-                // handling async file read inside this loop might be tricky if we want to bubble errors
-                let part = multipart::Part::bytes(
-                    tokio::fs::read(&item.value)
-                        .await
-                        .map_err(|e| format!("Failed to read file {}: {}", item.value, e))?,
-                )
-                .file_name(
-                    std::path::Path::new(&item.value)
-                        .file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                        .to_string(),
-                );
-                form = form.part(item.key, part);
-            } else {
-                form = form.text(item.key, item.value);
+    let request_future = async {
+        let client = reqwest::Client::new();
+
+        let method = Method::from_str(&args.method.to_uppercase())
+            .map_err(|e| format!("Invalid method: {}", e))?;
+
+        let mut request_builder = client.request(method, &args.url);
+
+        for (key, value) in args.headers {
+            request_builder = request_builder.header(key, value);
+        }
+
+        if let Some(form_data) = args.form_data {
+            let mut form = multipart::Form::new();
+            for item in form_data {
+                if item.entry_type == "file" {
+                    let part = multipart::Part::bytes(
+                        tokio::fs::read(&item.value)
+                            .await
+                            .map_err(|e| format!("Failed to read file {}: {}", item.value, e))?,
+                    )
+                    .file_name(
+                        std::path::Path::new(&item.value)
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string(),
+                    );
+                    form = form.part(item.key, part);
+                } else {
+                    form = form.text(item.key, item.value);
+                }
+            }
+            request_builder = request_builder.multipart(form);
+        } else if let Some(body) = args.body {
+            request_builder = request_builder.body(body);
+        }
+
+        let response = request_builder
+            .send()
+            .await
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        let status = response.status().as_u16();
+
+        let mut headers = HashMap::new();
+        for (key, value) in response.headers() {
+            if let Ok(v) = value.to_str() {
+                headers.insert(key.to_string(), v.to_string());
             }
         }
-        request_builder = request_builder.multipart(form);
-    } else if let Some(body) = args.body {
-        request_builder = request_builder.body(body);
+
+        let body = response
+            .text()
+            .await
+            .map_err(|e| format!("Failed to read body: {}", e))?;
+
+        Ok(HttpResponse {
+            status,
+            headers,
+            body,
+        })
+    };
+
+    let result = tokio::select! {
+        res = request_future => res,
+        _ = rx => Err("Canceled".to_string()),
+    };
+
+    if let Some(id) = &request_id {
+        let mut handles = state.handles.lock().await;
+        handles.remove(id);
     }
 
-    let response = request_builder
-        .send()
-        .await
-        .map_err(|e| format!("Request failed: {}", e))?;
+    result
+}
 
-    let status = response.status().as_u16();
-
-    let mut headers = HashMap::new();
-    for (key, value) in response.headers() {
-        if let Ok(v) = value.to_str() {
-            headers.insert(key.to_string(), v.to_string());
-        }
+#[command]
+pub async fn cancel_http_request(
+    state: tauri::State<'_, crate::HttpRequestState>,
+    request_id: String,
+) -> Result<(), String> {
+    let mut handles = state.handles.lock().await;
+    if let Some(tx) = handles.remove(&request_id) {
+        let _ = tx.send(());
     }
-
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read body: {}", e))?;
-
-    Ok(HttpResponse {
-        status,
-        headers,
-        body,
-    })
+    Ok(())
 }
 
 #[command]

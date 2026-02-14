@@ -9,18 +9,18 @@ interface RequestBodyEditorProps {
     formData: Signal<{ key: string, type: 'text' | 'file', values: string[] }[]>;
     isReadOnly?: boolean;
     isOverridden?: boolean;
+    isTypeReadOnly?: boolean;
 }
 
-export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden }: RequestBodyEditorProps) {
+export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden, isTypeReadOnly }: RequestBodyEditorProps) {
     return (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minHeight: 0, height: '100%' }}>
             <select
                 value={bodyType.value}
                 onChange={(e) => bodyType.value = e.currentTarget.value as any}
-                disabled={isReadOnly}
+                disabled={isReadOnly || isTypeReadOnly}
                 style={{
                     width: '100%',
-                    marginBottom: '4px',
                     backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
                     border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
                     cursor: isReadOnly ? 'default' : 'pointer'
@@ -186,7 +186,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                 </div>
             ) : (
                 bodyType.value !== 'none' && (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minHeight: 0 }}>
                         {isOverridden && (
                             <div style={{ display: 'flex', gap: '4px', alignItems: 'center', padding: '4px 0' }}>
                                 <OverrideIndicator />
@@ -218,6 +218,6 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                     This request has no body
                 </div>
             )}
-        </>
+        </div>
     );
 }

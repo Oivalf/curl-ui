@@ -1,6 +1,7 @@
 import { useSignal, useSignalEffect, useComputed, batch } from "@preact/signals";
 import { useRef, useEffect, useCallback } from "preact/hooks";
-import { Play, ArrowLeft } from 'lucide-preact';
+import { ArrowLeft, Play, XCircle, Loader2, Circle, CheckCircle } from "lucide-preact";
+import { formatBytes } from "../utils/format";
 import { invoke } from '@tauri-apps/api/core';
 import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, responseData, ScriptItem, addLog, openTabs, activeTabId, activeFolderId } from "../store";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
@@ -83,12 +84,16 @@ export function ExecutionEditor() {
 
     const headers = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedHeaders());
     const body = useSignal(currentExecution.body ?? parentRequest.body ?? '');
-    const bodyType = useComputed<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(() => {
-        // Body type is inherited from parent request, but we derive it from the content if parent doesn't specify?
-        // Actually, the user says the type is fixed but value can change.
-        // For now let's derive it from the body content or follow parent if we had a bodyType field (which we don't yet).
-        // Best approach: determine type from content of the body (JSON check).
-        return (body.value && (body.value.trim().startsWith('{') || body.value.trim().startsWith('['))) ? 'json' : 'none';
+    const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>('none');
+
+    // Auto-detect body type
+    useSignalEffect(() => {
+        const content = body.value;
+        if (content && (content.trim().startsWith('{') || content.trim().startsWith('['))) {
+            bodyType.value = 'json';
+        } else if (!content) {
+            bodyType.value = 'none';
+        }
     });
     const preScripts = useSignal<ScriptItem[]>(currentExecution.preScripts ?? parentRequest.preScripts ?? []);
     const postScripts = useSignal<ScriptItem[]>(currentExecution.postScripts ?? parentRequest.postScripts ?? []);
@@ -150,16 +155,33 @@ export function ExecutionEditor() {
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
 
+    // Execution Progress State
+    const currentRequestId = useSignal<string | null>(null);
+    const executionSteps = useSignal<{
+        id: string;
+        name: string;
+        status: 'pending' | 'running' | 'completed' | 'error' | 'canceled';
+        message?: string;
+        duration?: number;
+    }[]>([]);
+
+    const totalExecutionTime = useSignal<number | null>(null);
+    const lastResponseTime = useSignal<number | null>(null);
+    const responseSize = useSignal<number | null>(null);
+    const responseStatus = useSignal<number | null>(null);
+
+
     // URL sync effect removed - handled by sync logic and internal params management
 
     const updateUrlFromParams = (newParams: { key: string, value: string, enabled: boolean }[]) => {
         queryParams.value = newParams;
     };
 
-    const detectedPathKeys = useComputed(() => {
+    const detectedPathKeys = useSignal<string[]>([]);
+
+    useSignalEffect(() => {
         const matches = url.value.match(/(?<!\{)\{[a-zA-Z0-9_]+\}(?!\})/g);
-        if (!matches) return [];
-        return matches.map(m => m.slice(1, -1));
+        detectedPathKeys.value = matches ? matches.map(m => m.slice(1, -1)) : [];
     });
 
     const getFinalUrl = (includeQuery = true) => {
@@ -390,16 +412,50 @@ export function ExecutionEditor() {
         }
     };
 
+    const handleCancel = async () => {
+        if (!currentRequestId.value) return;
+        try {
+            await invoke('cancel_http_request', { requestId: currentRequestId.value });
+            addLog('info', 'Request cancellation requested', 'System');
+        } catch (err) {
+            console.error('Failed to cancel request', err);
+        }
+    };
+
     const handleSend = async () => {
         if (isLoading.value) return;
+
+        const requestId = Math.random().toString(36).substring(7);
+        currentRequestId.value = requestId;
         isLoading.value = true;
         responseData.value = null;
+        totalExecutionTime.value = null;
+        lastResponseTime.value = null;
+        responseSize.value = null;
+        responseStatus.value = null;
+
+        // Initialize Steps
+        const steps = [
+            { id: 'pre-scripts', name: 'Pre-request Scripts', status: 'pending' as const },
+            { id: 'prep', name: 'Preparing Request', status: 'pending' as const },
+            { id: 'http', name: 'HTTP Request', status: 'pending' as const },
+            { id: 'post-scripts', name: 'Post-request Scripts', status: 'pending' as const },
+        ];
+        executionSteps.value = steps;
+
+        const setStepStatus = (id: string, status: 'pending' | 'running' | 'completed' | 'error' | 'canceled', message?: string, duration?: number) => {
+            executionSteps.value = executionSteps.peek().map(s =>
+                s.id === id ? { ...s, status, message, duration } : s
+            );
+        };
+
         const startTime = Date.now();
 
         try {
             const activeEnv = environments.peek().find(e => e.name === activeEnvironmentName.peek());
 
             const scriptContext = {
+                // ... same script context ...
                 console: {
                     ...console,
                     log: (...args: any[]) => {
@@ -441,18 +497,26 @@ export function ExecutionEditor() {
                 }
             };
 
-            for (const script of preScripts.peek()) {
-                if (script.enabled) {
+            // 1. Pre-scripts
+            setStepStatus('pre-scripts', 'running');
+            const preStartTime = Date.now();
+            const enabledPreScripts = preScripts.peek().filter(s => s.enabled);
+            if (enabledPreScripts.length > 0) {
+                for (const script of enabledPreScripts) {
                     try {
                         console.log(`Executing Pre-Script: ${script.name}`);
                         await executeScript(script.content, scriptContext);
                     } catch (e) {
-                        alert(`Error executing Pre-Script "${script.name}":\n${e}`);
-                        throw new Error(`Pre-Script failed: ${e}`);
+                        setStepStatus('pre-scripts', 'error', String(e), Date.now() - preStartTime);
+                        throw new Error(`Pre-Script "${script.name}" failed: ${e}`);
                     }
                 }
             }
+            setStepStatus('pre-scripts', 'completed', undefined, Date.now() - preStartTime);
 
+            // 2. Prep
+            setStepStatus('prep', 'running');
+            const prepStartTime = Date.now();
             // Snapshot Request Data
             const requestRaw = generateRawRequest();
             const requestCurl = generateCurl();
@@ -522,84 +586,114 @@ export function ExecutionEditor() {
                     });
                 });
                 finalBody = null;
-            } else if (bodyType.value === 'json' && !finalHeaders['Content-Type']) {
-                finalHeaders['Content-Type'] = 'application/json';
+            } else {
+                if (!finalHeaders['Content-Type'] && bodyType.value !== 'none') {
+                    switch (bodyType.value) {
+                        case 'json': finalHeaders['Content-Type'] = 'application/json'; break;
+                        case 'xml': finalHeaders['Content-Type'] = 'application/xml'; break;
+                        case 'yaml': finalHeaders['Content-Type'] = 'application/x-yaml'; break;
+                    }
+                }
             }
+            setStepStatus('prep', 'completed', undefined, Date.now() - prepStartTime);
 
+            // 3. HTTP Request
+            setStepStatus('http', 'running');
+            const httpStartTime = Date.now();
             const res = await invoke<{ status: number, headers: Record<string, string>, body: string, time_taken: number }>('http_request', {
                 args: {
                     method: method.value,
                     url: finalUrl,
                     headers: finalHeaders,
                     body: finalBody,
-                    form_data: formDataArgs
+                    form_data: formDataArgs,
+                    request_id: requestId
                 }
             });
+            const httpDuration = Date.now() - httpStartTime;
+            setStepStatus('http', 'completed', undefined, res.time_taken || httpDuration);
 
-            const duration = Date.now() - startTime;
+            // Handle Response...
+            const endTime = Date.now();
+            const respTime = res.time_taken || (endTime - startTime);
+            lastResponseTime.value = respTime;
+            responseSize.value = res.body.length;
+            responseStatus.value = res.status;
 
             responseData.value = {
-                ...responseData.peek(), // Preserve snapshots
+                ...responseData.value!,
                 status: res.status,
                 headers: res.headers,
                 body: res.body,
-                size: new Blob([res.body]).size,
-                time: duration
+                time: respTime,
+                size: res.body.length
             };
 
-            const shouldExecuteScript = (pattern: string | undefined, status: number): boolean => {
-                if (!pattern || pattern.trim() === '') return true;
-                const patterns = pattern.split(',').map(p => p.trim());
-                const statusStr = status.toString();
-
-                return patterns.some(p => {
-                    if (p === statusStr) return true;
-                    if (p.toLowerCase().endsWith('xx')) {
-                        const prefix = p.slice(0, -2);
-                        return statusStr.startsWith(prefix);
+            // 4. Post-scripts
+            setStepStatus('post-scripts', 'running');
+            const postStartTime = Date.now();
+            const enabledPostScripts = postScripts.peek().filter(s => s.enabled);
+            if (enabledPostScripts.length > 0) {
+                // Post-script Context
+                const postScriptContext = {
+                    ...scriptContext,
+                    response: {
+                        status: res.status,
+                        headers: res.headers,
+                        body: res.body,
+                        json: () => {
+                            try { return JSON.parse(res.body); }
+                            catch (e) { return null; }
+                        }
                     }
-                    return false;
-                });
-            };
+                };
 
-            const responseContext = {
-                status: res.status,
-                headers: res.headers,
-                body: res.body,
-                time: duration
-            };
+                for (const script of enabledPostScripts) {
+                    const statusFilter = script.executeOnStatusCodes || 'all';
+                    const matchesStatus = statusFilter === 'all' ||
+                        statusFilter.split(',').map(s => s.trim()).includes(res.status.toString()) ||
+                        (statusFilter === '2xx' && res.status >= 200 && res.status < 300);
 
-            const postScriptContext = {
-                ...scriptContext,
-                response: responseContext
-            };
-
-            for (const script of postScripts.peek()) {
-                if (script.enabled) {
-                    if (shouldExecuteScript(script.executeOnStatusCodes, res.status)) {
+                    if (matchesStatus) {
                         try {
                             console.log(`Executing Post-Script: ${script.name}`);
                             await executeScript(script.content, postScriptContext);
                         } catch (e) {
                             addLog('error', `Post-Script "${script.name}" failed: ${e}`, 'Request');
                         }
-                    } else {
-                        console.log(`Skipping Post-Script "${script.name}" (Status ${res.status} does not match ${script.executeOnStatusCodes})`);
                     }
                 }
             }
+            setStepStatus('post-scripts', 'completed', undefined, Date.now() - postStartTime);
+            totalExecutionTime.value = Date.now() - startTime;
 
         } catch (err) {
             console.error(err);
+            const errStr = String(err);
+            const isCanceled = errStr.includes('Canceled');
+
+            if (isCanceled) {
+                setStepStatus('http', 'canceled');
+                executionSteps.value = executionSteps.peek().map(s =>
+                    s.status === 'pending' || s.status === 'running' ? { ...s, status: s.id === 'http' ? 'canceled' : s.status } : s
+                );
+            } else {
+                // Find current running step and mark as error
+                executionSteps.value = executionSteps.peek().map(s =>
+                    s.status === 'running' ? { ...s, status: 'error', message: errStr } : s
+                );
+            }
+
             responseData.value = {
                 status: 0,
                 headers: {},
-                body: `Error: ${err}`,
+                body: isCanceled ? 'Request Canceled' : `Error: ${err}`,
                 size: 0,
                 time: 0
             };
         } finally {
             isLoading.value = false;
+            currentRequestId.value = null;
         }
     };
 
@@ -858,27 +952,106 @@ export function ExecutionEditor() {
                         Preview: {finalUrlPreview.value}
                     </div>
                 </div>
-                <button
-                    onClick={handleSend}
-                    disabled={isLoading.value}
-                    style={{
-                        padding: '8px 16px',
-                        backgroundColor: 'var(--accent-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 'var(--radius-sm)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        opacity: isLoading.value ? 0.7 : 1
-                    }}
-                >
-                    <Play size={16} />
-                    {isLoading.value ? 'Sending...' : 'Run'}
-                </button>
+                {isLoading.value ? (
+                    <button
+                        onClick={handleCancel}
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: 'var(--error)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 'bold',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
+                    >
+                        <XCircle size={18} />
+                        Cancel
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleSend}
+                        style={{
+                            padding: '10px 20px',
+                            backgroundColor: 'var(--accent-primary)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 'bold',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
+                    >
+                        <Play size={18} fill="currentColor" />
+                        Run
+                    </button>
+                )}
             </div>
+
+            {/* Progress Summary */}
+            {(isLoading.value || executionSteps.value.length > 0) && (
+                <div style={{
+                    padding: '12px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Execution Progress</span>
+                            {(totalExecutionTime.value !== null || lastResponseTime.value !== null) && (
+                                <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-base)', padding: '2px 8px', borderRadius: '4px' }}>
+                                    {totalExecutionTime.value !== null && (
+                                        <span>Total Time: <strong style={{ color: 'var(--text-secondary)' }}>{totalExecutionTime.value}ms</strong></span>
+                                    )}
+                                    {responseSize.value !== null && (
+                                        <span>Size: <strong style={{ color: 'var(--success)' }}>{formatBytes(responseSize.value)}</strong></span>
+                                    )}
+                                    {responseStatus.value !== null && (
+                                        <span>Status: <strong style={{
+                                            color: responseStatus.value >= 200 && responseStatus.value < 300 ? 'var(--success)' :
+                                                responseStatus.value >= 400 ? 'var(--error)' : 'var(--warning)'
+                                        }}>{responseStatus.value}</strong></span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        {isLoading.value && <Loader2 size={16} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />}
+                    </div>
+                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                        {executionSteps.value.map(step => (
+                            <div key={step.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: step.status === 'pending' ? 0.5 : 1 }}>
+                                {step.status === 'pending' && <Circle size={16} style={{ color: 'var(--text-muted)' }} />}
+                                {step.status === 'running' && <Loader2 size={16} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />}
+                                {step.status === 'completed' && <CheckCircle size={16} style={{ color: 'var(--success)' }} />}
+                                {step.status === 'error' && <XCircle size={16} style={{ color: 'var(--error)' }} />}
+                                {step.status === 'canceled' && <XCircle size={16} style={{ color: 'var(--warning)' }} />}
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: step.status === 'running' ? 'bold' : 'normal' }}>{step.name}</span>
+                                        {step.duration !== undefined && (
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-base)', padding: '0px 4px', borderRadius: '2px' }}>
+                                                {step.duration}ms
+                                            </span>
+                                        )}
+                                    </div>
+                                    {step.message && <span style={{ fontSize: '0.7rem', color: 'var(--error)' }}>{step.message}</span>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>

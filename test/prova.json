@@ -470,7 +470,30 @@
       ],
       "pathParams": {
         "id": "11"
-      }
+      },
+      "headers": [
+        {
+          "key": "ciao",
+          "value": "secco",
+          "enabled": true
+        }
+      ],
+      "preScripts": [
+        {
+          "id": "08b20993-d14a-42bc-9e6e-82bfe5455cc1",
+          "name": "New Script",
+          "content": "console.log('Script');",
+          "enabled": true,
+          "executeOnStatusCodes": ""
+        },
+        {
+          "id": "160ff1da-a8ed-40d5-b57d-b843c932bb51",
+          "name": "New Script",
+          "content": "io sono rotto",
+          "enabled": false,
+          "executeOnStatusCodes": ""
+        }
+      ]
     }
   ],
   "environments": [
@@ -512,7 +535,7 @@
         },
         {
           "key": "test_insert",
-          "value": "kfPAjvyKPihCrCmzoRxLcQsxVLytaE"
+          "value": "IoTtOmcBeivNUYv"
         },
         {
           "key": "sampleURL",

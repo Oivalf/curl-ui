@@ -65,8 +65,8 @@ export function ExecutionRequestPanel({
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeRequestTab.value === 'scripts' ? 1 : 0.5, borderBottom: activeRequestTab.value === 'scripts' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeRequestTab.value = 'scripts'}>Scripts</h3>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, height: '100%' }}>
                     {activeRequestTab.value === 'params' && (
                         <ExecutionParamsEditor
                             queryParams={queryParams}
@@ -85,6 +85,7 @@ export function ExecutionRequestPanel({
                             formData={formData}
                             isReadOnly={isReadOnly}
                             isOverridden={isBodyOverridden}
+                            isTypeReadOnly={true}
                         />
                     )}
                     {activeRequestTab.value === 'headers' && (

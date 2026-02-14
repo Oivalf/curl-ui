@@ -12,10 +12,17 @@ pub struct MockServerState {
     pub handles: Arc<Mutex<HashMap<String, oneshot::Sender<()>>>>,
 }
 
+pub struct HttpRequestState {
+    pub handles: Arc<Mutex<HashMap<String, oneshot::Sender<()>>>>,
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(MockServerState {
+            handles: Arc::new(Mutex::new(HashMap::new())),
+        })
+        .manage(HttpRequestState {
             handles: Arc::new(Mutex::new(HashMap::new())),
         })
         .setup(|app| {
@@ -98,6 +105,7 @@ pub fn run() {
             commands::git_reset,
             commands::start_mock_server,
             commands::stop_mock_server,
+            commands::cancel_http_request,
             refresh_projects_menu,
             enable_window_menu
         ])

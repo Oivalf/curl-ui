@@ -1,6 +1,7 @@
 import { useSignal } from "@preact/signals";
 import { responseData } from '../store';
 import { RequestCurlView } from "./request/RequestCurlView";
+import { formatBytes } from "../utils/format";
 
 export function ResponsePanel() {
     const activeResponseTab = useSignal<'body' | 'headers' | 'raw_response' | 'raw_request' | 'curl'>('body');
@@ -16,9 +17,19 @@ export function ResponsePanel() {
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeResponseTab.value === 'curl' ? 1 : 0.5, borderBottom: activeResponseTab.value === 'curl' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeResponseTab.value = 'curl'}>Curl</h3>
                 {responseData.value && (
                     <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', maxWidth: '50%' }}>
-                        <span style={{ color: responseData.value.status > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: 'bold' }}>
+                        <span style={{
+                            color: responseData.value.status >= 200 && responseData.value.status < 300 ? 'var(--success)' :
+                                responseData.value.status >= 400 ? 'var(--error)' :
+                                    responseData.value.status === 0 ? 'var(--text-muted)' : 'var(--warning)',
+                            fontWeight: 'bold'
+                        }}>
                             {responseData.value.status === 0 ? '...' : responseData.value.status}
                         </span>
+                        {responseData.value.size !== undefined && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {formatBytes(responseData.value.size)}
+                            </span>
+                        )}
                     </div>
                 )}
             </div>
