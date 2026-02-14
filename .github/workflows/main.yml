@@ -10,6 +10,7 @@ on:
 
 jobs:
   publish-tauri:
+    if: startsWith(github.event.head_commit.message, 'RELEASE')
     permissions:
       contents: write
     strategy:
@@ -65,10 +66,13 @@ jobs:
           # Aspetta 5 secondi per la propagazione della release
           sleep 5
           
+          pwd
+          ls -1
+          
           # Recupera la versione dal tauri.conf.json per ricostruire il tag
           # Se nel tauri-action hai messo tagName: app-v__VERSION__ usa quello:
-          VERSION=$(jq -r .package.version src-tauri/tauri.conf.json)
-          RELEASE_NAME="cURL-UI v$VERSION" 
+          VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
+          RELEASE_NAME="cURL-UI v$VERSION"
           
           echo "version $VERSION"
           echo "release name $RELEASE_NAME"
