@@ -68,9 +68,11 @@ jobs:
           # Recupera la versione dal tauri.conf.json per ricostruire il tag
           # Se nel tauri-action hai messo tagName: app-v__VERSION__ usa quello:
           VERSION=$(jq -r .package.version src-tauri/tauri.conf.json)
-          TAG_NAME="cURL-UI-v$VERSION" 
+          RELEASE_NAME="cURL-UI v$VERSION" 
           
-          gh release upload "$TAG_NAME" src-tauri/target/release/curl-ui.exe --clobber
+          echo "version $VERSION"
+
+          gh release upload "$RELEASE_NAME" src-tauri/target/release/curl-ui.exe --clobber
        # run: gh release upload ${{ steps.create_release.outputs.release_id || 'v1.0.0' }} src-tauri/target/release/curl-ui.exe
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
