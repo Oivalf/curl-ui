@@ -20,9 +20,9 @@ The **Mock Manager** allows you to create local HTTP servers that simulate API r
 2.  **Import from Swagger/OpenAPI**: Within the External Mock Editor, use the **Import Swagger** button to add endpoints from a specification (JSON or YAML) to an existing mock.
     - **Smart Generation**: If the specification includes JSON schemas but lacks examples, the system will automatically generate random, structurally valid response data.
     - **Path Parameters**: Path parameters like `{id}` are automatically preserved for correct matching.
-3.  **Load from Disk**: Click the **Load** (Folder) button in the same section to select an existing mock JSON file. This allows you to import configurations shared by other teammates or from previous projects.
+3.  **Load from Disk**: Click the **Load** (Folder) button in the same section to select an existing `.mock.json` (or `.json`) file. This allows you to import configurations shared by other teammates or from previous projects.
 3.  **Autonomous Management**: Each External Mock has its own configuration for Port and endpoints.
-4.  **Persistence**: They are saved as individual JSON files and referenced in the project manifest.
+4.  **Persistence**: They are saved as individual `.mock.json` files and referenced in the project manifest.
 
 ## 📍 Path & Query Matching
 

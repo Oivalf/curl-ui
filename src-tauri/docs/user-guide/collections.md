@@ -3,8 +3,8 @@
 cURL-UI uses a hierarchical structure to organize requests.
 
 ## Collections
-A **Collection** is the top-level container, stored as a JSON file on disk.
-- **Creation**: Create new collections or import existing JSON files or **Swagger/OpenAPI** specifications using the sidebar.
+A **Collection** is the top-level container, stored as a `.collection.json` file on disk.
+- **Creation**: Create new collections or import existing `.collection.json` (or `.json`) files or **Swagger/OpenAPI** specifications using the sidebar.
 - **Saving**: Changes are not auto-saved. Use **File > Save** to persist modifications.
 
 ## Folders

@@ -439,10 +439,10 @@ export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean
 
         if (!path || saveAs) {
             path = await save({
-                defaultPath: collection.path || `${collection.name}.json`,
+                defaultPath: collection.path || `${collection.name}.collection.json`,
                 filters: [{
                     name: 'cURL-UI Collection',
-                    extensions: ['json']
+                    extensions: ['collection.json', 'json']
                 }]
             });
         }
@@ -498,10 +498,10 @@ export const saveExternalMockToDisk = async (mockId: string, saveAs: boolean = f
 
         if (!path || saveAs) {
             path = await save({
-                defaultPath: mock.path || `${mock.name}.json`,
+                defaultPath: mock.path || `${mock.name}.mock.json`,
                 filters: [{
                     name: 'External Mock',
-                    extensions: ['json']
+                    extensions: ['mock.json', 'json']
                 }]
             });
         }
@@ -573,7 +573,7 @@ export const loadExternalMockFromDisk = async () => {
             directory: false,
             filters: [{
                 name: 'External Mock JSON',
-                extensions: ['json']
+                extensions: ['mock.json', 'json']
             }]
         });
 
@@ -732,7 +732,7 @@ export const loadCollectionFromDisk = async () => {
             directory: false,
             filters: [{
                 name: 'cURL-UI Collection',
-                extensions: ['json']
+                extensions: ['collection.json', 'json']
             }]
         });
 

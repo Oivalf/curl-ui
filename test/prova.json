@@ -482,7 +482,7 @@
         {
           "id": "08b20993-d14a-42bc-9e6e-82bfe5455cc1",
           "name": "New Script",
-          "content": "console.log('Script');",
+          "content": "console.log('Script');\nconsole.log(request);",
           "enabled": true,
           "executeOnStatusCodes": ""
         },

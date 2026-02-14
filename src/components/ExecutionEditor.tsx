@@ -494,6 +494,63 @@ export function ExecutionEditor() {
                         }
                         environments.value = [...environments.peek()];
                     }
+                },
+                request: {
+                    get method() { return method.peek(); },
+                    set method(v) { method.value = v; },
+                    get url() { return url.peek(); },
+                    set url(v) { url.value = v; },
+                    get body() { return body.peek(); },
+                    set body(v) { body.value = v; },
+                    headers: {
+                        get: (key: string) => headers.peek().find(h => h.key === key)?.value,
+                        set: (key: string, value: string) => {
+                            const current = headers.peek();
+                            const idx = current.findIndex(h => h.key === key);
+                            if (idx !== -1) {
+                                const next = [...current];
+                                next[idx] = { ...next[idx], value, enabled: true };
+                                headers.value = next;
+                            } else {
+                                headers.value = [...current, { key, value, enabled: true }];
+                            }
+                        },
+                        remove: (key: string) => {
+                            headers.value = headers.peek().filter(h => h.key !== key);
+                        },
+                        all: () => {
+                            return headers.peek().reduce((acc, h) => {
+                                if (h.key) acc[h.key] = h.value;
+                                return acc;
+                            }, {} as Record<string, string>);
+                        }
+                    },
+                    queryParams: {
+                        get: (key: string) => queryParams.peek().find(p => p.key === key)?.value,
+                        set: (key: string, value: string) => {
+                            const current = queryParams.peek();
+                            const idx = current.findIndex(p => p.key === key);
+                            if (idx !== -1) {
+                                const next = [...current];
+                                next[idx] = { ...next[idx], value, enabled: true };
+                                queryParams.value = next;
+                            } else {
+                                queryParams.value = [...current, { key, value, enabled: true }];
+                            }
+                        },
+                        add: (key: string, value: string) => {
+                            queryParams.value = [...queryParams.peek(), { key, value, enabled: true }];
+                        },
+                        remove: (key: string) => {
+                            queryParams.value = queryParams.peek().filter(p => p.key !== key);
+                        },
+                        all: () => {
+                            return queryParams.peek().reduce((acc, p) => {
+                                if (p.key) acc[p.key] = p.value;
+                                return acc;
+                            }, {} as Record<string, string>);
+                        }
+                    }
                 }
             };
 
