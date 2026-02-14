@@ -42,20 +42,28 @@ export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys,
                 {queryParams.value.map((p, i) => (
                     <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                         <div style={{ width: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <VariableInput
+                            <input
                                 placeholder="Key"
                                 value={p.key}
                                 readOnly={isReadOnly}
-                                parentId={parentId}
-                                onInput={(val) => {
+                                onInput={(e) => {
                                     if (isReadOnly) return;
                                     const newParams = queryParams.value.map((param, idx) =>
-                                        idx === i ? { ...param, key: val } : param
+                                        idx === i ? { ...param, key: e.currentTarget.value } : param
                                     );
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{
+                                    width: '100%',
                                     background: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: 'var(--spacing-sm)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '0.9rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
                                 }}
                             />
                         </div>

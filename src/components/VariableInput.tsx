@@ -30,7 +30,7 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
     }, [filterText, parentId, activeEnvironmentName.value]);
 
     const highlight = (text: string) => {
-        if (!text) return " "; // Needs a character to maintain height
+        if (!text) return "&nbsp;"; // Needs a character to maintain height
 
         // Escape HTML
         const escaped = text
@@ -140,21 +140,48 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
+    // Helper to split layout styles from visual styles
+    const splitStyles = (s: any) => {
+        const container: any = {};
+        const input: any = {};
+
+        const layoutKeys = new Set([
+            'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight',
+            'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+            'flex', 'flexGrow', 'flexShrink', 'flexBasis', 'alignSelf',
+            'position', 'top', 'bottom', 'left', 'right', 'zIndex',
+            'display'
+        ]);
+
+        Object.keys(s).forEach(key => {
+            if (layoutKeys.has(key)) {
+                container[key] = s[key];
+            } else {
+                input[key] = s[key];
+            }
+        });
+
+        return { container, input };
+    };
+
+    const { container: containerStyle, input: inputStyle } = splitStyles(style);
+
     const commonStyles: any = {
         fontFamily: 'var(--font-mono)',
         fontSize: '0.9rem',
-        lineHeight: '1.5',
-        padding: 'var(--spacing-sm)',
+        lineHeight: '1.5rem', // Use explicit unit
+        padding: '6px 8px', // Explicit padding
         border: '1px solid var(--border-color)',
         borderRadius: 'var(--radius-sm)',
         width: '100%',
+        minHeight: multiline ? 'auto' : '38px', // Consistent height (1.5rem + 12px padding + 2px border)
         height: multiline ? '100%' : 'auto',
         margin: 0,
         boxSizing: 'border-box',
         whiteSpace: multiline ? 'pre-wrap' : 'nowrap',
         wordWrap: multiline ? 'break-word' : 'normal',
         overflow: multiline ? 'auto' : 'hidden',
-        ...style
+        ...inputStyle // Only apply visual/input styles here
     };
 
     const inputBaseStyles: any = {
@@ -165,7 +192,13 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
         position: 'relative',
         zIndex: 2,
         outline: 'none',
-        resize: multiline ? 'vertical' : 'none'
+        resize: multiline ? 'vertical' : 'none',
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        MozAppearance: 'none',
+        boxShadow: 'none',
+        margin: 0,
+        verticalAlign: 'top' // Ensure alignment
     };
 
     const highlighterStyles: any = {
@@ -176,25 +209,34 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
         zIndex: 1,
         color: 'var(--text-primary)',
         pointerEvents: 'none',
-        backgroundColor: readOnly ? 'transparent' : 'var(--bg-input)',
-        borderColor: readOnly ? 'transparent' : 'var(--border-color)',
-        overflow: 'hidden' // Scrolling is synced via JS
+        // Use user provided bg or default, but handle readOnly
+        backgroundColor: readOnly ? 'transparent' : (inputStyle.background || inputStyle.backgroundColor || 'var(--bg-input)'),
+        // Do not override borderColor if not readonly, to allow user style to persist
+        borderColor: readOnly ? 'transparent' : undefined,
+        overflow: 'hidden', // Scrolling is synced via JS
+        verticalAlign: 'top',
+        display: 'block' // Ensure it behaves like a block
     };
 
     const InputTag = multiline ? 'textarea' : 'input';
 
     return (
         <div ref={containerRef} style={{
-            ...style,
+            ...containerStyle, // Only layout styles
             position: 'relative',
             width: style.width || '100%',
             flex: style.flex,
-            height: multiline ? (style.height || '100%') : 'auto'
+            height: multiline ? (style.height || '100%') : 'auto',
+            // Ensure no border/padding on container to avoid doubling
+            border: 'none',
+            padding: 0,
+            background: 'transparent'
         }}>
             <div
                 ref={highlighterRef}
                 style={highlighterStyles}
                 dangerouslySetInnerHTML={{ __html: highlight(value) + (multiline && value.endsWith('\n') ? '<br/>' : '') }}
+
             />
             <InputTag
                 ref={inputRef as any}

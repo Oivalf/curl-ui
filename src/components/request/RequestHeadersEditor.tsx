@@ -17,22 +17,28 @@ export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, ov
             {/* Own Headers */}
             {headers.value.map((h, i) => (
                 <div key={i} style={{ display: 'flex', gap: '8px' }}>
-                    <VariableInput
+                    <input
                         placeholder="Key"
                         value={h.key}
                         readOnly={isReadOnly}
-                        onInput={(val) => {
+                        onInput={(e) => {
                             if (isReadOnly) return;
                             const newHeaders = [...headers.value];
-                            newHeaders[i].key = val;
+                            newHeaders[i].key = e.currentTarget.value;
                             headers.value = newHeaders;
                         }}
                         style={{
                             flex: 1,
                             minWidth: 0,
                             background: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: 'var(--spacing-sm)',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.9rem',
+                            outline: 'none'
                         }}
-                        parentId={parentId}
                     />
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
                         {overriddenKeys?.has(h.key) && <OverrideIndicator />}

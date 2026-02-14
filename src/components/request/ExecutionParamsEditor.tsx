@@ -89,22 +89,30 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
 
                         {/* Key Input */}
                         <div style={{ width: '150px', marginTop: '4px' }}>
-                            <VariableInput
+                            <input
                                 placeholder="Key"
                                 value={group.key}
                                 readOnly={isReadOnly}
-                                parentId={parentId}
-                                onInput={(val) => {
+                                onInput={(e) => {
                                     if (isReadOnly) return;
                                     const newParams = [...queryParams.value];
                                     group.items.forEach(item => {
-                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: val };
+                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: e.currentTarget.value };
                                     });
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{
                                     width: '100%',
                                     background: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '6px 8px',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '0.9rem',
+                                    outline: 'none',
+                                    lineHeight: '1.5rem',
+                                    boxSizing: 'border-box'
                                 }}
                             />
                         </div>

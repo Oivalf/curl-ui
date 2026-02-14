@@ -236,7 +236,9 @@
       "name": "sample put",
       "method": "PUT",
       "url": "{{sampleURL}}/{id}",
-      "headers": {},
+      "headers": {
+        "yghybtyyt": ""
+      },
       "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "body": "{ \n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
@@ -482,6 +484,11 @@
       },
       "headers": [
         {
+          "key": "yghybtyyt",
+          "value": "",
+          "enabled": true
+        },
+        {
           "key": "ciao",
           "value": "secco",
           "enabled": true
@@ -489,6 +496,11 @@
         {
           "key": "unaltra",
           "value": "{{gvar}}",
+          "enabled": true
+        },
+        {
+          "key": "",
+          "value": "",
           "enabled": true
         }
       ],
@@ -515,6 +527,18 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "bfd681c7-f634-444d-bd28-65db1e53e77f",
+      "requestId": "b841735c-6264-4b06-bdc5-dac2f5505757",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample"
+    },
+    {
+      "id": "9ab72366-61f7-4ac9-ac0d-a424ae3d3a05",
+      "requestId": "8657b610-b89c-47a6-9603-46868ff5917a",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample"
     }
   ],
   "environments": [
