@@ -71,8 +71,8 @@ jobs:
           RELEASE_NAME="cURL-UI v$VERSION" 
           
           echo "version $VERSION"
+          echo "release name $RELEASE_NAME"
 
           gh release upload "$RELEASE_NAME" src-tauri/target/release/curl-ui.exe --clobber
-       # run: gh release upload ${{ steps.create_release.outputs.release_id || 'v1.0.0' }} src-tauri/target/release/curl-ui.exe
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
