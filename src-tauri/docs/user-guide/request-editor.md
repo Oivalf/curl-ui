@@ -12,6 +12,9 @@ The Request Editor is used to define the base configuration (template) for an HT
 - **Body**: Define the default payload structure (JSON, Form-data, Text, etc.).
 - **Scripts**: Configure JavaScript logic to run before or after executions.
 
+> [!TIP]
+> Use `{{` in any URL, Parameter, Header, or Body field to trigger **Variable Autocomplete**. It will show all accessible variables and their sources.
+
 ## Inheritance
 Requests can inherit authentication and headers from their parent folders. This ensures consistency across entire segments of your API.
 
