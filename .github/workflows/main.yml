@@ -70,10 +70,13 @@ jobs:
           # Se nel tauri-action hai messo tagName: app-v__VERSION__ usa quello:
           VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
           RELEASE_NAME="cURL-UI v$VERSION"
+          RELEASE_ID=$(gh release list --limit 1 --exclude-pre-releases=false | awk '{print $3}')
 
           echo "version $VERSION"
           echo "release name $RELEASE_NAME"
+          echo "release id $RELEASE_ID"
 
-          gh release upload "$RELEASE_NAME" src-tauri/target/release/curl-ui.exe --clobber --repo ${{ github.repository }}
+          gh release upload "$RELEASE_ID" src-tauri/target/release/curl-ui.exe --clobber
+
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
