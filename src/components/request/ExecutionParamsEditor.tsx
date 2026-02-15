@@ -68,7 +68,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                 </div>
 
                 {grouped.map((group) => (
-                    <div key={group.key} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                    <div key={group.items[0].originalIndex} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                         {/* Enabled Toggle - Key Level */}
                         <div style={{ width: '24px', marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
                             <input
@@ -92,9 +92,9 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                             <input
                                 placeholder="Key"
                                 value={group.key}
-                                readOnly={isReadOnly}
+                                readOnly={isReadOnly || parentKeys?.has(group.key)}
                                 onInput={(e) => {
-                                    if (isReadOnly) return;
+                                    if (isReadOnly || parentKeys?.has(group.key)) return;
                                     const newParams = [...queryParams.value];
                                     group.items.forEach(item => {
                                         newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: e.currentTarget.value };
@@ -103,7 +103,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                 }}
                                 style={{
                                     width: '100%',
-                                    background: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                    background: (isReadOnly || parentKeys?.has(group.key)) ? 'transparent' : 'var(--bg-input)',
                                     color: 'var(--text-primary)',
                                     border: '1px solid var(--border-color)',
                                     borderRadius: 'var(--radius-sm)',

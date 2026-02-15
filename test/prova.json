@@ -235,7 +235,7 @@
       "id": "781f9f29-e08b-40ca-83c9-c1734f0b137c",
       "name": "sample put",
       "method": "PUT",
-      "url": "{{sampleURL}}/{id}",
+      "url": "{{sampleURL}}/{id}?gfgfgfgfgf=gfgfgfgfgf&qp2=vp2",
       "headers": {
         "yghybtyyt": ""
       },

@@ -47,16 +47,16 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                         <input
                             placeholder="Key"
                             value={h.key}
-                            readOnly={isReadOnly}
+                            readOnly={isReadOnly || parentKeys?.has(h.key)}
                             onInput={(e) => {
-                                if (isReadOnly) return;
+                                if (isReadOnly || parentKeys?.has(h.key)) return;
                                 const newHeaders = [...headers.value];
                                 newHeaders[i] = { ...newHeaders[i], key: e.currentTarget.value };
                                 headers.value = newHeaders;
                             }}
                             style={{
                                 width: '100%',
-                                background: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                background: (isReadOnly || parentKeys?.has(h.key)) ? 'transparent' : 'var(--bg-input)',
                                 color: 'var(--text-primary)',
                                 border: '1px solid var(--border-color)',
                                 borderRadius: 'var(--radius-sm)',

@@ -39,14 +39,7 @@ export function ExecutionEditor() {
         return { base, params };
     };
 
-    const { base: initialBase, params: derivedParams } = parseUrl(currentExecution.url ?? parentRequest.url);
-
-    // Logic: 
-    // 1. If execution has `queryParams`, use them.
-    // 2. Else parse `currentExecution.url` (if set) or `parentRequest.url`.
-    const initialParams = currentExecution.queryParams && currentExecution.queryParams.length > 0
-        ? currentExecution.queryParams
-        : derivedParams;
+    const { base: initialBase } = parseUrl(currentExecution.url ?? parentRequest.url);
 
     // Re-parsing parent just to have clean start if needed (actually just need parseUrl logic available)
     // We don't need to call it here if we don't use the result immediately, but overriddenQueryParams uses it.
@@ -76,6 +69,33 @@ export function ExecutionEditor() {
                 merged[index] = { ...override };
             } else {
                 // Add new
+                merged.push({ ...override });
+            }
+        });
+
+        return merged;
+    };
+
+    // Merge parent query params with execution overrides (same pattern as headers)
+    const getMergedQueryParams = (parentUrl: string, execOverrides?: { key: string, value: string, enabled: boolean }[]) => {
+        const { params: parentParams } = parseUrl(parentUrl);
+        const overrides = execOverrides || [];
+
+        // Start with parent params (defaults)
+        const merged: { key: string, value: string, enabled: boolean }[] = parentParams.map(p => ({
+            key: p.key,
+            value: p.value,
+            enabled: true
+        }));
+
+        // Apply overrides (same logic as getMergedHeaders)
+        overrides.forEach(override => {
+            const index = merged.findIndex(m => m.key === override.key);
+            if (index !== -1) {
+                // Update existing parent param with override
+                merged[index] = { ...override };
+            } else {
+                // Add execution-only param
                 merged.push({ ...override });
             }
         });
@@ -115,7 +135,7 @@ export function ExecutionEditor() {
         lastLoadedId.current = activeExecutionId.value;
         const initialPathParams = cExec.pathParams ?? {};
         // Initialize from override or inherit base
-        const { base, params: pParams } = parseUrl(cExec.url ?? parentRequest.url);
+        const { base } = parseUrl(cExec.url ?? parentRequest.url);
 
         url.value = base;
         method.value = cExec.method ?? parentRequest.method;
@@ -124,13 +144,52 @@ export function ExecutionEditor() {
         preScripts.value = cExec.preScripts ?? parentRequest.preScripts ?? [];
         postScripts.value = cExec.postScripts ?? parentRequest.postScripts ?? [];
 
-        // Params initialization
-        queryParams.value = cExec.queryParams && cExec.queryParams.length > 0 ? cExec.queryParams : pParams;
+        // Params initialization (merge parent with overrides, like headers)
+        queryParams.value = getMergedQueryParams(parentRequest.url, cExec.queryParams);
         pathParams.value = initialPathParams;
 
         // Headers initialization
         headers.value = getMergedHeaders();
     }, [activeExecutionId.value, parentRequest?.id]);
+
+    // Reactive sync: When parent request changes (e.g. adding params), update inherited fields
+    useSignalEffect(() => {
+        // Subscribe to requests signal to detect parent changes
+        const allRequests = requests.value;
+        const execId = lastLoadedId.current;
+        if (!execId) return;
+
+        const cExec = executions.peek().find(e => e.id === execId);
+        if (!cExec) return;
+
+        const parent = allRequests.find(r => r.id === cExec.requestId);
+        if (!parent) return;
+
+        // Always re-merge: parent params + execution overrides (like headers)
+        const { base } = parseUrl(parent.url);
+        url.value = base;
+        queryParams.value = getMergedQueryParams(parent.url, cExec.queryParams);
+
+        // Re-derive method if not overridden
+        if (!cExec.method) {
+            method.value = parent.method;
+        }
+
+        // Re-derive headers (merge parent + overrides)
+        const parentHeaders = Object.entries(parent.headers || {});
+        const mergedHeaders: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(([k, v]) => ({
+            key: k, value: v, enabled: true
+        }));
+        (cExec.headers || []).forEach(override => {
+            const index = mergedHeaders.findIndex(m => m.key === override.key);
+            if (index !== -1) {
+                mergedHeaders[index] = { ...override };
+            } else {
+                mergedHeaders.push({ ...override });
+            }
+        });
+        headers.value = mergedHeaders;
+    });
 
     // Inherited Auth
     const inheritedAuth = useComputed(() => {
@@ -152,7 +211,7 @@ export function ExecutionEditor() {
     const isLoading = useSignal(false);
 
     // Params State
-    const queryParams = useSignal<{ key: string, value: string, enabled: boolean }[]>(initialParams);
+    const queryParams = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedQueryParams(parentRequest.url, currentExecution.queryParams));
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
 
@@ -275,15 +334,11 @@ export function ExecutionEditor() {
     const overriddenQueryParams = useComputed(() => {
         const { params: parentParams } = parseUrl(parentRequest.url);
         const overriddenKeys = new Set<string>();
-        // Simple override check: if key exists in execution but value diffs from parent's *first* occurrence?
-        // Or if the whole set for that key differs?
-        // Since we moved to flat list for Execution, let's just check if p is strictly equal to any parent param.
-        // Actually, highlighting might be complex with duplicates.
-        // Let's simplify: Mark as overridden if it doesn't exist exactly in parent.
 
+        // Only mark as overridden if the key exists in parent but value differs
         queryParams.value.forEach(p => {
-            const inParent = parentParams.some(pp => pp.key === p.key && pp.value === p.value);
-            if (!inParent) {
+            const parentMatch = parentParams.find(pp => pp.key === p.key);
+            if (parentMatch && (parentMatch.value !== p.value || !p.enabled)) {
                 overriddenKeys.add(p.key);
             }
         });
@@ -336,22 +391,17 @@ export function ExecutionEditor() {
             }
             const finalHeaders = matchesParentHeaders ? undefined : currentHeaders;
 
-            // 2. Query Params Inheritance Check
+            // 2. Query Params - save only overrides (params that differ from parent)
             const { params: parentParams } = parseUrl(parentRequest.url);
-            let matchesParentParams = true;
-            if (currentQueryParams.length !== parentParams.length) {
-                matchesParentParams = false;
-            } else {
-                for (let i = 0; i < currentQueryParams.length; i++) {
-                    const c = currentQueryParams[i];
-                    const p = parentParams[i];
-                    if (!c.enabled || c.key !== p.key || c.value !== p.value) {
-                        matchesParentParams = false;
-                        break;
-                    }
+            const overriddenParams: typeof currentQueryParams = [];
+            currentQueryParams.forEach(cp => {
+                const parentMatch = parentParams.find(pp => pp.key === cp.key);
+                if (!parentMatch || parentMatch.value !== cp.value || !cp.enabled) {
+                    // This param was overridden (value changed, disabled, or new key)
+                    overriddenParams.push(cp);
                 }
-            }
-            const finalQueryParams = matchesParentParams ? undefined : currentQueryParams;
+            });
+            const finalQueryParams = overriddenParams.length > 0 ? overriddenParams : undefined;
 
             // 3. Path Params Inheritance Check (new)
             const finalPathParams = Object.keys(currentPathParams).length === 0 ? undefined : currentPathParams;

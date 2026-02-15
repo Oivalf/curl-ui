@@ -6,11 +6,11 @@ export function OverrideIndicator() {
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                backgroundColor: 'var(--warning)',
+                backgroundColor: '#2563eb',
                 display: 'inline-block',
                 flexShrink: 0,
                 alignSelf: 'center',
-                boxShadow: '0 0 4px var(--warning)',
+                boxShadow: '0 0 6px #2563eb',
                 cursor: 'help'
             }}
         />
