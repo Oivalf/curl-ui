@@ -74,7 +74,9 @@ jobs:
           echo "version $VERSION"
           echo "tag name $TAG_NAME"
 
-          gh release upload "$TAG_NAME" src-tauri/target/release/curl-ui.exe --clobber
+          cp src-tauri/target/release/curl-ui.exe src-tauri/target/release/$TAG_NAME.exe
+
+          gh release upload "$TAG_NAME" src-tauri/target/release/$TAG_NAME.exe --clobber
 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
