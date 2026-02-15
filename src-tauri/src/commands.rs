@@ -648,9 +648,9 @@ pub async fn check_for_updates(app: tauri::AppHandle) -> Result<UpdateInfo, Stri
         .ok_or("Missing html_url in release data")?
         .to_string();
 
-    println!("Current version: {}", current_version);
-    println!("Latest version: {}", latest_version);
-    println!("Release url: {}", release_url);
+    crate::rust_info!(&app, "Current version: {}", current_version);
+    crate::rust_info!(&app, "Latest version: {}", latest_version);
+    crate::rust_info!(&app, "Release url: {}", release_url);
 
     // Semantic comparison
     let is_available = latest_version > current_version;

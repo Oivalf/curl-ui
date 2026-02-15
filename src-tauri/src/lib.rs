@@ -1,4 +1,5 @@
 mod commands;
+pub mod logging;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem, Submenu};
@@ -33,7 +34,7 @@ pub fn run() {
                 let config_dir = home_dir.join(".curl-ui");
                 if !config_dir.exists() {
                     if let Ok(_) = std::fs::create_dir_all(&config_dir) {
-                        println!("Created config directory: {:?}", config_dir);
+                        rust_info!(&handle, "Created config directory: {:?}", config_dir);
                     }
                 }
             }
@@ -179,9 +180,10 @@ fn update_menu_internal<R: tauri::Runtime>(
     app: &AppHandle<R>,
     menu: &Menu<R>,
 ) -> tauri::Result<()> {
-    println!("Searching for recent_projects submenu...");
+    // Note: no app_handle easily available here, keep eprintln for menu internals
+    eprintln!("Searching for recent_projects submenu...");
     if let Some(recent_submenu) = find_submenu_recursive(menu, "recent_projects") {
-        println!("Found recent_projects submenu. Clearing items...");
+        eprintln!("Found recent_projects submenu. Clearing items...");
         // Clear existing items
         while !recent_submenu.items()?.is_empty() {
             recent_submenu.remove_at(0)?;
@@ -191,13 +193,13 @@ fn update_menu_internal<R: tauri::Runtime>(
         let mut projects = Vec::new();
         if let Ok(home_dir) = app.path().home_dir() {
             let config_dir = home_dir.join(".curl-ui");
-            println!("Searching for projects in {:?}", config_dir);
+            eprintln!("Searching for projects in {:?}", config_dir);
             if let Ok(entries) = std::fs::read_dir(config_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("json") {
                         if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-                            println!("Found project: {}", name);
+                            eprintln!("Found project: {}", name);
                             projects.push(name.to_string());
                         }
                     }
@@ -207,7 +209,7 @@ fn update_menu_internal<R: tauri::Runtime>(
 
         // Sort alphabetically
         projects.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
-        println!("Total discovered projects: {}", projects.len());
+        eprintln!("Total discovered projects: {}", projects.len());
 
         if projects.is_empty() {
             let item =
@@ -221,7 +223,7 @@ fn update_menu_internal<R: tauri::Runtime>(
             }
         }
     } else {
-        println!("CRITICAL: recent_projects submenu NOT FOUND in menu structure.");
+        eprintln!("CRITICAL: recent_projects submenu NOT FOUND in menu structure.");
     }
     Ok(())
 }
