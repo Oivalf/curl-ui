@@ -3,10 +3,10 @@ import { OverrideIndicator } from "../OverrideIndicator";
 import { VariableInput } from "../VariableInput";
 
 interface ExecutionParamsEditorProps {
-    queryParams: Signal<{ key: string, value: string, enabled: boolean }[]>;
+    queryParams: Signal<{ key: string, values: string[], enabled: boolean }[]>;
     pathParams: Signal<Record<string, string>>;
     detectedPathKeys: Signal<string[]>;
-    updateUrlFromParams: (newParams: { key: string, value: string, enabled: boolean }[]) => void;
+    updateUrlFromParams: (newParams: { key: string, values: string[], enabled: boolean }[]) => void;
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
     parentKeys?: Set<string>;
@@ -14,23 +14,6 @@ interface ExecutionParamsEditorProps {
 }
 
 export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys, parentKeys, parentId }: ExecutionParamsEditorProps) {
-    // Group the flat queryParams by key for rendering
-    const groupParams = () => {
-        const groups: { key: string, items: { value: string, enabled: boolean, originalIndex: number }[] }[] = [];
-        const keyToGroupIdx = new Map<string, number>();
-
-        queryParams.value.forEach((p, i) => {
-            if (keyToGroupIdx.has(p.key)) {
-                groups[keyToGroupIdx.get(p.key)!].items.push({ ...p, originalIndex: i });
-            } else {
-                keyToGroupIdx.set(p.key, groups.length);
-                groups.push({ key: p.key, items: [{ ...p, originalIndex: i }] });
-            }
-        });
-        return groups;
-    };
-
-    const grouped = groupParams();
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -67,20 +50,17 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                     {!isReadOnly && <div style={{ width: '24px' }}></div>}
                 </div>
 
-                {grouped.map((group) => (
-                    <div key={group.items[0].originalIndex} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                {queryParams.value.map((group, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                         {/* Enabled Toggle - Key Level */}
                         <div style={{ width: '24px', marginTop: '4px', display: 'flex', justifyContent: 'center' }}>
                             <input
                                 type="checkbox"
-                                checked={group.items.every(it => it.enabled)}
+                                checked={group.enabled}
                                 disabled={isReadOnly}
                                 onChange={(e) => {
-                                    const newEnabled = e.currentTarget.checked;
                                     const newParams = [...queryParams.value];
-                                    group.items.forEach(item => {
-                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], enabled: newEnabled };
-                                    });
+                                    newParams[i] = { ...newParams[i], enabled: e.currentTarget.checked };
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
@@ -96,9 +76,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                 onInput={(e) => {
                                     if (isReadOnly || parentKeys?.has(group.key)) return;
                                     const newParams = [...queryParams.value];
-                                    group.items.forEach(item => {
-                                        newParams[item.originalIndex] = { ...newParams[item.originalIndex], key: e.currentTarget.value };
-                                    });
+                                    newParams[i] = { ...newParams[i], key: e.currentTarget.value };
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{
@@ -119,19 +97,21 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
 
                         {/* Values List */}
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {group.items.map((item) => (
-                                <div key={item.originalIndex} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {group.values.map((v, valIdx) => (
+                                <div key={valIdx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     {/* Value Input */}
                                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        {overriddenKeys?.has(group.key) && item.originalIndex === group.items[0].originalIndex && <OverrideIndicator />}
+                                        {overriddenKeys?.has(group.key) && valIdx === 0 && <OverrideIndicator />}
                                         <VariableInput
                                             placeholder="Value"
-                                            value={item.value}
+                                            value={v}
                                             readOnly={isReadOnly}
                                             onInput={(val) => {
                                                 if (isReadOnly) return;
                                                 const newParams = [...queryParams.value];
-                                                newParams[item.originalIndex] = { ...newParams[item.originalIndex], value: val };
+                                                const newVals = [...newParams[i].values];
+                                                newVals[valIdx] = val;
+                                                newParams[i].values = newVals;
                                                 updateUrlFromParams(newParams);
                                             }}
                                             style={{
@@ -146,7 +126,8 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                     {!isReadOnly && (
                                         <button
                                             onClick={() => {
-                                                const newParams = queryParams.value.filter((_, idx) => idx !== item.originalIndex);
+                                                const newParams = [...queryParams.value];
+                                                newParams[i].values = newParams[i].values.filter((_, idx) => idx !== valIdx);
                                                 updateUrlFromParams(newParams);
                                             }}
                                             style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -162,9 +143,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                                 <button
                                     onClick={() => {
                                         const newParams = [...queryParams.value];
-                                        // Insert after the last item of this group for better UX? 
-                                        // Simple append for now.
-                                        newParams.push({ key: group.key, value: '', enabled: true });
+                                        newParams[i].values = [...newParams[i].values, ''];
                                         updateUrlFromParams(newParams);
                                     }}
                                     style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -178,8 +157,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
                         {!isReadOnly && !parentKeys?.has(group.key) && (
                             <button
                                 onClick={() => {
-                                    const indexesToRemove = new Set(group.items.map(it => it.originalIndex));
-                                    const newParams = queryParams.value.filter((_, idx) => !indexesToRemove.has(idx));
+                                    const newParams = queryParams.value.filter((_, idx) => idx !== i);
                                     updateUrlFromParams(newParams);
                                 }}
                                 style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'center' }}
@@ -194,7 +172,7 @@ export function ExecutionParamsEditor({ queryParams, pathParams, detectedPathKey
 
                 {!isReadOnly && (
                     <button
-                        onClick={() => updateUrlFromParams([...queryParams.value, { key: '', value: '', enabled: true }])}
+                        onClick={() => updateUrlFromParams([...queryParams.value, { key: '', values: [''], enabled: true }])}
                         style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
                     >
                         + Add Param

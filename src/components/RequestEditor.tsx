@@ -32,8 +32,8 @@ export function RequestEditor() {
     const url = useSignal(initialBase);
     const method = useSignal(currentRequest.method);
     // Convert headers object to array for easier editing
-    const headers = useSignal<{ key: string, value: string }[]>(
-        (currentRequest.headers || []).map(h => ({ ...h }))
+    const headers = useSignal<{ key: string, values: string[] }[]>(
+        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])] }))
     );
     const body = useSignal(currentRequest.body || '');
     const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(

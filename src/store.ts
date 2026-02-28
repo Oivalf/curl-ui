@@ -19,7 +19,7 @@ export interface CollectionMockConfig {
 
 export interface MockResponse {
     statusCode: number;
-    headers: { key: string, value: string }[];
+    headers: { key: string, values: string[] }[];
     body: string;
     enabled: boolean;
 }
@@ -93,7 +93,7 @@ export interface RequestItem {
     name: string;
     method: string;
     url: string;
-    headers: { key: string, value: string }[];
+    headers: { key: string, values: string[] }[];
     bodyType?: 'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml';
     body?: string;
     formData?: { key: string, type: 'text' | 'file', values: string[] }[];
@@ -111,7 +111,7 @@ export interface Folder {
     name: string;
     parentId?: string | null;
     collapsed?: boolean;
-    headers?: { key: string, value: string }[];
+    headers?: { key: string, values: string[] }[];
     variables?: Record<string, string>;
     auth?: AuthConfig;
 }
@@ -130,8 +130,8 @@ export interface ExecutionItem {
     // Override fields (if undefined, inherit from parent request)
     method?: string;
     url?: string; // Legacy/Reference. Actual params are in queryParams
-    headers?: KeyValueItem[]; // CHANGED: Now a list with enabled flag
-    queryParams?: KeyValueItem[]; // NEW: Specific query params overrides
+    headers?: { key: string, values: string[], enabled: boolean }[];
+    queryParams?: { key: string, values: string[], enabled: boolean }[];
     pathParams?: Record<string, string>; // NEW: Path variables overrides
     bodyType?: 'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml';
     body?: string;
@@ -604,6 +604,17 @@ export const loadExternalMockFromPath = async (path: string) => {
         const dataStr = await invoke<string>('load_workspace', { path });
         const data: ExternalMock = JSON.parse(dataStr);
 
+        // Migration: Convert legacy headers Record<string,string> or {key,value}[] to {key,values: string[]}[]
+        if (data.endpoints) {
+            data.endpoints.forEach((e: any) => {
+                if (e.response && e.response.headers && !Array.isArray(e.response.headers)) {
+                    e.response.headers = Object.entries(e.response.headers).map(([key, value]) => ({ key, values: [value as string] }));
+                } else if (e.response && e.response.headers && Array.isArray(e.response.headers) && e.response.headers.length > 0 && typeof e.response.headers[0].value !== 'undefined') {
+                    e.response.headers = e.response.headers.map((h: any) => ({ key: h.key, values: [h.value as string] }));
+                }
+            });
+        }
+
         const existingIdx = externalMocks.value.findIndex(m => m.id === data.id);
         const newMock: ExternalMock = {
             ...data,
@@ -700,15 +711,19 @@ export const loadCollectionFromPath = async (path: string) => {
         }];
     }
 
-    // Migration: Convert legacy headers Record<string,string> to {key,value}[] on requests and folders
+    // Migration: Convert legacy headers Record<string,string> or {key,value}[] to {key,values: string[]}[] on requests and folders
     data.requests.forEach((r: any) => {
         if (r.headers && !Array.isArray(r.headers)) {
-            r.headers = Object.entries(r.headers).map(([key, value]) => ({ key, value: value as string }));
+            r.headers = Object.entries(r.headers).map(([key, value]) => ({ key, values: [value as string] }));
+        } else if (r.headers && Array.isArray(r.headers) && r.headers.length > 0 && typeof r.headers[0].value !== 'undefined') {
+            r.headers = r.headers.map((h: any) => ({ key: h.key, values: [h.value as string] }));
         }
     });
     data.folders.forEach((f: any) => {
         if (f.headers && !Array.isArray(f.headers)) {
-            f.headers = Object.entries(f.headers).map(([key, value]) => ({ key, value: value as string }));
+            f.headers = Object.entries(f.headers).map(([key, value]) => ({ key, values: [value as string] }));
+        } else if (f.headers && Array.isArray(f.headers) && f.headers.length > 0 && typeof f.headers[0].value !== 'undefined') {
+            f.headers = f.headers.map((h: any) => ({ key: h.key, values: [h.value as string] }));
         }
     });
 
@@ -717,13 +732,28 @@ export const loadCollectionFromPath = async (path: string) => {
 
     // Migration: Convert legacy executions
     const migratedExecutions = (data.executions || []).map(e => {
-        // Convert legacy headers Record<string,string> to KeyValueItem[]
+        // Convert legacy headers to new structure
         if (e.headers && !Array.isArray(e.headers)) {
             const legacyHeaders = e.headers as unknown as Record<string, string>;
             e.headers = Object.entries(legacyHeaders).map(([key, value]) => ({
                 key,
-                value,
+                values: [value as string],
                 enabled: true
+            }));
+        } else if (e.headers && Array.isArray(e.headers) && e.headers.length > 0 && typeof (e.headers[0] as any).value !== 'undefined') {
+            e.headers = (e.headers as any[]).map(h => ({
+                key: h.key,
+                values: [h.value as string],
+                enabled: typeof h.enabled !== 'undefined' ? h.enabled : true
+            }));
+        }
+
+        // Convert legacy queryParams to new structure
+        if (e.queryParams && Array.isArray(e.queryParams) && e.queryParams.length > 0 && typeof (e.queryParams[0] as any).value !== 'undefined') {
+            e.queryParams = (e.queryParams as any[]).map(p => ({
+                key: p.key,
+                values: [p.value as string],
+                enabled: typeof p.enabled !== 'undefined' ? p.enabled : true
             }));
         }
         return e;
@@ -926,10 +956,10 @@ export const navigateToItem = (id: string) => {
     }
 };
 
-export const resolveHeaders = (itemId: string): { key: string, value: string, source: string, sourceId: string }[] => {
+export const resolveHeaders = (itemId: string): { key: string, values: string[], source: string, sourceId: string }[] => {
     const allFolders = folders.peek();
     const allRequests = requests.peek();
-    const hierarchy: { id: string, name: string, type: 'folder' | 'request', headers: { key: string, value: string }[] }[] = [];
+    const hierarchy: { id: string, name: string, type: 'folder' | 'request', headers: { key: string, values: string[] }[] }[] = [];
 
     let currentId: string | null | undefined = itemId;
     let isRequest = true;
@@ -953,14 +983,28 @@ export const resolveHeaders = (itemId: string): { key: string, value: string, so
         }
     }
 
-    const headerMap = new Map<string, { value: string, source: string, sourceId: string }>();
+    const finalHeaders: { key: string, values: string[], source: string, sourceId: string }[] = [];
+    const keyToIdx = new Map<string, number>();
+
     hierarchy.forEach(item => {
         item.headers.forEach(h => {
-            headerMap.set(h.key, { value: h.value, source: item.type === 'request' ? 'Request' : `Folder: ${item.name}`, sourceId: item.id });
+            if (keyToIdx.has(h.key)) {
+                const existing = finalHeaders[keyToIdx.get(h.key)!];
+                // Overwrite values and source from deeper in hierarchy (more specific)
+                existing.values = [...h.values];
+                existing.source = item.type === 'request' ? 'Request' : `Folder: ${item.name}`;
+                existing.sourceId = item.id;
+            } else {
+                keyToIdx.set(h.key, finalHeaders.length);
+                finalHeaders.push({
+                    key: h.key,
+                    values: [...h.values],
+                    source: item.type === 'request' ? 'Request' : `Folder: ${item.name}`,
+                    sourceId: item.id
+                });
+            }
         });
     });
 
-    return Array.from(headerMap.entries()).map(([key, data]) => ({
-        key, value: data.value, source: data.source, sourceId: data.sourceId
-    })).sort((a, b) => a.key.localeCompare(b.key));
+    return finalHeaders;
 };

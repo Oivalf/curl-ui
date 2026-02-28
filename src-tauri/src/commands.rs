@@ -34,10 +34,13 @@ pub struct HttpRequestArgs {
     pub method: String,
     pub url: String,
     pub headers: Vec<Vec<String>>,
+    #[serde(default)]
     pub body: Option<String>,
     #[serde(default)]
     pub form_data: Option<Vec<FormDataItem>>,
+    #[serde(default)]
     pub request_id: Option<String>,
+    #[serde(default)]
     pub project_name: Option<String>,
 }
 

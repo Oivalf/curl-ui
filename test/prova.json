@@ -11,11 +11,15 @@
       "headers": [
         {
           "key": "head1",
-          "value": "ma perché"
+          "values": [
+            "ma perché"
+          ]
         },
         {
           "key": "head2",
-          "value": ""
+          "values": [
+            ""
+          ]
         }
       ],
       "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
@@ -185,11 +189,16 @@
       "headers": [
         {
           "key": "ciao",
-          "value": "grgre"
+          "values": [
+            "grgre",
+            "secco"
+          ]
         },
         {
-          "key": "ciao",
-          "value": "fdfdfdfd"
+          "key": "loo",
+          "values": [
+            "fdfdfdfd"
+          ]
         }
       ],
       "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
@@ -280,7 +289,9 @@
       "headers": [
         {
           "key": "yghybtyyt",
-          "value": ""
+          "values": [
+            ""
+          ]
         }
       ],
       "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
@@ -303,7 +314,9 @@
       "headers": [
         {
           "key": "head",
-          "value": "lvl1"
+          "values": [
+            "lvl1"
+          ]
         }
       ],
       "variables": {
@@ -340,7 +353,7 @@
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "base",
       "parentId": null,
-      "collapsed": true,
+      "collapsed": false,
       "headers": [],
       "variables": {
         "basevar": "basevar-value"
@@ -371,7 +384,15 @@
       "parentId": null,
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "collapsed": false,
-      "headers": [],
+      "headers": [
+        {
+          "key": "fh",
+          "values": [
+            "fh1",
+            "fh2"
+          ]
+        }
+      ],
       "variables": {
         "samplevar": "samplevar-value"
       },
@@ -390,34 +411,46 @@
       "headers": [
         {
           "key": "head1",
-          "value": "",
+          "values": [
+            ""
+          ],
           "enabled": true
         },
         {
           "key": "head2",
-          "value": "mmm",
+          "values": [
+            "mmm"
+          ],
           "enabled": true
         },
         {
           "key": "nnnkk",
-          "value": "juiii",
+          "values": [
+            "juiii"
+          ],
           "enabled": true
         }
       ],
       "queryParams": [
         {
           "key": "lalala",
-          "value": "blablablajuikkk",
+          "values": [
+            "blablablajuikkk"
+          ],
           "enabled": true
         },
         {
           "key": "uffi",
-          "value": "hggll",
+          "values": [
+            "hggll"
+          ],
           "enabled": true
         },
         {
           "key": "jukill",
-          "value": "",
+          "values": [
+            ""
+          ],
           "enabled": true
         }
       ]
@@ -445,12 +478,16 @@
       "headers": [
         {
           "key": "head1",
-          "value": "",
+          "values": [
+            ""
+          ],
           "enabled": true
         },
         {
           "key": "head2",
-          "value": "ciao",
+          "values": [
+            "ciao"
+          ],
           "enabled": true
         }
       ]
@@ -493,12 +530,17 @@
       "headers": [
         {
           "key": "ciao",
-          "value": "fdfdfdfd",
+          "values": [
+            "ciaone",
+            "zì"
+          ],
           "enabled": true
         },
         {
-          "key": "ciao",
-          "value": "fdfdfdfd",
+          "key": "loo",
+          "values": [
+            "fdfdfdfd"
+          ],
           "enabled": true
         }
       ],
@@ -542,12 +584,10 @@
       "headers": [
         {
           "key": "ciccio",
-          "value": "ne",
-          "enabled": true
-        },
-        {
-          "key": "ciccio",
-          "value": "pasticcio",
+          "values": [
+            "pasticcio",
+            "ne"
+          ],
           "enabled": true
         }
       ]
@@ -586,22 +626,30 @@
       "headers": [
         {
           "key": "yghybtyyt",
-          "value": "",
+          "values": [
+            ""
+          ],
           "enabled": true
         },
         {
           "key": "ciao",
-          "value": "secco",
+          "values": [
+            "secco"
+          ],
           "enabled": true
         },
         {
           "key": "unaltra",
-          "value": "{{gvar}}",
+          "values": [
+            "{{gvar}}"
+          ],
           "enabled": true
         },
         {
           "key": "",
-          "value": "",
+          "values": [
+            ""
+          ],
           "enabled": true
         }
       ],
@@ -624,7 +672,9 @@
       "queryParams": [
         {
           "key": "fddd",
-          "value": "{{gvar}}",
+          "values": [
+            "{{gvar}}"
+          ],
           "enabled": true
         }
       ]

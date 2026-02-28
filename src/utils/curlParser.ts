@@ -1,7 +1,7 @@
 export interface ParsedCurl {
     method: string;
     url: string;
-    headers: { key: string, value: string }[];
+    headers: { key: string, values: string[] }[];
     body: string;
 }
 
@@ -38,7 +38,12 @@ export function parseCurl(curlCommand: string): ParsedCurl {
                 if (parts.length >= 2) {
                     const key = parts[0].trim();
                     const value = parts.slice(1).join(':').trim();
-                    result.headers.push({ key, value });
+                    const existing = result.headers.find(h => h.key === key);
+                    if (existing) {
+                        existing.values.push(value);
+                    } else {
+                        result.headers.push({ key, values: [value] });
+                    }
                 }
                 i += 2;
                 continue;
@@ -57,7 +62,7 @@ export function parseCurl(curlCommand: string): ParsedCurl {
         if (arg === '-u' || arg === '--user') {
             if (nextArg) {
                 const auth = btoa(nextArg);
-                result.headers.push({ key: 'Authorization', value: `Basic ${auth}` });
+                result.headers.push({ key: 'Authorization', values: [`Basic ${auth}`] });
                 i += 2;
                 continue;
             }

@@ -4,8 +4,8 @@ import { OverrideIndicator } from "../OverrideIndicator";
 import { VariableInput } from "../VariableInput";
 
 interface ExecutionHeadersEditorProps {
-    headers: Signal<{ key: string, value: string, enabled: boolean }[]>;
-    inheritedHeaders?: { key: string, value: string, source: string, sourceId?: string }[];
+    headers: Signal<{ key: string, values: string[], enabled: boolean }[]>;
+    inheritedHeaders?: { key: string, values: string[], source: string, sourceId?: string }[];
     isReadOnly?: boolean;
     overriddenKeys?: Set<string>;
     parentKeys?: Set<string>;
@@ -26,9 +26,9 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
 
             {/* Own Headers */}
             {headers.value.map((h, i) => (
-                <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                     {/* Enabled Toggle */}
-                    <div style={{ width: '24px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: '24px', marginTop: '6px', display: 'flex', justifyContent: 'center' }}>
                         <input
                             type="checkbox"
                             checked={h.enabled}
@@ -43,7 +43,7 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                     </div>
 
                     {/* Key Input */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ width: '150px', marginTop: '4px' }}>
                         <input
                             placeholder="Key"
                             value={h.key}
@@ -70,21 +70,52 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                         />
                     </div>
 
-                    {/* Value Input */}
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        {overriddenKeys?.has(h.key) && <OverrideIndicator />}
-                        <VariableInput
-                            placeholder="Value"
-                            value={h.value}
-                            onInput={(val) => {
-                                const newHeaders = [...headers.value];
-                                newHeaders[i] = { ...newHeaders[i], value: val };
-                                headers.value = newHeaders;
-                            }}
-                            style={{ flex: 1, minWidth: 0 }}
-                            readOnly={isReadOnly}
-                            parentId={parentId}
-                        />
+                    {/* Values List */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {h.values.map((v, valIdx) => (
+                            <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                {overriddenKeys?.has(h.key) && valIdx === 0 && <OverrideIndicator />}
+                                <VariableInput
+                                    placeholder="Value"
+                                    value={v}
+                                    onInput={(newVal) => {
+                                        if (isReadOnly) return;
+                                        const newHeaders = [...headers.value];
+                                        const newValues = [...newHeaders[i].values];
+                                        newValues[valIdx] = newVal;
+                                        newHeaders[i].values = newValues;
+                                        headers.value = newHeaders;
+                                    }}
+                                    style={{ flex: 1 }}
+                                    readOnly={isReadOnly}
+                                    parentId={parentId}
+                                />
+                                {!isReadOnly && (
+                                    <button
+                                        onClick={() => {
+                                            const newHeaders = [...headers.value];
+                                            newHeaders[i].values = newHeaders[i].values.filter((_, idx) => idx !== valIdx);
+                                            headers.value = newHeaders;
+                                        }}
+                                        style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    >
+                                        -
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        {!isReadOnly && (
+                            <button
+                                onClick={() => {
+                                    const newHeaders = [...headers.value];
+                                    newHeaders[i].values = [...newHeaders[i].values, ''];
+                                    headers.value = newHeaders;
+                                }}
+                                style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
+                                + Value
+                            </button>
+                        )}
                     </div>
 
                     {/* Delete Button - Hidden for inherited keys */}
@@ -94,7 +125,7 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                                 const newHeaders = headers.value.filter((_, idx) => idx !== i);
                                 headers.value = newHeaders;
                             }}
-                            style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer' }}
+                            style={{ color: 'var(--error)', width: '24px', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'center' }}
                         >
                             ×
                         </button>
@@ -106,7 +137,7 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
 
             {!isReadOnly && (
                 <button
-                    onClick={() => headers.value = [...headers.value, { key: '', value: '', enabled: true }]}
+                    onClick={() => headers.value = [...headers.value, { key: '', values: [''], enabled: true }]}
                     style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                     + Add Header
@@ -122,10 +153,14 @@ export function ExecutionHeadersEditor({ headers, inheritedHeaders, isReadOnly, 
                         <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Value</div>
                         <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Source</div>
 
-                        {inheritedHeaders.map((h, i) => (
-                            <div key={i} style={{ display: 'contents' }}>
+                        {inheritedHeaders.map((h, idx) => (
+                            <div key={idx} style={{ display: 'contents' }}>
                                 <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{h.key}</div>
-                                <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.value}>{h.value}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', color: 'var(--text-secondary)', overflow: 'hidden' }}>
+                                    {h.values.map((v, vIdx) => (
+                                        <div key={vIdx} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={v}>{v}</div>
+                                    ))}
+                                </div>
                                 <div
                                     style={{
                                         color: h.sourceId ? 'var(--accent-primary)' : 'var(--text-muted)',

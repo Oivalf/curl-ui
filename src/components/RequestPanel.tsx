@@ -7,7 +7,7 @@ import { AuthEditor } from "./AuthEditor";
 import { AuthConfig, ScriptItem } from "../store";
 
 interface RequestPanelProps {
-    headers: Signal<{ key: string, value: string }[]>;
+    headers: Signal<{ key: string, values: string[] }[]>;
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
     body: Signal<string>;
     auth: Signal<AuthConfig | undefined>;

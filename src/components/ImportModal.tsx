@@ -68,7 +68,7 @@ export function ImportModal() {
                     name: name,
                     method: parsed.method,
                     url: parsed.url,
-                    headers: parsed.headers,
+                    headers: parsed.headers.map(h => ({ key: h.key, values: [h.value] })),
                     body: parsed.body,
                     parentId: state.folderId || null,
                     collectionId: state.collectionId
@@ -157,7 +157,7 @@ export function ImportModal() {
                             name: pr.name,
                             method: pr.method,
                             url: pr.url,
-                            headers: pr.headers,
+                            headers: pr.headers.map(h => ({ key: h.key, values: [h.value] })),
                             body: pr.body,
                             parentId
                         });

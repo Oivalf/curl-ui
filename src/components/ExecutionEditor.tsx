@@ -51,13 +51,12 @@ export function ExecutionEditor() {
     // Merge parent headers with execution overrides
     const getMergedHeaders = () => {
         const parentHeaders = parentRequest.headers || [];
-        // e.headers is now KeyValueItem[] | undefined
         const execOverrides = currentExecution.headers || [];
 
         // Start with parent headers (defaults)
-        const merged: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(h => ({
+        const merged: { key: string, values: string[], enabled: boolean }[] = parentHeaders.map(h => ({
             key: h.key,
-            value: h.value,
+            values: [...h.values],
             enabled: true // Inherited default
         }));
 
@@ -66,44 +65,53 @@ export function ExecutionEditor() {
             const index = merged.findIndex(m => m.key === override.key);
             if (index !== -1) {
                 // Update existing
-                merged[index] = { ...override };
+                merged[index] = { ...override, values: [...override.values] };
             } else {
                 // Add new
-                merged.push({ ...override });
+                merged.push({ ...override, values: [...override.values] });
             }
         });
 
         return merged;
     };
 
-    // Merge parent query params with execution overrides (same pattern as headers)
-    const getMergedQueryParams = (parentUrl: string, execOverrides?: { key: string, value: string, enabled: boolean }[]) => {
-        const { params: parentParams } = parseUrl(parentUrl);
+    // Merge parent query params with execution overrides
+    const getMergedQueryParams = (parentUrl: string, execOverrides?: { key: string, values: string[], enabled: boolean }[]) => {
+        const { params: parentParamsFlat } = parseUrl(parentUrl);
+        // Group flat parent params
+        const parentParams: { key: string, values: string[] }[] = [];
+        parentParamsFlat.forEach(p => {
+            const existing = parentParams.find(x => x.key === p.key);
+            if (existing) {
+                existing.values.push(p.value);
+            } else {
+                parentParams.push({ key: p.key, values: [p.value] });
+            }
+        });
+
         const overrides = execOverrides || [];
 
         // Start with parent params (defaults)
-        const merged: { key: string, value: string, enabled: boolean }[] = parentParams.map(p => ({
+        const merged: { key: string, values: string[], enabled: boolean }[] = parentParams.map(p => ({
             key: p.key,
-            value: p.value,
+            values: [...p.values],
             enabled: true
         }));
 
-        // Apply overrides (same logic as getMergedHeaders)
+        // Apply overrides
         overrides.forEach(override => {
             const index = merged.findIndex(m => m.key === override.key);
             if (index !== -1) {
-                // Update existing parent param with override
-                merged[index] = { ...override };
+                merged[index] = { ...override, values: [...override.values] };
             } else {
-                // Add execution-only param
-                merged.push({ ...override });
+                merged.push({ ...override, values: [...override.values] });
             }
         });
 
         return merged;
     };
 
-    const headers = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedHeaders());
+    const headers = useSignal<{ key: string, values: string[], enabled: boolean }[]>(getMergedHeaders());
     const body = useSignal(currentExecution.body ?? parentRequest.body ?? '');
     const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
         currentExecution.bodyType || parentRequest.bodyType || ((currentExecution.body ?? parentRequest.body ?? '') !== '' ? 'json' : 'none')
@@ -169,15 +177,15 @@ export function ExecutionEditor() {
 
         // Re-derive headers (merge parent + overrides)
         const parentHeaders = parent.headers || [];
-        const mergedHeaders: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(h => ({
-            key: h.key, value: h.value, enabled: true
+        const mergedHeaders: { key: string, values: string[], enabled: boolean }[] = parentHeaders.map(h => ({
+            key: h.key, values: [...h.values], enabled: true
         }));
         (cExec.headers || []).forEach(override => {
             const index = mergedHeaders.findIndex(m => m.key === override.key);
             if (index !== -1) {
-                mergedHeaders[index] = { ...override };
+                mergedHeaders[index] = { ...override, values: [...override.values] };
             } else {
-                mergedHeaders.push({ ...override });
+                mergedHeaders.push({ ...override, values: [...override.values] });
             }
         });
         headers.value = mergedHeaders;
@@ -203,7 +211,7 @@ export function ExecutionEditor() {
     const isLoading = useSignal(false);
 
     // Params State
-    const queryParams = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedQueryParams(parentRequest.url, currentExecution.queryParams));
+    const queryParams = useSignal<{ key: string, values: string[], enabled: boolean }[]>(getMergedQueryParams(parentRequest.url, currentExecution.queryParams));
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentExecution.formData ?? parentRequest.formData ?? []);
 
@@ -225,7 +233,7 @@ export function ExecutionEditor() {
 
     // URL sync effect removed - handled by sync logic and internal params management
 
-    const updateUrlFromParams = (newParams: { key: string, value: string, enabled: boolean }[]) => {
+    const updateUrlFromParams = (newParams: { key: string, values: string[], enabled: boolean }[]) => {
         queryParams.value = newParams;
     };
 
@@ -236,8 +244,8 @@ export function ExecutionEditor() {
         detectedPathKeys.value = matches ? matches.map(m => m.slice(1, -1)) : [];
     });
 
-    const substituteVariables = (text: string): string => {
-        if (!text) return text;
+    const substituteVariables = (text: string | null | undefined): string => {
+        if (!text) return '';
         const placeholders = Array.from(new Set(text.match(/{{\s*[\S]+?\s*}}/g) || []));
         if (placeholders.length === 0) return text;
 
@@ -302,7 +310,9 @@ export function ExecutionEditor() {
             const searchParams = new URLSearchParams();
             queryParams.value.forEach(p => {
                 if (p.key && p.enabled) {
-                    searchParams.append(substituteVariables(p.key), substituteVariables(p.value));
+                    p.values.forEach(v => {
+                        searchParams.append(substituteVariables(p.key), substituteVariables(v));
+                    });
                 }
             });
             const qs = searchParams.toString();
@@ -322,18 +332,28 @@ export function ExecutionEditor() {
         const parentHeaders = parentRequest.headers || [];
         return new Set(headers.value.filter(h => {
             const parentMatch = parentHeaders.find(ph => ph.key === h.key);
-            return h.key && parentMatch !== undefined && h.value !== parentMatch.value;
+            if (!h.key || parentMatch === undefined) return false;
+            // Overridden if values differ or it's disabled
+            return JSON.stringify(h.values) !== JSON.stringify(parentMatch.values) || !h.enabled;
         }).map(h => h.key));
     });
 
     const overriddenQueryParams = useComputed(() => {
-        const { params: parentParams } = parseUrl(parentRequest.url);
+        const { params: parentParamsFlat } = parseUrl(parentRequest.url);
+        // Group parent params
+        const parentParams: { key: string, values: string[] }[] = [];
+        parentParamsFlat.forEach(p => {
+            const existing = parentParams.find(x => x.key === p.key);
+            if (existing) existing.values.push(p.value);
+            else parentParams.push({ key: p.key, values: [p.value] });
+        });
+
         const overriddenKeys = new Set<string>();
 
         // Only mark as overridden if the key exists in parent but value differs
         queryParams.value.forEach(p => {
             const parentMatch = parentParams.find(pp => pp.key === p.key);
-            if (parentMatch && (parentMatch.value !== p.value || !p.enabled)) {
+            if (parentMatch && (JSON.stringify(parentMatch.values) !== JSON.stringify(p.values) || !p.enabled)) {
                 overriddenKeys.add(p.key);
             }
         });
@@ -380,7 +400,7 @@ export function ExecutionEditor() {
             } else {
                 for (const h of currentHeaders) {
                     const parentMatch = parentHeaders.find(ph => ph.key === h.key);
-                    if (!h.enabled || !parentMatch || parentMatch.value !== h.value) {
+                    if (!h.enabled || !parentMatch || JSON.stringify(parentMatch.values) !== JSON.stringify(h.values)) {
                         matchesParentHeaders = false;
                         break;
                     }
@@ -389,11 +409,19 @@ export function ExecutionEditor() {
             const finalHeaders = matchesParentHeaders ? undefined : currentHeaders;
 
             // 2. Query Params - save only overrides (params that differ from parent)
-            const { params: parentParams } = parseUrl(parentRequest.url);
+            const { params: parentParamsFlat } = parseUrl(parentRequest.url);
+            // Group parent params
+            const parentParams: { key: string, values: string[] }[] = [];
+            parentParamsFlat.forEach(p => {
+                const existing = parentParams.find(x => x.key === p.key);
+                if (existing) existing.values.push(p.value);
+                else parentParams.push({ key: p.key, values: [p.value] });
+            });
+
             const overriddenParams: typeof currentQueryParams = [];
             currentQueryParams.forEach(cp => {
                 const parentMatch = parentParams.find(pp => pp.key === cp.key);
-                if (!parentMatch || parentMatch.value !== cp.value || !cp.enabled) {
+                if (!parentMatch || JSON.stringify(parentMatch.values) !== JSON.stringify(cp.values) || !cp.enabled) {
                     // This param was overridden (value changed, disabled, or new key)
                     overriddenParams.push(cp);
                 }
@@ -552,16 +580,16 @@ export function ExecutionEditor() {
                     get body() { return body.peek(); },
                     set body(v) { body.value = v; },
                     headers: {
-                        get: (key: string) => headers.peek().find(h => h.key === key)?.value,
+                        get: (key: string) => headers.peek().find(h => h.key === key)?.values[0],
                         set: (key: string, value: string) => {
                             const current = headers.peek();
                             const idx = current.findIndex(h => h.key === key);
                             if (idx !== -1) {
                                 const next = [...current];
-                                next[idx] = { ...next[idx], value, enabled: true };
+                                next[idx] = { ...next[idx], values: [value], enabled: true };
                                 headers.value = next;
                             } else {
-                                headers.value = [...current, { key, value, enabled: true }];
+                                headers.value = [...current, { key, values: [value], enabled: true }];
                             }
                         },
                         remove: (key: string) => {
@@ -569,33 +597,33 @@ export function ExecutionEditor() {
                         },
                         all: () => {
                             return headers.peek().reduce((acc, h) => {
-                                if (h.key) acc[h.key] = h.value;
+                                if (h.key) acc[h.key] = h.values[0];
                                 return acc;
                             }, {} as Record<string, string>);
                         }
                     },
                     queryParams: {
-                        get: (key: string) => queryParams.peek().find(p => p.key === key)?.value,
+                        get: (key: string) => queryParams.peek().find(p => p.key === key)?.values[0],
                         set: (key: string, value: string) => {
                             const current = queryParams.peek();
                             const idx = current.findIndex(p => p.key === key);
                             if (idx !== -1) {
                                 const next = [...current];
-                                next[idx] = { ...next[idx], value, enabled: true };
+                                next[idx] = { ...next[idx], values: [value], enabled: true };
                                 queryParams.value = next;
                             } else {
-                                queryParams.value = [...current, { key, value, enabled: true }];
+                                queryParams.value = [...current, { key, values: [value], enabled: true }];
                             }
                         },
                         add: (key: string, value: string) => {
-                            queryParams.value = [...queryParams.peek(), { key, value, enabled: true }];
+                            queryParams.value = [...queryParams.peek(), { key, values: [value], enabled: true }];
                         },
                         remove: (key: string) => {
                             queryParams.value = queryParams.peek().filter(p => p.key !== key);
                         },
                         all: () => {
                             return queryParams.peek().reduce((acc, p) => {
-                                if (p.key) acc[p.key] = p.value;
+                                if (p.key) acc[p.key] = p.values[0];
                                 return acc;
                             }, {} as Record<string, string>);
                         }
@@ -639,22 +667,31 @@ export function ExecutionEditor() {
                 requestMethod: finalRequestMethod
             };
 
-            // Use parent request ID to resolve headers hierarchy
             const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
             const finalHeaders: string[][] = [];
 
             startHeaders.forEach(h => {
-                if (h.key && h.value) {
-                    finalHeaders.push([h.key, substituteVariables(h.value)]);
+                if (h.key && h.values) {
+                    h.values.forEach(v => {
+                        finalHeaders.push([h.key, substituteVariables(v)]);
+                    });
                 }
             });
 
             headers.value.forEach(h => {
-                if (h.key && h.value && h.enabled) {
+                if (h.key && h.values.length > 0 && h.enabled) {
                     // Remove any existing header with this key (override)
-                    const idx = finalHeaders.findIndex(fh => fh[0] === h.key);
-                    if (idx !== -1) finalHeaders.splice(idx, 1);
-                    finalHeaders.push([h.key, substituteVariables(h.value)]);
+                    const existingIdxs = finalHeaders.reduce((acc, fh, idx) => {
+                        if (fh[0] === h.key) acc.push(idx);
+                        return acc;
+                    }, [] as number[]);
+
+                    // Remove from backwards to keep indexes valid
+                    existingIdxs.reverse().forEach(idx => finalHeaders.splice(idx, 1));
+
+                    h.values.forEach(v => {
+                        finalHeaders.push([h.key, substituteVariables(v)]);
+                    });
                 }
             });
 
@@ -713,8 +750,8 @@ export function ExecutionEditor() {
             const httpStartTime = Date.now();
             const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number }>('http_request', {
                 args: {
-                    method: method.value,
-                    url: finalUrl,
+                    method: String(method.value || 'GET'),
+                    url: String(finalUrl || ''),
                     headers: finalHeaders,
                     body: finalBody,
                     form_data: formDataArgs,
@@ -814,17 +851,28 @@ export function ExecutionEditor() {
         const methodStr = method.value;
 
         const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
-        const finalHeaders: Record<string, string> = {};
+        const finalHeadersFlat: [string, string][] = [];
 
         startHeaders.forEach(h => {
-            if (h.key && h.value) {
-                finalHeaders[h.key] = substituteVariables(h.value);
+            if (h.key && h.values) {
+                h.values.forEach(v => {
+                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
+                });
             }
         });
 
         headers.value.forEach(h => {
-            if (h.key && h.value && h.enabled) {
-                finalHeaders[h.key] = substituteVariables(h.value);
+            if (h.key && h.values.length > 0 && h.enabled) {
+                // For raw display, we usually show overrides by removing parent and adding ours
+                const existingIdxs = finalHeadersFlat.reduce((acc, fh, idx) => {
+                    if (fh[0] === h.key) acc.push(idx);
+                    return acc;
+                }, [] as number[]);
+                existingIdxs.reverse().forEach(idx => finalHeadersFlat.splice(idx, 1));
+
+                h.values.forEach(v => {
+                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
+                });
             }
         });
 
@@ -835,15 +883,15 @@ export function ExecutionEditor() {
 
         if (authConfig.type === 'basic' && authConfig.basic) {
             const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-            finalHeaders['Authorization'] = `Basic ${token}`;
+            finalHeadersFlat.push(['Authorization', `Basic ${token}`]);
         } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-            finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
+            finalHeadersFlat.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token)}`]);
         }
 
         let raw = `${methodStr} ${urlWithQuery} HTTP/1.1\n`;
 
         // Add content-type if missing
-        if (!finalHeaders['Content-Type'] && bodyType.value !== 'none') {
+        if (!finalHeadersFlat.find(fh => fh[0] === 'Content-Type') && bodyType.value !== 'none') {
             let contentType: string | null = null;
             switch (bodyType.value) {
                 case 'json': contentType = 'application/json'; break;
@@ -854,12 +902,12 @@ export function ExecutionEditor() {
                 case 'javascript': contentType = 'application/javascript'; break;
                 case 'yaml': contentType = 'application/x-yaml'; break;
             }
-            if (contentType) finalHeaders['Content-Type'] = contentType;
+            if (contentType) finalHeadersFlat.push(['Content-Type', contentType]);
         }
 
-        for (const key in finalHeaders) {
-            raw += `${key}: ${finalHeaders[key]}\n`;
-        }
+        finalHeadersFlat.forEach(([key, val]) => {
+            raw += `${key}: ${val}\n`;
+        });
 
         raw += '\n';
         if (bodyType.value !== 'none') {
@@ -873,17 +921,28 @@ export function ExecutionEditor() {
         let cmd = `curl -X ${method.value} '${getFinalUrl()}'`;
 
         const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
-        const finalHeaders: Record<string, string> = {};
+        const finalHeadersFlat: [string, string][] = [];
 
         startHeaders.forEach(h => {
-            if (h.key && h.value) {
-                finalHeaders[h.key] = substituteVariables(h.value);
+            if (h.key && h.values) {
+                h.values.forEach(v => {
+                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
+                });
             }
         });
 
         headers.value.forEach(h => {
-            if (h.key && h.value && h.enabled) {
-                finalHeaders[h.key] = substituteVariables(h.value);
+            if (h.key && h.values.length > 0 && h.enabled) {
+                // Remove parent ones
+                const existingIdxs = finalHeadersFlat.reduce((acc, fh, idx) => {
+                    if (fh[0] === h.key) acc.push(idx);
+                    return acc;
+                }, [] as number[]);
+                existingIdxs.reverse().forEach(idx => finalHeadersFlat.splice(idx, 1));
+
+                h.values.forEach(v => {
+                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
+                });
             }
         });
 
@@ -894,16 +953,16 @@ export function ExecutionEditor() {
 
         if (authConfig.type === 'basic' && authConfig.basic) {
             const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-            finalHeaders['Authorization'] = `Basic ${token}`;
+            finalHeadersFlat.push(['Authorization', `Basic ${token}`]);
         } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-            finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
+            finalHeadersFlat.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token)}`]);
         }
 
-        for (const key in finalHeaders) {
-            cmd += ` \\\n  -H "${key}: ${finalHeaders[key]}"`;
-        }
+        finalHeadersFlat.forEach(([key, val]) => {
+            cmd += ` \\\n  -H "${key}: ${val}"`;
+        });
 
-        if (!finalHeaders['Content-Type']) {
+        if (!finalHeadersFlat.find(fh => fh[0] === 'Content-Type')) {
             let contentType: string | null = null;
             switch (bodyType.value) {
                 case 'json': contentType = 'application/json'; break;

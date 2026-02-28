@@ -8,9 +8,14 @@
       "path": "/pet",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
         "enabled": true
       }
@@ -20,9 +25,14 @@
       "path": "/pet",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
         "enabled": true
       }
@@ -32,9 +42,14 @@
       "path": "/pet/findByStatus",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "[\n  {\n    \"id\": 10,\n    \"name\": \"doggie\",\n    \"category\": {\n      \"id\": 1,\n      \"name\": \"Dogs\"\n    },\n    \"photoUrls\": [\n      \"string\"\n    ],\n    \"tags\": [\n      {\n        \"id\": 0,\n        \"name\": \"string\"\n      }\n    ],\n    \"status\": \"available\"\n  }\n]",
         "enabled": true
       }
@@ -44,9 +59,14 @@
       "path": "/pet/findByTags",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "[\n  {\n    \"id\": 10,\n    \"name\": \"doggie\",\n    \"category\": {\n      \"id\": 1,\n      \"name\": \"Dogs\"\n    },\n    \"photoUrls\": [\n      \"string\"\n    ],\n    \"tags\": [\n      {\n        \"id\": 0,\n        \"name\": \"string\"\n      }\n    ],\n    \"status\": \"available\"\n  }\n]",
         "enabled": true
       }
@@ -56,9 +76,14 @@
       "path": "/pet/{petId}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
         "enabled": true
       }
@@ -68,9 +93,14 @@
       "path": "/pet/{petId}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"name\": \"doggie\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"photoUrls\": [\n    \"string\"\n  ],\n  \"tags\": [\n    {\n      \"id\": 0,\n      \"name\": \"string\"\n    }\n  ],\n  \"status\": \"available\"\n}",
         "enabled": true
       }
@@ -80,10 +110,20 @@
       "path": "/pet/{petId}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "api_key": "",
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "api_key",
+            "values": [
+              ""
+            ]
+          },
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{}",
         "enabled": true
       }
@@ -93,9 +133,14 @@
       "path": "/pet/{petId}/uploadImage",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"code\": 0,\n  \"type\": \"string\",\n  \"message\": \"string\"\n}",
         "enabled": true
       }
@@ -105,9 +150,14 @@
       "path": "/store/inventory",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{}",
         "enabled": true
       }
@@ -117,9 +167,14 @@
       "path": "/store/order",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"petId\": 198772,\n  \"quantity\": 7,\n  \"shipDate\": \"2026-02-14T09:46:24.845Z\",\n  \"status\": \"approved\",\n  \"complete\": true\n}",
         "enabled": true
       }
@@ -129,9 +184,14 @@
       "path": "/store/order/{orderId}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"petId\": 198772,\n  \"quantity\": 7,\n  \"shipDate\": \"2026-02-14T09:46:24.849Z\",\n  \"status\": \"approved\",\n  \"complete\": true\n}",
         "enabled": true
       }
@@ -141,9 +201,14 @@
       "path": "/store/order/{orderId}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{}",
         "enabled": true
       }
@@ -153,9 +218,14 @@
       "path": "/user",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"username\": \"theUser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"James\",\n  \"email\": \"john@email.com\",\n  \"password\": \"12345\",\n  \"phone\": \"12345\",\n  \"userStatus\": 1\n}",
         "enabled": true
       }
@@ -165,9 +235,14 @@
       "path": "/user/createWithList",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"username\": \"theUser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"James\",\n  \"email\": \"john@email.com\",\n  \"password\": \"12345\",\n  \"phone\": \"12345\",\n  \"userStatus\": 1\n}",
         "enabled": true
       }
@@ -177,9 +252,14 @@
       "path": "/user/login",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "\"string\"",
         "enabled": true
       }
@@ -189,9 +269,14 @@
       "path": "/user/logout",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{}",
         "enabled": true
       }
@@ -201,9 +286,14 @@
       "path": "/user/{username}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"id\": 10,\n  \"username\": \"theUser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"James\",\n  \"email\": \"john@email.com\",\n  \"password\": \"12345\",\n  \"phone\": \"12345\",\n  \"userStatus\": 1\n}",
         "enabled": true
       }
@@ -213,9 +303,14 @@
       "path": "/user/{username}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{}",
         "enabled": true
       }
@@ -225,9 +320,14 @@
       "path": "/user/{username}",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{}",
         "enabled": true
       }
@@ -237,9 +337,14 @@
       "path": "/pet/{petId}/image",
       "response": {
         "statusCode": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
+        "headers": [
+          {
+            "key": "Content-Type",
+            "values": [
+              "application/json"
+            ]
+          }
+        ],
         "body": "{\n  \"image\": \"b64:image\"\n}",
         "enabled": true
       }

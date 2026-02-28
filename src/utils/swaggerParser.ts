@@ -5,7 +5,7 @@ export interface ParsedSwaggerRequest {
     method: string;
     url: string;
     path: string;
-    headers: { key: string, value: string }[];
+    headers: { key: string, values: string[] }[];
     body: string;
     responseStatus?: number;
     tags: string[];
@@ -44,13 +44,13 @@ export function parseSwagger(content: string): ParsedSwagger {
             const name = op.summary || op.operationId || `${method.toUpperCase()} ${path}`;
             const tags = op.tags || [];
 
-            const headers: { key: string, value: string }[] = [];
+            const headers: { key: string, values: string[] }[] = [];
 
             // Extract headers and body (very basic for now)
             if (op.parameters) {
                 for (const p of op.parameters) {
                     if (p.in === 'header') {
-                        headers.push({ key: p.name, value: p.example || p.default || '' });
+                        headers.push({ key: p.name, values: [p.example || p.default || ''] });
                     }
                 }
             }
@@ -60,13 +60,13 @@ export function parseSwagger(content: string): ParsedSwagger {
                 const content = op.requestBody.content || {};
                 const firstType = Object.keys(content)[0];
                 if (firstType === 'application/json') {
-                    headers.push({ key: 'Content-Type', value: 'application/json' });
+                    headers.push({ key: 'Content-Type', values: ['application/json'] });
                 }
             } else if (op.parameters) {
                 // Swagger 2.0 body
                 const bodyParam = op.parameters.find((p: any) => p.in === 'body');
                 if (bodyParam) {
-                    headers.push({ key: 'Content-Type', value: 'application/json' });
+                    headers.push({ key: 'Content-Type', values: ['application/json'] });
                 }
             }
 

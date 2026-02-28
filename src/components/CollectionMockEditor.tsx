@@ -72,7 +72,7 @@ export function CollectionMockEditor() {
                             path: path,
                             response: {
                                 status_code: r.mockResponse?.statusCode || 200,
-                                headers: (r.mockResponse?.headers || []).map(h => [h.key, h.value]),
+                                headers: (r.mockResponse?.headers || []).flatMap(h => h.values.map(v => [h.key, v])),
                                 body: r.mockResponse?.body || ''
                             }
                         };
@@ -207,7 +207,7 @@ export function CollectionMockEditor() {
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Response Headers</label>
                                         <button
                                             onClick={() => {
-                                                const newHeaders = [...(req.mockResponse?.headers || []), { key: 'New-Header', value: '' }];
+                                                const newHeaders = [...(req.mockResponse?.headers || []), { key: 'New-Header', values: [''] }];
                                                 updateRequestMock(req.id, { headers: newHeaders });
                                             }}
                                             style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -217,36 +217,60 @@ export function CollectionMockEditor() {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         {(req.mockResponse?.headers || []).map((header, hIdx) => (
-                                            <div key={hIdx} style={{ display: 'flex', gap: '4px' }}>
-                                                <input
-                                                    type="text"
-                                                    value={header.key}
-                                                    onInput={(e) => {
-                                                        const newHeaders = [...(req.mockResponse?.headers || [])];
-                                                        newHeaders[hIdx] = { ...newHeaders[hIdx], key: e.currentTarget.value };
-                                                        updateRequestMock(req.id, { headers: newHeaders });
-                                                    }}
-                                                    style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={header.value}
-                                                    onInput={(e) => {
-                                                        const newHeaders = [...(req.mockResponse?.headers || [])];
-                                                        newHeaders[hIdx] = { ...newHeaders[hIdx], value: e.currentTarget.value };
-                                                        updateRequestMock(req.id, { headers: newHeaders });
-                                                    }}
-                                                    style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                                                />
+                                            <div key={hIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
+                                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={header.key}
+                                                        onInput={(e) => {
+                                                            const newHeaders = [...(req.mockResponse?.headers || [])];
+                                                            newHeaders[hIdx] = { ...newHeaders[hIdx], key: e.currentTarget.value };
+                                                            updateRequestMock(req.id, { headers: newHeaders });
+                                                        }}
+                                                        style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newHeaders = (req.mockResponse?.headers || []).filter((_, i) => i !== hIdx);
+                                                            updateRequestMock(req.id, { headers: newHeaders });
+                                                        }}
+                                                        style={{ background: 'none', color: 'var(--error)', cursor: 'pointer' }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                                {header.values.map((v, vIdx) => (
+                                                    <div key={vIdx} style={{ display: 'flex', gap: '4px', paddingLeft: '8px' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={v}
+                                                            onInput={(e) => {
+                                                                const newHeaders = [...(req.mockResponse?.headers || [])];
+                                                                const newVals = [...newHeaders[hIdx].values];
+                                                                newVals[vIdx] = e.currentTarget.value;
+                                                                newHeaders[hIdx].values = newVals;
+                                                                updateRequestMock(req.id, { headers: newHeaders });
+                                                            }}
+                                                            style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', fontSize: '0.8rem' }}
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                const newHeaders = [...(req.mockResponse?.headers || [])];
+                                                                newHeaders[hIdx].values = newHeaders[hIdx].values.filter((_, i) => i !== vIdx);
+                                                                updateRequestMock(req.id, { headers: newHeaders });
+                                                            }}
+                                                            style={{ background: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                                                        >-</button>
+                                                    </div>
+                                                ))}
                                                 <button
                                                     onClick={() => {
-                                                        const newHeaders = (req.mockResponse?.headers || []).filter((_, i) => i !== hIdx);
+                                                        const newHeaders = [...(req.mockResponse?.headers || [])];
+                                                        newHeaders[hIdx].values = [...newHeaders[hIdx].values, ''];
                                                         updateRequestMock(req.id, { headers: newHeaders });
                                                     }}
-                                                    style={{ background: 'none', color: 'var(--error)', cursor: 'pointer' }}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                    style={{ alignSelf: 'flex-start', marginLeft: '8px', fontSize: '0.75rem', background: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}
+                                                >+ Add Value</button>
                                             </div>
                                         ))}
                                     </div>

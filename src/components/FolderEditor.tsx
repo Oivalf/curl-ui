@@ -10,8 +10,8 @@ export function FolderEditor() {
 
     // Local signals
     const name = useSignal(currentFolder.name);
-    const headers = useSignal<{ key: string, value: string }[]>(
-        (currentFolder.headers || []).map(h => ({ ...h }))
+    const headers = useSignal<{ key: string, values: string[] }[]>(
+        (currentFolder.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])] }))
     );
     const variables = useSignal<{ key: string, value: string }[]>(
         Object.entries(currentFolder.variables || {}).map(([k, v]) => ({ key: k, value: v }))
@@ -135,16 +135,24 @@ export function FolderEditor() {
     });
 
     const addHeader = () => {
-        headers.value = [...headers.value, { key: '', value: '' }];
+        headers.value = [...headers.value, { key: '', values: [''] }];
     };
 
     const removeHeader = (index: number) => {
         headers.value = headers.value.filter((_, i) => i !== index);
     };
 
-    const updateHeader = (index: number, field: 'key' | 'value', val: string) => {
+    const updateHeaderKey = (index: number, val: string) => {
         const newHeaders = [...headers.value];
-        newHeaders[index] = { ...newHeaders[index], [field]: val };
+        newHeaders[index].key = val;
+        headers.value = newHeaders;
+    };
+
+    const updateHeaderValue = (index: number, valIndex: number, val: string) => {
+        const newHeaders = [...headers.value];
+        const newValues = [...newHeaders[index].values];
+        newValues[valIndex] = val;
+        newHeaders[index].values = newValues;
         headers.value = newHeaders;
     };
 
@@ -185,22 +193,47 @@ export function FolderEditor() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {headers.value.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No headers defined.</div>}
                     {headers.value.map((header, index) => (
-                        <div key={index} style={{ display: 'flex', gap: '8px' }}>
-                            <input
-                                placeholder="Key"
-                                value={header.key}
-                                onInput={(e) => updateHeader(index, 'key', e.currentTarget.value)}
-                                style={{ flex: 1, minWidth: 0 }}
-                            />
-                            <input
-                                placeholder="Value"
-                                value={header.value}
-                                onInput={(e) => updateHeader(index, 'value', e.currentTarget.value)}
-                                style={{ flex: 1, minWidth: 0 }}
-                            />
+                        <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                            <div style={{ width: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <input
+                                    placeholder="Key"
+                                    value={header.key}
+                                    onInput={(e) => updateHeaderKey(index, e.currentTarget.value)}
+                                    style={{ width: '100%', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: 'var(--spacing-sm)', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {header.values.length === 0 && (
+                                    <button onClick={() => {
+                                        const newHeaders = [...headers.value];
+                                        newHeaders[index].values = [''];
+                                        headers.value = newHeaders;
+                                    }} style={{ alignSelf: 'flex-start', fontSize: '0.8rem', background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}>+ Add Value</button>
+                                )}
+                                {header.values.map((val, valIdx) => (
+                                    <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                        <input
+                                            placeholder="Value"
+                                            value={val}
+                                            onInput={(e) => updateHeaderValue(index, valIdx, e.currentTarget.value)}
+                                            style={{ flex: 1, background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: 'var(--spacing-sm)', fontSize: '0.9rem', outline: 'none' }}
+                                        />
+                                        <button onClick={() => {
+                                            const newHeaders = [...headers.value];
+                                            newHeaders[index].values = newHeaders[index].values.filter((_, vIdx) => vIdx !== valIdx);
+                                            headers.value = newHeaders;
+                                        }} style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}>-</button>
+                                    </div>
+                                ))}
+                                <button onClick={() => {
+                                    const newHeaders = [...headers.value];
+                                    newHeaders[index].values = [...newHeaders[index].values, ''];
+                                    headers.value = newHeaders;
+                                }} style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}>+</button>
+                            </div>
                             <button
                                 onClick={() => removeHeader(index)}
-                                style={{ padding: '4px 8px', color: 'var(--text-muted)', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                                style={{ color: 'var(--error)', alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer' }}
                             >
                                 ×
                             </button>

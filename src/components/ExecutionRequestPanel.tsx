@@ -7,17 +7,17 @@ import { AuthEditor } from "./AuthEditor";
 import { AuthConfig, ScriptItem } from "../store";
 
 interface ExecutionRequestPanelProps {
-    headers: Signal<{ key: string, value: string, enabled: boolean }[]>;
+    headers: Signal<{ key: string, values: string[], enabled: boolean }[]>;
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
     body: Signal<string>;
     auth: Signal<AuthConfig | undefined>;
-    queryParams: Signal<{ key: string, value: string, enabled: boolean }[]>;
+    queryParams: Signal<{ key: string, values: string[], enabled: boolean }[]>;
     pathParams: Signal<Record<string, string>>;
     formData: Signal<{ key: string, type: 'text' | 'file', values: string[] }[]>;
     detectedPathKeys: Signal<string[]>;
-    updateUrlFromParams: (newParams: { key: string, value: string, enabled: boolean }[]) => void;
+    updateUrlFromParams: (newParams: { key: string, values: string[], enabled: boolean }[]) => void;
     inheritedAuth?: { config: AuthConfig, source: string, sourceId?: string };
-    inheritedHeaders?: { key: string, value: string, source: string, sourceId?: string }[];
+    inheritedHeaders?: { key: string, values: string[], source: string, sourceId?: string }[];
     preScripts: Signal<ScriptItem[]>;
     postScripts: Signal<ScriptItem[]>;
     isReadOnly?: boolean;
