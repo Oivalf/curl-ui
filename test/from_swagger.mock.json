@@ -231,6 +231,18 @@
         "body": "{}",
         "enabled": true
       }
+    },
+    {
+      "method": "GET",
+      "path": "/pet/{petId}/image",
+      "response": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"image\": \"b64:image\"\n}",
+        "enabled": true
+      }
     }
   ]
 }

@@ -504,14 +504,33 @@ pub async fn start_mock_server(
                 target_method, target_full_uri
             );
 
-            // Pass 1: Try exact match (Method + Path + Query)
-            let exact_match = mock_data.iter().find(|m| {
-                let m_path = if m.path.starts_with('/') {
-                    m.path.clone()
+            // Helper: check if a mock path pattern matches a request path.
+            // Segments wrapped in `{…}` are treated as wildcards that match any value.
+            let path_matches = |pattern: &str, actual: &str| -> bool {
+                let pat_segments: Vec<&str> = pattern.split('/').collect();
+                let act_segments: Vec<&str> = actual.split('/').collect();
+                if pat_segments.len() != act_segments.len() {
+                    return false;
+                }
+                pat_segments
+                    .iter()
+                    .zip(act_segments.iter())
+                    .all(|(p, a)| (p.starts_with('{') && p.ends_with('}')) || p == a)
+            };
+
+            // Normalise a stored mock path so that it always starts with '/'.
+            let norm = |p: &str| -> String {
+                if p.starts_with('/') {
+                    p.to_string()
                 } else {
-                    format!("/{}", m.path)
-                };
-                m.method.to_uppercase() == target_method && m_path == target_full_uri
+                    format!("/{}", p)
+                }
+            };
+
+            // Pass 1: Try exact match (Method + full URI including query string)
+            let exact_match = mock_data.iter().find(|m| {
+                let m_path = norm(&m.path);
+                m.method.to_uppercase() == target_method && path_matches(&m_path, target_full_uri)
             });
 
             let matching = if let Some(m) = exact_match {
@@ -521,14 +540,10 @@ pub async fn start_mock_server(
                 // Pass 2: Fallback to path-only match (Method + Path), ignoring query params in request
                 // BUT only if the mock definition ITSELF doesn't have a query string (is generic)
                 let fuzzy_match = mock_data.iter().find(|m| {
-                    let m_path = if m.path.starts_with('/') {
-                        m.path.clone()
-                    } else {
-                        format!("/{}", m.path)
-                    };
+                    let m_path = norm(&m.path);
                     !m_path.contains('?')
                         && m.method.to_uppercase() == target_method
-                        && m_path == target_path
+                        && path_matches(&m_path, target_path)
                 });
                 if let Some(m) = fuzzy_match {
                     eprintln!("Mock Server: Matched Generic: {}", m.path);

@@ -202,12 +202,13 @@ export function MainLayout({ children }: LayoutProps) {
                                 fontSize: '0.8rem'
                             }}
                         >
-                            <option value="">No Environment</option>
-                            {environments.value
-                                .filter(env => env.name !== 'Global')
-                                .map(env => (
-                                    <option key={env.name} value={env.name}>{env.name}</option>
-                                ))}
+                            {environments.value.filter(env => env.name !== 'Global').length === 0
+                                ? <option value="">No Environment</option>
+                                : environments.value
+                                    .filter(env => env.name !== 'Global')
+                                    .map(env => (
+                                        <option key={env.name} value={env.name}>{env.name}</option>
+                                    ))}
                         </select>
                         <button
                             onClick={() => isEnvManagerOpen.value = true}
