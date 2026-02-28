@@ -15,6 +15,7 @@ pub struct MockServerState {
 
 pub struct HttpRequestState {
     pub handles: Arc<Mutex<HashMap<String, oneshot::Sender<()>>>>,
+    pub clients: Arc<Mutex<HashMap<String, reqwest::Client>>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,6 +26,7 @@ pub fn run() {
         })
         .manage(HttpRequestState {
             handles: Arc::new(Mutex::new(HashMap::new())),
+            clients: Arc::new(Mutex::new(HashMap::new())),
         })
         .setup(|app| {
             let handle = app.handle();

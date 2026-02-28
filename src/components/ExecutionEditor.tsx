@@ -3,7 +3,7 @@ import { useRef, useEffect, useCallback } from "preact/hooks";
 import { ArrowLeft, Play, XCircle, Loader2, Circle, CheckCircle } from "lucide-preact";
 import { formatBytes } from "../utils/format";
 import { invoke } from '@tauri-apps/api/core';
-import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, responseData, ScriptItem, addLog, openTabs, activeTabId, activeFolderId } from "../store";
+import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, responseData, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName } from "../store";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ResponsePanel } from "./ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
@@ -50,14 +50,14 @@ export function ExecutionEditor() {
     // Convert headers object to array for easier editing
     // Merge parent headers with execution overrides
     const getMergedHeaders = () => {
-        const parentHeaders = Object.entries(parentRequest.headers || {});
+        const parentHeaders = parentRequest.headers || [];
         // e.headers is now KeyValueItem[] | undefined
         const execOverrides = currentExecution.headers || [];
 
         // Start with parent headers (defaults)
-        const merged: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(([k, v]) => ({
-            key: k,
-            value: v,
+        const merged: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(h => ({
+            key: h.key,
+            value: h.value,
             enabled: true // Inherited default
         }));
 
@@ -105,17 +105,9 @@ export function ExecutionEditor() {
 
     const headers = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedHeaders());
     const body = useSignal(currentExecution.body ?? parentRequest.body ?? '');
-    const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>('none');
-
-    // Auto-detect body type
-    useSignalEffect(() => {
-        const content = body.value;
-        if (content && (content.trim().startsWith('{') || content.trim().startsWith('['))) {
-            bodyType.value = 'json';
-        } else if (!content) {
-            bodyType.value = 'none';
-        }
-    });
+    const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
+        currentExecution.bodyType || parentRequest.bodyType || ((currentExecution.body ?? parentRequest.body ?? '') !== '' ? 'json' : 'none')
+    );
     const preScripts = useSignal<ScriptItem[]>(currentExecution.preScripts ?? parentRequest.preScripts ?? []);
     const postScripts = useSignal<ScriptItem[]>(currentExecution.postScripts ?? parentRequest.postScripts ?? []);
 
@@ -176,9 +168,9 @@ export function ExecutionEditor() {
         }
 
         // Re-derive headers (merge parent + overrides)
-        const parentHeaders = Object.entries(parent.headers || {});
-        const mergedHeaders: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(([k, v]) => ({
-            key: k, value: v, enabled: true
+        const parentHeaders = parent.headers || [];
+        const mergedHeaders: { key: string, value: string, enabled: boolean }[] = parentHeaders.map(h => ({
+            key: h.key, value: h.value, enabled: true
         }));
         (cExec.headers || []).forEach(override => {
             const index = mergedHeaders.findIndex(m => m.key === override.key);
@@ -213,7 +205,7 @@ export function ExecutionEditor() {
     // Params State
     const queryParams = useSignal<{ key: string, value: string, enabled: boolean }[]>(getMergedQueryParams(parentRequest.url, currentExecution.queryParams));
     const pathParams = useSignal<Record<string, string>>({});
-    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
+    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentExecution.formData ?? parentRequest.formData ?? []);
 
     // Execution Progress State
     const currentRequestId = useSignal<string | null>(null);
@@ -327,8 +319,11 @@ export function ExecutionEditor() {
 
     // Detect Overrides for UI highlighting
     const overriddenHeaders = useComputed(() => {
-        const parentHeaderMap = parentRequest.headers || {};
-        return new Set(headers.value.filter(h => h.key && parentHeaderMap[h.key] !== undefined && h.value !== parentHeaderMap[h.key]).map(h => h.key));
+        const parentHeaders = parentRequest.headers || [];
+        return new Set(headers.value.filter(h => {
+            const parentMatch = parentHeaders.find(ph => ph.key === h.key);
+            return h.key && parentMatch !== undefined && h.value !== parentMatch.value;
+        }).map(h => h.key));
     });
 
     const overriddenQueryParams = useComputed(() => {
@@ -345,7 +340,7 @@ export function ExecutionEditor() {
         return overriddenKeys;
     });
 
-    const parentHeaderKeys = useComputed(() => new Set(Object.keys(parentRequest.headers || {})));
+    const parentHeaderKeys = useComputed(() => new Set((parentRequest.headers || []).map(h => h.key)));
     const parentQueryParamKeys = useComputed(() => {
         const { params } = parseUrl(parentRequest.url);
         return new Set(params.map(p => p.key));
@@ -361,7 +356,9 @@ export function ExecutionEditor() {
         const currentHeaders = headers.value;
         const currentQueryParams = queryParams.value;
         const currentPathParams = pathParams.value;
+        const currentBodyType = bodyType.value;
         const currentBody = body.value;
+        const currentFormData = formData.value;
         const currentAuth = auth.value;
         const currentPreScripts = preScripts.value;
         const currentPostScripts = postScripts.value;
@@ -376,14 +373,14 @@ export function ExecutionEditor() {
             const exec = allExecutions[idx];
 
             // 1. Headers Inheritance Check
-            const parentHeaders = parentRequest.headers || {};
-            const parentHeaderKeysList = Object.keys(parentHeaders);
+            const parentHeaders = parentRequest.headers || [];
             let matchesParentHeaders = true;
-            if (currentHeaders.length !== parentHeaderKeysList.length) {
+            if (currentHeaders.length !== parentHeaders.length) {
                 matchesParentHeaders = false;
             } else {
                 for (const h of currentHeaders) {
-                    if (!h.enabled || parentHeaders[h.key] !== h.value) {
+                    const parentMatch = parentHeaders.find(ph => ph.key === h.key);
+                    if (!h.enabled || !parentMatch || parentMatch.value !== h.value) {
                         matchesParentHeaders = false;
                         break;
                     }
@@ -407,7 +404,9 @@ export function ExecutionEditor() {
             const finalPathParams = Object.keys(currentPathParams).length === 0 ? undefined : currentPathParams;
 
             // 4. Other fields
+            const finalBodyType = currentBodyType === (parentRequest.bodyType || 'json') ? undefined : currentBodyType;
             const finalBody = currentBody === (parentRequest.body ?? '') ? undefined : currentBody;
+            const finalFormData = JSON.stringify(currentFormData) === JSON.stringify(parentRequest.formData ?? []) ? undefined : currentFormData;
             const finalAuth = JSON.stringify(currentAuth) === JSON.stringify(parentRequest.auth ?? { type: 'inherit' }) ? undefined : currentAuth;
             const finalPreScripts = JSON.stringify(currentPreScripts) === JSON.stringify(parentRequest.preScripts ?? []) ? undefined : currentPreScripts;
             const finalPostScripts = JSON.stringify(currentPostScripts) === JSON.stringify(parentRequest.postScripts ?? []) ? undefined : currentPostScripts;
@@ -419,7 +418,10 @@ export function ExecutionEditor() {
             const authChanged = JSON.stringify(exec.auth) !== JSON.stringify(finalAuth);
             const preScriptsChanged = JSON.stringify(exec.preScripts) !== JSON.stringify(finalPreScripts);
             const postScriptsChanged = JSON.stringify(exec.postScripts) !== JSON.stringify(finalPostScripts);
-            if (exec.name !== currentName || headersChanged || paramsChanged || pathParamsChanged || exec.body !== finalBody || authChanged || preScriptsChanged || postScriptsChanged) {
+            const bodyTypeChanged = exec.bodyType !== finalBodyType;
+            const formDataChanged = JSON.stringify(exec.formData) !== JSON.stringify(finalFormData);
+
+            if (exec.name !== currentName || headersChanged || paramsChanged || pathParamsChanged || exec.body !== finalBody || bodyTypeChanged || formDataChanged || authChanged || preScriptsChanged || postScriptsChanged) {
                 batch(() => {
                     const newExecutions = [...allExecutions];
                     newExecutions[idx] = {
@@ -430,7 +432,9 @@ export function ExecutionEditor() {
                         headers: finalHeaders,
                         queryParams: finalQueryParams,
                         pathParams: finalPathParams,
+                        bodyType: finalBodyType,
                         body: finalBody,
+                        formData: finalFormData,
                         auth: finalAuth,
                         preScripts: finalPreScripts,
                         postScripts: finalPostScripts
@@ -637,17 +641,20 @@ export function ExecutionEditor() {
 
             // Use parent request ID to resolve headers hierarchy
             const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
-            const finalHeaders: Record<string, string> = {};
+            const finalHeaders: string[][] = [];
 
             startHeaders.forEach(h => {
                 if (h.key && h.value) {
-                    finalHeaders[h.key] = substituteVariables(h.value);
+                    finalHeaders.push([h.key, substituteVariables(h.value)]);
                 }
             });
 
             headers.value.forEach(h => {
                 if (h.key && h.value && h.enabled) {
-                    finalHeaders[h.key] = substituteVariables(h.value);
+                    // Remove any existing header with this key (override)
+                    const idx = finalHeaders.findIndex(fh => fh[0] === h.key);
+                    if (idx !== -1) finalHeaders.splice(idx, 1);
+                    finalHeaders.push([h.key, substituteVariables(h.value)]);
                 }
             });
 
@@ -658,9 +665,9 @@ export function ExecutionEditor() {
 
             if (authConfig.type === 'basic' && authConfig.basic) {
                 const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-                finalHeaders['Authorization'] = `Basic ${token}`;
+                finalHeaders.push(['Authorization', `Basic ${token}`]);
             } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-                finalHeaders['Authorization'] = `Bearer ${substituteVariables(authConfig.bearer.token)}`;
+                finalHeaders.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token)}`]);
             }
 
             const finalUrl = getFinalUrl();
@@ -675,7 +682,9 @@ export function ExecutionEditor() {
                     });
                 });
                 finalBody = params.toString();
-                if (!finalHeaders['Content-Type']) finalHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+                if (!finalHeaders.find(fh => fh[0] === 'Content-Type')) {
+                    finalHeaders.push(['Content-Type', 'application/x-www-form-urlencoded']);
+                }
             } else if (bodyType.value === 'multipart') {
                 formDataArgs = [];
                 formData.value.forEach(group => {
@@ -689,11 +698,11 @@ export function ExecutionEditor() {
                 });
                 finalBody = null;
             } else {
-                if (!finalHeaders['Content-Type'] && bodyType.value !== 'none') {
+                if (!finalHeaders.find(fh => fh[0] === 'Content-Type') && bodyType.value !== 'none') {
                     switch (bodyType.value) {
-                        case 'json': finalHeaders['Content-Type'] = 'application/json'; break;
-                        case 'xml': finalHeaders['Content-Type'] = 'application/xml'; break;
-                        case 'yaml': finalHeaders['Content-Type'] = 'application/x-yaml'; break;
+                        case 'json': finalHeaders.push(['Content-Type', 'application/json']); break;
+                        case 'xml': finalHeaders.push(['Content-Type', 'application/xml']); break;
+                        case 'yaml': finalHeaders.push(['Content-Type', 'application/x-yaml']); break;
                     }
                 }
             }
@@ -702,14 +711,15 @@ export function ExecutionEditor() {
             // 3. HTTP Request
             setStepStatus('http', 'running');
             const httpStartTime = Date.now();
-            const res = await invoke<{ status: number, headers: Record<string, string>, body: string, time_taken: number }>('http_request', {
+            const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number }>('http_request', {
                 args: {
                     method: method.value,
                     url: finalUrl,
                     headers: finalHeaders,
                     body: finalBody,
                     form_data: formDataArgs,
-                    request_id: requestId
+                    request_id: requestId,
+                    project_name: activeProjectName.peek()
                 }
             });
             const httpDuration = Date.now() - httpStartTime;

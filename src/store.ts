@@ -19,7 +19,7 @@ export interface CollectionMockConfig {
 
 export interface MockResponse {
     statusCode: number;
-    headers: Record<string, string>;
+    headers: { key: string, value: string }[];
     body: string;
     enabled: boolean;
 }
@@ -93,8 +93,10 @@ export interface RequestItem {
     name: string;
     method: string;
     url: string;
-    headers: Record<string, string>;
+    headers: { key: string, value: string }[];
+    bodyType?: 'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml';
     body?: string;
+    formData?: { key: string, type: 'text' | 'file', values: string[] }[];
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];
     parentId?: string | null;
@@ -109,7 +111,7 @@ export interface Folder {
     name: string;
     parentId?: string | null;
     collapsed?: boolean;
-    headers?: Record<string, string>;
+    headers?: { key: string, value: string }[];
     variables?: Record<string, string>;
     auth?: AuthConfig;
 }
@@ -131,7 +133,9 @@ export interface ExecutionItem {
     headers?: KeyValueItem[]; // CHANGED: Now a list with enabled flag
     queryParams?: KeyValueItem[]; // NEW: Specific query params overrides
     pathParams?: Record<string, string>; // NEW: Path variables overrides
+    bodyType?: 'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml';
     body?: string;
+    formData?: { key: string, type: 'text' | 'file', values: string[] }[];
     auth?: AuthConfig;
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];
@@ -696,6 +700,18 @@ export const loadCollectionFromPath = async (path: string) => {
         }];
     }
 
+    // Migration: Convert legacy headers Record<string,string> to {key,value}[] on requests and folders
+    data.requests.forEach((r: any) => {
+        if (r.headers && !Array.isArray(r.headers)) {
+            r.headers = Object.entries(r.headers).map(([key, value]) => ({ key, value: value as string }));
+        }
+    });
+    data.folders.forEach((f: any) => {
+        if (f.headers && !Array.isArray(f.headers)) {
+            f.headers = Object.entries(f.headers).map(([key, value]) => ({ key, value: value as string }));
+        }
+    });
+
     requests.value = [...requests.value, ...data.requests];
     folders.value = [...folders.value, ...data.folders];
 
@@ -913,7 +929,7 @@ export const navigateToItem = (id: string) => {
 export const resolveHeaders = (itemId: string): { key: string, value: string, source: string, sourceId: string }[] => {
     const allFolders = folders.peek();
     const allRequests = requests.peek();
-    const hierarchy: { id: string, name: string, type: 'folder' | 'request', headers: Record<string, string> }[] = [];
+    const hierarchy: { id: string, name: string, type: 'folder' | 'request', headers: { key: string, value: string }[] }[] = [];
 
     let currentId: string | null | undefined = itemId;
     let isRequest = true;
@@ -924,14 +940,14 @@ export const resolveHeaders = (itemId: string): { key: string, value: string, so
         if (isRequest) {
             const r = allRequests.find(x => x.id === currentId);
             if (r) {
-                hierarchy.unshift({ id: r.id, name: r.name, type: 'request', headers: r.headers });
+                hierarchy.unshift({ id: r.id, name: r.name, type: 'request', headers: r.headers || [] });
                 currentId = r.parentId;
                 isRequest = false;
             } else break;
         } else {
             const f = allFolders.find(x => x.id === currentId);
             if (f) {
-                hierarchy.unshift({ id: f.id, name: f.name, type: 'folder', headers: f.headers || {} });
+                hierarchy.unshift({ id: f.id, name: f.name, type: 'folder', headers: f.headers || [] });
                 currentId = f.parentId;
             } else break;
         }
@@ -939,8 +955,8 @@ export const resolveHeaders = (itemId: string): { key: string, value: string, so
 
     const headerMap = new Map<string, { value: string, source: string, sourceId: string }>();
     hierarchy.forEach(item => {
-        Object.entries(item.headers).forEach(([key, value]) => {
-            headerMap.set(key, { value, source: item.type === 'request' ? 'Request' : `Folder: ${item.name}`, sourceId: item.id });
+        item.headers.forEach(h => {
+            headerMap.set(h.key, { value: h.value, source: item.type === 'request' ? 'Request' : `Folder: ${item.name}`, sourceId: item.id });
         });
     });
 

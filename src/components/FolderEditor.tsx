@@ -11,7 +11,7 @@ export function FolderEditor() {
     // Local signals
     const name = useSignal(currentFolder.name);
     const headers = useSignal<{ key: string, value: string }[]>(
-        Object.entries(currentFolder.headers || {}).map(([k, v]) => ({ key: k, value: v }))
+        (currentFolder.headers || []).map(h => ({ ...h }))
     );
     const variables = useSignal<{ key: string, value: string }[]>(
         Object.entries(currentFolder.variables || {}).map(([k, v]) => ({ key: k, value: v }))
@@ -107,14 +107,11 @@ export function FolderEditor() {
         if (idx !== -1) {
             const folder = allFolders[idx];
 
-            // Reconstruct objects
-            const headersObj: Record<string, string> = {};
-            currentHeaders.forEach(h => { if (h.key) headersObj[h.key] = h.value; });
+            const headersChanged = JSON.stringify(folder.headers || []) !== JSON.stringify(currentHeaders);
 
             const varsObj: Record<string, string> = {};
             currentVars.forEach(v => { if (v.key) varsObj[v.key] = v.value; });
 
-            const headersChanged = JSON.stringify(folder.headers || {}) !== JSON.stringify(headersObj);
             const varsChanged = JSON.stringify(folder.variables || {}) !== JSON.stringify(varsObj);
             const authChanged = JSON.stringify(folder.auth) !== JSON.stringify(currentAuth);
 
@@ -123,7 +120,7 @@ export function FolderEditor() {
                 newFolders[idx] = {
                     ...folder,
                     name: currentName,
-                    headers: headersObj,
+                    headers: currentHeaders,
                     variables: varsObj,
                     auth: currentAuth
                 };

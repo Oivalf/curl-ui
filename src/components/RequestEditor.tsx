@@ -33,10 +33,12 @@ export function RequestEditor() {
     const method = useSignal(currentRequest.method);
     // Convert headers object to array for easier editing
     const headers = useSignal<{ key: string, value: string }[]>(
-        Object.entries(currentRequest.headers).map(([k, v]) => ({ key: k, value: v }))
+        (currentRequest.headers || []).map(h => ({ ...h }))
     );
     const body = useSignal(currentRequest.body || '');
-    const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>((currentRequest.body && (currentRequest.body as any).startsWith('{')) ? 'json' : 'none'); // Simple heuristic, todo fix
+    const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
+        currentRequest.bodyType || ((currentRequest.body && (currentRequest.body as any).startsWith('{')) ? 'json' : 'none')
+    );
     const preScripts = useSignal<ScriptItem[]>(currentRequest.preScripts || []);
     const postScripts = useSignal<ScriptItem[]>(currentRequest.postScripts || []);
 
@@ -65,7 +67,7 @@ export function RequestEditor() {
     // Params State
     const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>({});
-    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>([]);
+    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentRequest.formData || []);
 
     // URL sync effect removed - handled by onInput and initial state
 
@@ -122,7 +124,9 @@ export function RequestEditor() {
         const currentMethod = method.value;
         const currentUrl = getFinalUrl(true);
         const currentHeaders = headers.value;
+        const currentBodyType = bodyType.value;
         const currentBody = body.value;
+        const currentFormData = formData.value;
         const currentAuth = auth.value;
         const currentPreScripts = preScripts.value;
         const currentPostScripts = postScripts.value;
@@ -135,24 +139,24 @@ export function RequestEditor() {
 
         if (idx !== -1) {
             const req = allRequests[idx];
-            // Reconstruct headers object
-            const headersObj: Record<string, string> = {};
-            currentHeaders.forEach(h => { if (h.key) headersObj[h.key] = h.value; });
-
-            const headersChanged = JSON.stringify(req.headers) !== JSON.stringify(headersObj);
+            const headersChanged = JSON.stringify(req.headers) !== JSON.stringify(currentHeaders);
             const authChanged = JSON.stringify(req.auth) !== JSON.stringify(currentAuth);
             const preScriptsChanged = JSON.stringify(req.preScripts) !== JSON.stringify(currentPreScripts);
             const postScriptsChanged = JSON.stringify(req.postScripts) !== JSON.stringify(currentPostScripts);
+            const bodyTypeChanged = req.bodyType !== currentBodyType;
+            const formDataChanged = JSON.stringify(req.formData || []) !== JSON.stringify(currentFormData);
 
-            if (req.name !== currentName || req.method !== currentMethod || req.url !== currentUrl || headersChanged || req.body !== currentBody || authChanged || preScriptsChanged || postScriptsChanged) {
+            if (req.name !== currentName || req.method !== currentMethod || req.url !== currentUrl || headersChanged || req.body !== currentBody || bodyTypeChanged || formDataChanged || authChanged || preScriptsChanged || postScriptsChanged) {
                 const newRequests = [...allRequests];
                 newRequests[idx] = {
                     ...req,
                     name: currentName,
                     method: currentMethod,
                     url: currentUrl,
-                    headers: headersObj,
+                    headers: currentHeaders,
+                    bodyType: currentBodyType,
                     body: currentBody,
+                    formData: currentFormData,
                     auth: currentAuth,
                     preScripts: currentPreScripts,
                     postScripts: currentPostScripts

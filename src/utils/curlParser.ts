@@ -1,7 +1,7 @@
 export interface ParsedCurl {
     method: string;
     url: string;
-    headers: Record<string, string>;
+    headers: { key: string, value: string }[];
     body: string;
 }
 
@@ -10,7 +10,7 @@ export function parseCurl(curlCommand: string): ParsedCurl {
     const result: ParsedCurl = {
         method: 'GET',
         url: '',
-        headers: {},
+        headers: [],
         body: ''
     };
 
@@ -38,7 +38,7 @@ export function parseCurl(curlCommand: string): ParsedCurl {
                 if (parts.length >= 2) {
                     const key = parts[0].trim();
                     const value = parts.slice(1).join(':').trim();
-                    result.headers[key] = value;
+                    result.headers.push({ key, value });
                 }
                 i += 2;
                 continue;
@@ -57,7 +57,7 @@ export function parseCurl(curlCommand: string): ParsedCurl {
         if (arg === '-u' || arg === '--user') {
             if (nextArg) {
                 const auth = btoa(nextArg);
-                result.headers['Authorization'] = `Basic ${auth}`;
+                result.headers.push({ key: 'Authorization', value: `Basic ${auth}` });
                 i += 2;
                 continue;
             }

@@ -9,8 +9,9 @@ The Execution Editor is where you run requests and view responses. Each request 
 - **Execution Progress**: A real-time summary panel appears during execution, showing detailed steps (Pre-scripts, preparation, HTTP request, and post-scripts) with their individual durations.
 - **Status & Size**: View formatted response size (e.g., KB, MB) and status codes in both the progress summary and the response panel.
 - **Color Coding**: HTTP status codes are color-coded for quick identification: 🟢 Green for 2xx (Success), 🔴 Red for 4xx/5xx (Errors), and 🟡 Yellow for other codes.
-- **Multi-Value Params**: Manage multiple values for query parameters using the `+` and `-` buttons.
-- **Key-Level Control**: The "Enabled" checkbox for query parameters is located at the key level, allowing you to bulk-enable or disable all associated values.
+- **Multi-Value Support**: Manage multiple values with the same key for both query parameters and HTTP headers using the `+` and `-` buttons. This allows sending duplicate headers like `Set-Cookie` or `Accept` without overriding each other.
+- **Key-Level Control**: The "Enabled" checkbox for query parameters and headers is located at the key level, allowing you to bulk-enable or disable all associated values.
+- **Body & Form-Data Persistence**: The selected payload type (e.g., Multipart, Form Urlencoded) and all its defined fields (`formData`) are safely preserved during execution state changes.
 - **Inheritance Protection**: Items (headers or parameters) inherited from a parent request are protected. You can toggle them off, but the delete (`×`) icon is hidden until you add a new override.
 - **Response Panel**: View the detailed headers and body of the returned response.
 - **Console**: Inspect logs from scripts and application information in the integrated Console Panel.

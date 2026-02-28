@@ -110,7 +110,7 @@ export function ImportModal() {
                             path: pr.path,
                             response: {
                                 statusCode: pr.responseStatus || 200,
-                                headers: { ...pr.headers, 'Content-Type': 'application/json' },
+                                headers: [...pr.headers, { key: 'Content-Type', value: 'application/json' }],
                                 body: pr.body || '{}',
                                 enabled: true
                             }

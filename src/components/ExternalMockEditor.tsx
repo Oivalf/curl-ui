@@ -52,7 +52,7 @@ export function ExternalMockEditor() {
             path: '/new-endpoint',
             response: {
                 statusCode: 200,
-                headers: { 'Content-Type': 'application/json' },
+                headers: [{ key: 'Content-Type', value: 'application/json' }],
                 body: '{\n  "message": "Hello World"\n}',
                 enabled: true
             }
@@ -85,7 +85,7 @@ export function ExternalMockEditor() {
                     path: ep.path,
                     response: {
                         status_code: ep.response.statusCode,
-                        headers: ep.response.headers,
+                        headers: ep.response.headers.map(h => [h.key, h.value]),
                         body: ep.response.body
                     }
                 }));
@@ -281,9 +281,8 @@ export function ExternalMockEditor() {
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Response Headers</label>
                                         <button
                                             onClick={() => {
-                                                const h = { ...ep.response.headers };
-                                                h['New-Header'] = '';
-                                                updateEndpoint(index, { headers: h });
+                                                const newHeaders = [...ep.response.headers, { key: 'New-Header', value: '' }];
+                                                updateEndpoint(index, { headers: newHeaders });
                                             }}
                                             style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                                         >
@@ -291,34 +290,32 @@ export function ExternalMockEditor() {
                                         </button>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {Object.entries(ep.response.headers).map(([key, value]) => (
-                                            <div key={key} style={{ display: 'flex', gap: '4px' }}>
+                                        {ep.response.headers.map((header, hIdx) => (
+                                            <div key={hIdx} style={{ display: 'flex', gap: '4px' }}>
                                                 <input
                                                     type="text"
-                                                    value={key}
+                                                    value={header.key}
                                                     onInput={(e) => {
-                                                        const h = { ...ep.response.headers };
-                                                        delete h[key];
-                                                        h[e.currentTarget.value] = value;
-                                                        updateEndpoint(index, { headers: h });
+                                                        const newHeaders = [...ep.response.headers];
+                                                        newHeaders[hIdx] = { ...newHeaders[hIdx], key: e.currentTarget.value };
+                                                        updateEndpoint(index, { headers: newHeaders });
                                                     }}
                                                     style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                                                 />
                                                 <input
                                                     type="text"
-                                                    value={value}
+                                                    value={header.value}
                                                     onInput={(e) => {
-                                                        const h = { ...ep.response.headers };
-                                                        h[key] = e.currentTarget.value;
-                                                        updateEndpoint(index, { headers: h });
+                                                        const newHeaders = [...ep.response.headers];
+                                                        newHeaders[hIdx] = { ...newHeaders[hIdx], value: e.currentTarget.value };
+                                                        updateEndpoint(index, { headers: newHeaders });
                                                     }}
                                                     style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                                                 />
                                                 <button
                                                     onClick={() => {
-                                                        const h = { ...ep.response.headers };
-                                                        delete h[key];
-                                                        updateEndpoint(index, { headers: h });
+                                                        const newHeaders = ep.response.headers.filter((_, i) => i !== hIdx);
+                                                        updateEndpoint(index, { headers: newHeaders });
                                                     }}
                                                     style={{ background: 'none', color: 'var(--error)', cursor: 'pointer' }}
                                                 >

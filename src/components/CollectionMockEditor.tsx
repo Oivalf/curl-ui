@@ -37,7 +37,7 @@ export function CollectionMockEditor() {
 
     const updateRequestMock = (requestId: string, updates: Partial<MockResponse>) => {
         requests.value = requests.value.map(r =>
-            r.id === requestId ? { ...r, mockResponse: { ...(r.mockResponse || { statusCode: 200, headers: {}, body: '', enabled: false }), ...updates } } : r
+            r.id === requestId ? { ...r, mockResponse: { ...(r.mockResponse || { statusCode: 200, headers: [], body: '', enabled: false }), ...updates } } : r
         );
         unsavedItemIds.value = new Set([...unsavedItemIds.value, requestId]);
     };
@@ -72,7 +72,7 @@ export function CollectionMockEditor() {
                             path: path,
                             response: {
                                 status_code: r.mockResponse?.statusCode || 200,
-                                headers: r.mockResponse?.headers || {},
+                                headers: (r.mockResponse?.headers || []).map(h => [h.key, h.value]),
                                 body: r.mockResponse?.body || ''
                             }
                         };
@@ -207,9 +207,8 @@ export function CollectionMockEditor() {
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Response Headers</label>
                                         <button
                                             onClick={() => {
-                                                const h = { ...(req.mockResponse?.headers || {}) };
-                                                h['New-Header'] = '';
-                                                updateRequestMock(req.id, { headers: h });
+                                                const newHeaders = [...(req.mockResponse?.headers || []), { key: 'New-Header', value: '' }];
+                                                updateRequestMock(req.id, { headers: newHeaders });
                                             }}
                                             style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                                         >
@@ -217,34 +216,32 @@ export function CollectionMockEditor() {
                                         </button>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {Object.entries(req.mockResponse?.headers || {}).map(([key, value]) => (
-                                            <div key={key} style={{ display: 'flex', gap: '4px' }}>
+                                        {(req.mockResponse?.headers || []).map((header, hIdx) => (
+                                            <div key={hIdx} style={{ display: 'flex', gap: '4px' }}>
                                                 <input
                                                     type="text"
-                                                    value={key}
+                                                    value={header.key}
                                                     onInput={(e) => {
-                                                        const h = { ...(req.mockResponse?.headers || {}) };
-                                                        delete h[key];
-                                                        h[e.currentTarget.value] = value;
-                                                        updateRequestMock(req.id, { headers: h });
+                                                        const newHeaders = [...(req.mockResponse?.headers || [])];
+                                                        newHeaders[hIdx] = { ...newHeaders[hIdx], key: e.currentTarget.value };
+                                                        updateRequestMock(req.id, { headers: newHeaders });
                                                     }}
                                                     style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                                                 />
                                                 <input
                                                     type="text"
-                                                    value={value}
+                                                    value={header.value}
                                                     onInput={(e) => {
-                                                        const h = { ...(req.mockResponse?.headers || {}) };
-                                                        h[key] = e.currentTarget.value;
-                                                        updateRequestMock(req.id, { headers: h });
+                                                        const newHeaders = [...(req.mockResponse?.headers || [])];
+                                                        newHeaders[hIdx] = { ...newHeaders[hIdx], value: e.currentTarget.value };
+                                                        updateRequestMock(req.id, { headers: newHeaders });
                                                     }}
                                                     style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                                                 />
                                                 <button
                                                     onClick={() => {
-                                                        const h = { ...(req.mockResponse?.headers || {}) };
-                                                        delete h[key];
-                                                        updateRequestMock(req.id, { headers: h });
+                                                        const newHeaders = (req.mockResponse?.headers || []).filter((_, i) => i !== hIdx);
+                                                        updateRequestMock(req.id, { headers: newHeaders });
                                                     }}
                                                     style={{ background: 'none', color: 'var(--error)', cursor: 'pointer' }}
                                                 >

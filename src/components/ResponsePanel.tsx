@@ -74,10 +74,10 @@ export function ResponsePanel() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {Object.entries(responseData.value.headers).map(([k, v]) => (
-                                        <tr key={k}>
+                                    {(responseData.value.headers as string[][]).map(([k, v], i) => (
+                                        <tr key={i}>
                                             <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)' }}>{k}</td>
-                                            <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>{v as any}</td>
+                                            <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>{v}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -92,7 +92,7 @@ export function ResponsePanel() {
                             </div>
                         ) : (
                             `HTTP/1.1 ${responseData.value.status}\n` +
-                            Object.entries(responseData.value.headers).map(([k, v]) => `${k}: ${v}`).join('\n') +
+                            (responseData.value.headers as string[][]).map(([k, v]) => `${k}: ${v}`).join('\n') +
                             '\n\n' +
                             responseData.value.body
                         )

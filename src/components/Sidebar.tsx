@@ -323,7 +323,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                             name: name,
                                                             method: "GET",
                                                             url: "https://example.com",
-                                                            headers: {},
+                                                            headers: [],
                                                             parentId: null
                                                         }];
                                                         activeRequestId.value = newId;

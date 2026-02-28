@@ -151,7 +151,7 @@ export function SidebarContextMenu() {
             name: name || "New Request",
             method: "GET",
             url: "https://example.com",
-            headers: {},
+            headers: [],
             parentId: menu.itemId,
             collectionId: menu.collectionId
         }];
@@ -333,7 +333,7 @@ export function SidebarContextMenu() {
                                     name: name,
                                     method: "GET",
                                     url: "https://example.com",
-                                    headers: {},
+                                    headers: [],
                                     parentId: null, // Root of collection
                                     collectionId: menu.collectionId
                                 }];

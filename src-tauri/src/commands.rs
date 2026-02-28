@@ -8,7 +8,6 @@ use axum::{
 use git2::{IndexAddOption, Repository, Signature, StatusOptions};
 use reqwest::{multipart, Method};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use tauri::{command, path::BaseDirectory, Manager};
@@ -19,7 +18,7 @@ use tokio::sync::oneshot;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpResponse {
     status: u16,
-    headers: HashMap<String, String>,
+    headers: Vec<Vec<String>>,
     body: String,
 }
 
@@ -34,11 +33,12 @@ pub struct FormDataItem {
 pub struct HttpRequestArgs {
     pub method: String,
     pub url: String,
-    pub headers: HashMap<String, String>,
+    pub headers: Vec<Vec<String>>,
     pub body: Option<String>,
     #[serde(default)]
     pub form_data: Option<Vec<FormDataItem>>,
     pub request_id: Option<String>,
+    pub project_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,17 +66,40 @@ pub async fn http_request(
         handles.insert(id.clone(), tx);
     }
 
-    let request_future = async {
-        let client = reqwest::Client::new();
+    let client = {
+        let mut clients = state.clients.lock().await;
+        let p_name = args
+            .project_name
+            .clone()
+            .unwrap_or_else(|| "default".to_string());
+        if !clients.contains_key(&p_name) {
+            let new_client = reqwest::Client::builder()
+                .cookie_store(true)
+                .build()
+                .map_err(|e| format!("Failed to create client with cookie store: {}", e))?;
+            clients.insert(p_name.clone(), new_client);
+        }
+        clients.get(&p_name).unwrap().clone()
+    };
 
+    let request_future = async move {
         let method = Method::from_str(&args.method.to_uppercase())
             .map_err(|e| format!("Invalid method: {}", e))?;
 
         let mut request_builder = client.request(method, &args.url);
 
-        for (key, value) in args.headers {
-            request_builder = request_builder.header(key, value);
+        let mut header_map = reqwest::header::HeaderMap::new();
+        for pair in args.headers {
+            if pair.len() == 2 {
+                if let (Ok(name), Ok(value)) = (
+                    reqwest::header::HeaderName::from_bytes(pair[0].as_bytes()),
+                    reqwest::header::HeaderValue::from_bytes(pair[1].as_bytes()),
+                ) {
+                    header_map.append(name, value);
+                }
+            }
         }
+        request_builder = request_builder.headers(header_map);
 
         if let Some(form_data) = args.form_data {
             let mut form = multipart::Form::new();
@@ -111,10 +134,10 @@ pub async fn http_request(
 
         let status = response.status().as_u16();
 
-        let mut headers = HashMap::new();
+        let mut headers: Vec<Vec<String>> = Vec::new();
         for (key, value) in response.headers() {
             if let Ok(v) = value.to_str() {
-                headers.insert(key.to_string(), v.to_string());
+                headers.push(vec![key.to_string(), v.to_string()]);
             }
         }
 
@@ -458,7 +481,7 @@ pub async fn delete_project(app_handle: tauri::AppHandle, name: String) -> Resul
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MockResponseDefinition {
     pub status_code: u16,
-    pub headers: HashMap<String, String>,
+    pub headers: Vec<Vec<String>>,
     pub body: String,
 }
 
@@ -556,12 +579,14 @@ pub async fn start_mock_server(
 
             if let Some(m) = matching {
                 let mut hm = HeaderMap::new();
-                for (k, v) in &m.response.headers {
-                    if let (Ok(name), Ok(val)) = (
-                        axum::http::HeaderName::from_bytes(k.as_bytes()),
-                        axum::http::HeaderValue::from_bytes(v.as_bytes()),
-                    ) {
-                        hm.insert(name, val);
+                for pair in &m.response.headers {
+                    if pair.len() == 2 {
+                        if let (Ok(name), Ok(val)) = (
+                            axum::http::HeaderName::from_bytes(pair[0].as_bytes()),
+                            axum::http::HeaderValue::from_bytes(pair[1].as_bytes()),
+                        ) {
+                            hm.append(name, val);
+                        }
                     }
                 }
 
