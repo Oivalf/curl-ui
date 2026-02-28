@@ -254,7 +254,7 @@ export function FolderEditor() {
                         {inheritedHeaders.value.map((h, i) => (
                             <div key={i} style={{ display: 'contents' }}>
                                 <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{h.key}</div>
-                                <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.value}>{h.value}</div>
+                                <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.values.join(', ')}>{h.values.join(', ')}</div>
                                 <div
                                     style={{
                                         color: h.sourceId ? 'var(--accent-primary)' : 'var(--text-muted)',

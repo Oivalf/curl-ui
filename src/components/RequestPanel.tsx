@@ -17,7 +17,7 @@ interface RequestPanelProps {
     detectedPathKeys: Signal<string[]>;
     updateUrlFromParams: (newParams: { key: string, values: string[] }[]) => void;
     inheritedAuth?: { config: AuthConfig, source: string, sourceId?: string };
-    inheritedHeaders?: { key: string, value: string, source: string, sourceId?: string }[];
+    inheritedHeaders?: { key: string, values: string[], source: string, sourceId?: string }[];
     preScripts: Signal<ScriptItem[]>;
     postScripts: Signal<ScriptItem[]>;
     isReadOnly?: boolean;

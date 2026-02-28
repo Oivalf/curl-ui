@@ -68,7 +68,7 @@ export function ImportModal() {
                     name: name,
                     method: parsed.method,
                     url: parsed.url,
-                    headers: parsed.headers.map(h => ({ key: h.key, values: [h.value] })),
+                    headers: parsed.headers.map(h => ({ key: h.key, values: [...h.values] })),
                     body: parsed.body,
                     parentId: state.folderId || null,
                     collectionId: state.collectionId
@@ -110,7 +110,7 @@ export function ImportModal() {
                             path: pr.path,
                             response: {
                                 statusCode: pr.responseStatus || 200,
-                                headers: [...pr.headers, { key: 'Content-Type', value: 'application/json' }],
+                                headers: [...pr.headers, { key: 'Content-Type', values: ['application/json'] }],
                                 body: pr.body || '{}',
                                 enabled: true
                             }
@@ -157,7 +157,7 @@ export function ImportModal() {
                             name: pr.name,
                             method: pr.method,
                             url: pr.url,
-                            headers: pr.headers.map(h => ({ key: h.key, values: [h.value] })),
+                            headers: pr.headers.map(h => ({ key: h.key, values: [...h.values] })),
                             body: pr.body,
                             parentId
                         });
