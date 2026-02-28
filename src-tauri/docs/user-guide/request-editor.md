@@ -7,7 +7,7 @@ The Request Editor is used to define the base configuration (template) for an HT
 - **Name**: The descriptive name of the request.
 - **Method**: The HTTP verb (GET, POST, etc.) that will be used.
 - **URL**: The endpoint path. Support for `{{variables}}`.
-- **Headers**: Define key-value pairs for HTTP headers. Multiple headers with the same key (e.g., multiple `Accept` headers) are supported.
+- **Headers**: Define key-value pairs for HTTP headers. Multiple values for the same key are supported by grouping them under a single key input with `+` and `-` buttons.
 - **Auth**: Configure authentication (Inherit, Basic, or Bearer).
 - **Body**: Define the default payload structure (JSON, Form-data, Text, etc.). The selected body type and its content (including form-data fields) are automatically persisted.
 - **Scripts**: Configure JavaScript logic to run before or after executions.

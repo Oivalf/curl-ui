@@ -11,6 +11,7 @@ The Execution Editor is where you run requests and view responses. Each request 
 - **Color Coding**: HTTP status codes are color-coded for quick identification: 🟢 Green for 2xx (Success), 🔴 Red for 4xx/5xx (Errors), and 🟡 Yellow for other codes.
 - **Multi-Value Support**: Manage multiple values with the same key for both query parameters and HTTP headers using the `+` and `-` buttons. This allows sending duplicate headers like `Set-Cookie` or `Accept` without overriding each other.
 - **Key-Level Control**: The "Enabled" checkbox for query parameters and headers is located at the key level, allowing you to bulk-enable or disable all associated values.
+- **Cookie Management**: Each project maintains its own isolated cookie store. When a request returns a `Set-Cookie` header, subsequent requests to the same domain within that project will automatically include the stored cookies.
 - **Body & Form-Data Persistence**: The selected payload type (e.g., Multipart, Form Urlencoded) and all its defined fields (`formData`) are safely preserved during execution state changes.
 - **Inheritance Protection**: Items (headers or parameters) inherited from a parent request are protected. You can toggle them off, but the delete (`×`) icon is hidden until you add a new override.
 - **Response Panel**: View the detailed headers and body of the returned response.

@@ -28,3 +28,6 @@ Variables are resolved dynamically based on the current context following this p
 1. **Folder Variables**: Defined in the hierarchy of parent folders (closest parents first).
 2. **Active Environment**: Values from the currently selected custom environment.
 3. **Global Environment**: The final fallback for all variables.
+
+## Default Selection
+If custom environments exist, the application will automatically preselect the first available one (alphabetically) in the Main Layout if no other environment is currently active. This ensures that you are always working within a consistent context.
