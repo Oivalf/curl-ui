@@ -101,10 +101,14 @@ export function MainLayout({ children }: LayoutProps) {
         };
     }, []);
 
-    // Helper for reactive env check - keeping original logic
     useSignalEffect(() => {
         const selectable = environments.value.filter(e => e.name !== 'Global');
-        if (activeEnvironmentName.value && !selectable.some(e => e.name === activeEnvironmentName.value)) {
+        const current = activeEnvironmentName.value;
+        const isValid = current && selectable.some(e => e.name === current);
+
+        if (!isValid && selectable.length > 0) {
+            activeEnvironmentName.value = selectable[0].name;
+        } else if (!isValid) {
             activeEnvironmentName.value = null;
         }
     });
