@@ -205,6 +205,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                 language={bodyType.value}
                                 readOnly={isReadOnly}
                                 height="300px"
+                                parentId={parentId}
                             />
                         ) : (
                             <VariableInput

@@ -134,9 +134,9 @@ export function RequestPanel({
                             </div>
 
                             {activeScriptTab.value === 'pre' ? (
-                                <ScriptListEditor scripts={preScripts} title="Pre-request Scripts" />
+                                <ScriptListEditor scripts={preScripts} title="Pre-request Scripts" parentId={parentId} />
                             ) : (
-                                <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} />
+                                <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} parentId={parentId} />
                             )}
                         </div>
                     )}

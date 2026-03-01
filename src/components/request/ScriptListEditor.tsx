@@ -7,9 +7,10 @@ interface ScriptListEditorProps {
     scripts: Signal<ScriptItem[]>;
     title: string;
     showStatusFilter?: boolean;
+    parentId?: string | null;
 }
 
-export function ScriptListEditor({ scripts, title, showStatusFilter = false }: ScriptListEditorProps) {
+export function ScriptListEditor({ scripts, title, showStatusFilter = false, parentId }: ScriptListEditorProps) {
     const expandedScriptId = useSignal<string | null>(null);
 
     const addScript = () => {
@@ -144,6 +145,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false }: S
                                     language="javascript"
                                     height="100%"
                                     enableScriptAutocompletion={true}
+                                    parentId={parentId}
                                 />
                             </div>
                         )}
