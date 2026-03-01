@@ -448,6 +448,12 @@ pub struct UseCaseStep {
     pub id: String,
     pub execution_id: String,
     pub extraction_rules: Vec<ExtractionRule>,
+    #[serde(default = "default_success_codes")]
+    pub success_codes: String,
+}
+
+fn default_success_codes() -> String {
+    "2xx".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize)]

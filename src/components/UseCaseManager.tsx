@@ -1,13 +1,16 @@
 import { useState } from 'preact/hooks';
 import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, substituteVariables, requests } from '../store';
-import { Plus, Trash2, Play, ChevronRight, ListTree, Database } from 'lucide-preact';
+import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-preact';
 import { invoke } from '@tauri-apps/api/core';
+import { ResponseData } from '../store';
+import { ResponsePanel } from './ResponsePanel';
 
 export function UseCaseManager() {
     const activeUseCase = useCases.value.find(u => u.id === activeUseCaseId.value);
     const [isRunning, setIsRunning] = useState<string | null>(null);
     const [currentStepIdx, setCurrentStepIdx] = useState<number>(-1);
-    const [runLogs, setRunLogs] = useState<{ stepIdx: number, status: 'running' | 'success' | 'error', message?: string }[]>([]);
+    const [runLogs, setRunLogs] = useState<{ stepIdx: number, status: 'running' | 'success' | 'error', message?: string, response?: ResponseData }[]>([]);
+    const [openResponses, setOpenResponses] = useState<Record<number, boolean>>({});
 
     const handleCreate = async () => {
         const name = prompt("Enter Use Case Name:", "New Use Case");
@@ -35,7 +38,8 @@ export function UseCaseManager() {
         const newStep: UseCaseStep = {
             id: crypto.randomUUID(),
             executionId: "",
-            extractionRules: []
+            extractionRules: [],
+            successCodes: "2xx"
         };
 
         useCases.value = useCases.value.map(u =>
@@ -85,11 +89,13 @@ export function UseCaseManager() {
 
         let sessionVars: Record<string, string> = {};
         const logs: typeof runLogs = [];
+        let lastResponse: ResponseData | undefined = undefined;
 
         try {
             for (let i = 0; i < useCase.steps.length; i++) {
                 const step = useCase.steps[i];
                 setCurrentStepIdx(i);
+                lastResponse = undefined;
 
                 const execution = executions.value.find(ex => ex.id === step.executionId);
                 if (!execution) {
@@ -122,6 +128,32 @@ export function UseCaseManager() {
                     }
                 });
 
+                lastResponse = {
+                    status: res.status,
+                    headers: res.headers,
+                    body: res.body,
+                    time: 0,
+                    size: res.body.length
+                };
+
+                // Validate Status Code
+                const successCodes = step.successCodes || "2xx";
+                let isSuccess = false;
+                if (successCodes === 'all') {
+                    isSuccess = true;
+                } else if (successCodes === '2xx' && res.status >= 200 && res.status < 300) {
+                    isSuccess = true;
+                } else {
+                    const allowed = successCodes.split(',').map(s => s.trim());
+                    if (allowed.includes(res.status.toString())) {
+                        isSuccess = true;
+                    }
+                }
+
+                if (!isSuccess) {
+                    throw new Error(`Step failed with status ${res.status}. Expected: ${successCodes}`);
+                }
+
                 // Extraction
                 for (const rule of step.extractionRules) {
                     if (rule.source === 'body') {
@@ -144,12 +176,12 @@ export function UseCaseManager() {
                     }
                 }
 
-                logs.push({ stepIdx: i, status: 'success' });
+                logs.push({ stepIdx: i, status: 'success', response: lastResponse });
                 setRunLogs([...logs]);
             }
             alert("Use Case completed successfully!");
         } catch (err: any) {
-            logs.push({ stepIdx: currentStepIdx, status: 'error', message: err.message });
+            logs.push({ stepIdx: currentStepIdx, status: 'error', message: err.message, response: lastResponse });
             setRunLogs([...logs]);
             alert(`Use Case failed: ${err.message}`);
         } finally {
@@ -227,25 +259,53 @@ export function UseCaseManager() {
                                 {activeUseCase.steps.map((step, idx) => (
                                     <div key={step.id} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-surface)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                                                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: currentStepIdx === idx ? 'var(--warning)' : 'var(--accent-primary)', color: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
                                                     {idx + 1}
                                                 </div>
                                                 <select
                                                     value={step.executionId}
                                                     onChange={(e) => handleUpdateStep(activeUseCase.id, step.id, { executionId: e.currentTarget.value })}
-                                                    style={{ padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
+                                                    style={{ padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', flex: 1, maxWidth: '200px' }}
                                                 >
                                                     <option value="">Select Execution...</option>
                                                     {executions.value.map(ex => (
                                                         <option key={ex.id} value={ex.id}>{ex.name}</option>
                                                     ))}
                                                 </select>
-                                                {runLogs.find(l => l.stepIdx === idx)?.status === 'success' && <div style={{ color: 'var(--success)', fontSize: '0.8rem' }}>✓ Success</div>}
-                                                {runLogs.find(l => l.stepIdx === idx)?.status === 'error' && <div style={{ color: 'var(--error)', fontSize: '0.8rem' }}>✗ Error</div>}
+
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '12px' }}>
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Success:</span>
+                                                    <input
+                                                        value={step.successCodes}
+                                                        onInput={(e) => handleUpdateStep(activeUseCase.id, step.id, { successCodes: e.currentTarget.value })}
+                                                        placeholder="200,201 or 2xx"
+                                                        style={{ width: '80px', padding: '2px 6px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)' }}
+                                                    />
+                                                </div>
+
+                                                {runLogs.find(l => l.stepIdx === idx)?.status === 'success' && <div style={{ color: 'var(--success)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Success</div>}
+                                                {runLogs.find(l => l.stepIdx === idx)?.status === 'error' && <div style={{ color: 'var(--error)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14} /> Error</div>}
                                             </div>
-                                            <button onClick={() => handleRemoveStep(activeUseCase.id, step.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {runLogs.find(l => l.stepIdx === idx)?.response && (
+                                                    <button
+                                                        onClick={() => setOpenResponses(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                                        style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                        title="Toggle Response"
+                                                    >
+                                                        {openResponses[idx] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                    </button>
+                                                )}
+                                                <button onClick={() => handleRemoveStep(activeUseCase.id, step.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                            </div>
                                         </div>
+
+                                        {openResponses[idx] && runLogs.find(l => l.stepIdx === idx)?.response && (
+                                            <div style={{ marginBottom: '16px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '300px' }}>
+                                                <ResponsePanel response={runLogs.find(l => l.stepIdx === idx)!.response!} />
+                                            </div>
+                                        )}
 
                                         <div style={{ marginLeft: '32px' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>

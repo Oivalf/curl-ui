@@ -171,6 +171,7 @@ export interface UseCaseStep {
     id: string;
     executionId: string;
     extractionRules: ExtractionRule[];
+    successCodes: string;
 }
 
 export interface UseCase {

@@ -1,10 +1,6 @@
 {
   "id": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-<<<<<<< HEAD
-  "name": "My Collection conflict8",
-=======
   "name": "My Collection changed",
->>>>>>> refs/remotes/origin/develop
   "requests": [
     {
       "id": "1",
@@ -532,7 +528,7 @@
       "id": "857608cc-180c-4b56-b7c3-5a3e92145b0c",
       "requestId": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "sample",
+      "name": "sample get",
       "headers": [
         {
           "key": "ciao",
@@ -585,7 +581,7 @@
       "id": "f5951d74-1252-4beb-b024-1aac9c9184a5",
       "requestId": "9ff2c3c4-fd7d-411d-a15f-c84dccda6338",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "sample",
+      "name": "sample post",
       "body": "{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n",
       "headers": [
         {
@@ -602,7 +598,7 @@
       "id": "7ea2f0ee-4c1f-43eb-bf2e-d9b4c1ca8298",
       "requestId": "0db90b3b-22d1-4765-a944-6772479a358f",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "sample"
+      "name": "sample patch"
     },
     {
       "id": "005329e7-cb8d-49ed-bc7e-e31d3b17c7ab",
