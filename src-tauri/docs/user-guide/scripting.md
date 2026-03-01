@@ -2,6 +2,13 @@
 
 cURL-UI allows running JavaScript logic before and after requests.
 
+## Intelligent Autocomplete
+
+The Script Editor provides real-time suggestions for all available objects:
+- **Objects**: Suggestions for `env`, `request`, and `response` (in post-scripts).
+- **Methods**: Once you type `env.` or `request.`, the editor shows all available methods (e.g., `get`, `set`, `headers`).
+- **Variables**: Use `{{` within script strings to autocomplete environment variables.
+
 ## Script API
 
 ### The `env` Object

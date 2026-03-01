@@ -14,7 +14,7 @@ The Execution Editor is where you run requests and view responses. Each request 
 - **Cookie Management**: Each project maintains its own isolated cookie store. When a request returns a `Set-Cookie` header, subsequent requests to the same domain within that project will automatically include the stored cookies.
 - **Body & Form-Data Persistence**: The selected payload type (e.g., Multipart, Form Urlencoded) and all its defined fields (`formData`) are safely preserved during execution state changes.
 - **Inheritance Protection**: Items (headers or parameters) inherited from a parent request are protected. You can toggle them off, but the delete (`×`) icon is hidden until you add a new override.
-- **Response Panel**: View the detailed headers and body of the returned response.
+- **Response Panel**: View the detailed headers and body of the returned response. Responses are **isolated and persisted per execution**, meaning you can run multiple requests and switch between their tabs without losing or sharing response data.
 - **Console**: Inspect logs from scripts and application information in the integrated Console Panel.
 
 ## Progress Summary
