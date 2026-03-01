@@ -2,9 +2,56 @@ import { useSignal } from "@preact/signals";
 import { responseData } from '../store';
 import { RequestCurlView } from "./request/RequestCurlView";
 import { formatBytes } from "../utils/format";
+import { save } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
+import { Download } from 'lucide-preact';
 
 export function ResponsePanel() {
     const activeResponseTab = useSignal<'body' | 'headers' | 'raw_response' | 'raw_request' | 'curl'>('body');
+
+    const handleSaveBody = async () => {
+        if (!responseData.value?.body) return;
+
+        try {
+            // Try to determine extension from content-type header
+            let extension = 'bin';
+            const headers = responseData.value.headers as string[][];
+            const contentType = headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1] || '';
+
+            if (contentType.includes('json')) extension = 'json';
+            else if (contentType.includes('xml')) extension = 'xml';
+            else if (contentType.includes('html')) extension = 'html';
+            else if (contentType.includes('text')) extension = 'txt';
+            else if (contentType.includes('javascript')) extension = 'js';
+            else if (contentType.includes('yaml')) extension = 'yaml';
+
+            const filePath = await save({
+                defaultPath: `response_body.${extension}`,
+                filters: [{
+                    name: 'Response Body',
+                    extensions: [extension, 'txt', 'bin', '*']
+                }]
+            });
+
+            if (filePath) {
+                let content = responseData.value.body;
+                // If it's JSON, maybe the user wants it prettified as shown in UI?
+                // Let's stick to the raw body for accuracy, or whatever is currently displayed.
+                // In the UI we try to JSON.parse(body), let's do the same for the file if it's JSON.
+                if (extension === 'json') {
+                    try {
+                        content = JSON.stringify(JSON.parse(content), null, 2);
+                    } catch { /* ignore if parse fails */ }
+                }
+
+                await invoke('save_workspace', { path: filePath, data: content });
+                alert(`Body saved to ${filePath}`);
+            }
+        } catch (err) {
+            console.error('Failed to save body:', err);
+            alert('Error saving body: ' + err);
+        }
+    };
 
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, minHeight: 0 }}>
@@ -49,14 +96,41 @@ export function ResponsePanel() {
                                 {responseData.value?.status === 0 ? 'Requesting...' : 'No response'}
                             </div>
                         ) : (
-                            // Try to prettify if it looks like JSON, otherwise raw
-                            (() => {
-                                try {
-                                    return JSON.stringify(JSON.parse(responseData.value.body), null, 2);
-                                } catch {
-                                    return responseData.value.body;
-                                }
-                            })()
+                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                <div style={{ flex: 1 }}>
+                                    {(() => {
+                                        try {
+                                            return JSON.stringify(JSON.parse(responseData.value.body), null, 2);
+                                        } catch {
+                                            return responseData.value.body;
+                                        }
+                                    })()}
+                                </div>
+                                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <button
+                                        onClick={handleSaveBody}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            padding: '8px 16px',
+                                            backgroundColor: 'var(--accent-primary)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: 'var(--radius-md)',
+                                            cursor: 'pointer',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 'bold',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--accent-hover, var(--accent-primary))')}
+                                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--accent-primary)')}
+                                    >
+                                        <Download size={16} />
+                                        Save Body to File
+                                    </button>
+                                </div>
+                            </div>
                         )
                     )}
 
