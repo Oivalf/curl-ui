@@ -10,6 +10,7 @@ import { ImportModal } from "./components/ImportModal";
 import { CollectionMockEditor } from "./components/CollectionMockEditor";
 import { ExternalMockEditor } from "./components/ExternalMockEditor";
 import { PromptModal } from "./components/PromptModal";
+import { UseCaseManager } from "./components/UseCaseManager";
 
 function App() {
   // Simple "Routing" for separate windows
@@ -57,6 +58,8 @@ function App() {
               <CollectionMockEditor key={activeTab.id} />
             ) : activeTab.type === 'external-mock' ? (
               <ExternalMockEditor key={activeTab.id} />
+            ) : activeTab.type === 'use-case' ? (
+              <UseCaseManager key={activeTab.id} />
             ) : (
               <FolderEditor key={activeTab.id} />
             )

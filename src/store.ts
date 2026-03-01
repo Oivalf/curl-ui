@@ -160,9 +160,28 @@ export interface Environment {
     variables: { key: string, value: string }[];
 }
 
+export interface ExtractionRule {
+    source: string; // e.g. "body", "header:Set-Cookie"
+    jsonPath?: string;
+    regex?: string;
+    variableName: string;
+}
+
+export interface UseCaseStep {
+    id: string;
+    executionId: string;
+    extractionRules: ExtractionRule[];
+}
+
+export interface UseCase {
+    id: string;
+    name: string;
+    steps: UseCaseStep[];
+}
+
 export interface Tab {
     id: string;
-    type: 'request' | 'folder' | 'execution' | 'collection' | 'external-mock';
+    type: 'request' | 'folder' | 'execution' | 'collection' | 'external-mock' | 'use-case';
     name: string;
 }
 
@@ -229,11 +248,13 @@ export const requests = signal<RequestItem[]>([]);
 export const folders = signal<Folder[]>([]);
 export const executions = signal<ExecutionItem[]>([]);
 export const environments = signal<Environment[]>([]);
+export const useCases = signal<UseCase[]>([]);
 
 export const activeRequestId = signal<string | null>(null);
 export const activeFolderId = signal<string | null>(null);
 export const activeExecutionId = signal<string | null>(null);
 export const activeExternalMockId = signal<string | null>(null);
+export const activeUseCaseId = signal<string | null>(null);
 export const activeEnvironmentName = signal<string | null>(null);
 export const activeTabId = signal<string | null>(null);
 export const activeProjectName = signal<string>("Default Project");
@@ -285,6 +306,65 @@ export const getScopedVariables = (parentId?: string | null): VariableInfo[] => 
     return Array.from(varsMap.entries())
         .map(([name, source]) => ({ name, source }))
         .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+export const resolveVariables = (parentId: string | null, sessionVars: Record<string, string> = {}): Record<string, string> => {
+    const vars: Record<string, string> = {};
+
+    // 1. Global
+    const globalEnv = environments.value.find(e => e.name === 'Global');
+    if (globalEnv) {
+        globalEnv.variables.forEach(v => {
+            if (v.key) vars[v.key] = v.value;
+        });
+    }
+
+    // 2. Active Environment
+    const activeEnv = environments.value.find(e => e.name === activeEnvironmentName.value);
+    if (activeEnv && activeEnv.name !== 'Global') {
+        activeEnv.variables.forEach(v => {
+            if (v.key) vars[v.key] = v.value;
+        });
+    }
+
+    // 3. Parent Hierarchy
+    let currentId = parentId;
+    while (currentId) {
+        const folder = folders.value.find(f => f.id === currentId);
+        if (folder) {
+            if (folder.variables) {
+                Object.entries(folder.variables).forEach(([k, v]) => {
+                    vars[k] = v;
+                });
+            }
+            currentId = folder.parentId as string | null;
+        } else {
+            break;
+        }
+    }
+
+    // 4. Session Variables (highest priority)
+    Object.entries(sessionVars).forEach(([k, v]) => {
+        vars[k] = v;
+    });
+
+    return vars;
+};
+
+export const substituteVariables = (text: string | null | undefined, variableMap: Record<string, string>): string => {
+    if (!text) return '';
+    const placeholders = Array.from(new Set(text.match(/{{\s*[\S]+?\s*}}/g) || []));
+    if (placeholders.length === 0) return text;
+
+    let result = text;
+    placeholders.forEach(placeholder => {
+        const key = placeholder.slice(2, -2).trim();
+        const value = variableMap[key];
+        if (value !== undefined) {
+            result = result.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+        }
+    });
+    return result;
 };
 
 export const allVariableNames = computed(() => getScopedVariables(null));
@@ -454,11 +534,12 @@ export const syncProjectManifest = async (projectName: string) => {
         const projectMocks = externalMocks.value.filter(m => m.path);
         const mockPaths = projectMocks.map(m => m.path!);
 
-        if (paths.length > 0 || mockPaths.length > 0) {
+        if (paths.length > 0 || mockPaths.length > 0 || useCases.value.length > 0) {
             await invoke('sync_project_manifest', {
                 name: projectName,
                 collectionPaths: paths,
-                externalMockPaths: mockPaths
+                externalMockPaths: mockPaths,
+                useCases: useCases.value
             });
             await refreshMenu();
         }
@@ -481,6 +562,7 @@ export const openProject = async (name: string) => {
         activeRequestId.value = null;
         activeFolderId.value = null;
         activeExternalMockId.value = null;
+        useCases.value = manifest.use_cases || [];
 
         for (const path of manifest.collections) {
             await loadCollectionFromPath(path);

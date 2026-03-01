@@ -444,11 +444,35 @@ pub async fn load_workspace(path: String) -> Result<String, String> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct UseCaseStep {
+    pub id: String,
+    pub execution_id: String,
+    pub extraction_rules: Vec<ExtractionRule>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExtractionRule {
+    pub source: String, // e.g. "body", "header:Set-Cookie"
+    pub json_path: Option<String>,
+    pub regex: Option<String>,
+    pub variable_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UseCase {
+    pub id: String,
+    pub name: String,
+    pub steps: Vec<UseCaseStep>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectManifest {
     pub name: String,
     pub collections: Vec<String>,
     #[serde(default)]
     pub external_mocks: Vec<String>,
+    #[serde(default)]
+    pub use_cases: Vec<UseCase>,
 }
 
 #[command]
@@ -457,6 +481,7 @@ pub async fn sync_project_manifest(
     name: String,
     collection_paths: Vec<String>,
     external_mock_paths: Vec<String>,
+    use_cases: Vec<UseCase>,
 ) -> Result<(), String> {
     use tauri::Manager;
 
@@ -473,6 +498,7 @@ pub async fn sync_project_manifest(
         name,
         collections: collection_paths,
         external_mocks: external_mock_paths,
+        use_cases,
     };
 
     let data = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
