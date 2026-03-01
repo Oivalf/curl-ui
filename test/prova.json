@@ -1,10 +1,6 @@
 {
   "id": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-<<<<<<< HEAD
-  "name": "My Collection conflict3",
-=======
-  "name": "My Collection changed",
->>>>>>> 90fc7d2c6a404f35f1545da80ed9b95383585bff
+  "name": "My Collection conflict4",
   "requests": [
     {
       "id": "1",
