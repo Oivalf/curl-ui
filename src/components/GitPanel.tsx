@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'preact/hooks';
 import { invoke } from '@tauri-apps/api/core';
-import { UploadCloud, RefreshCw } from 'lucide-preact';
+import { UploadCloud, RefreshCw, Download } from 'lucide-preact';
 import { collections } from '../store';
+import { MergeEditor } from './MergeEditor';
 
 interface FileStatus {
     path: string;
@@ -17,11 +18,20 @@ interface CollectionGitState {
     commitMsg: string;
     loading: boolean;
     result: string | null;
+    hasConflict: boolean;
+}
+
+interface MergeData {
+    index: number;
+    local: string;
+    remote: string;
+    filename: string;
 }
 
 export function GitPanel() {
     const [collectionStates, setCollectionStates] = useState<CollectionGitState[]>([]);
     const [globalLoading, setGlobalLoading] = useState(false);
+    const [mergeData, setMergeData] = useState<MergeData | null>(null);
 
     const loadStatus = async () => {
         setGlobalLoading(true);
@@ -48,7 +58,8 @@ export function GitPanel() {
                             status: relativePath.status,
                             commitMsg: "",
                             loading: false,
-                            result: null
+                            result: null,
+                            hasConflict: relativePath.status === 'Conflict' || relativePath.status === 'Unmerged'
                         });
                     }
 
@@ -136,9 +147,91 @@ export function GitPanel() {
             console.error(err);
             const msg = typeof err === 'string' ? err : (err as any).message || JSON.stringify(err);
             updateState({ result: "Error: " + msg });
-            alert("Commit/Push Failed: " + msg);
+
+            if (msg.includes("fetch first") || msg.includes("rejected")) {
+                if (confirm("Push was rejected because the remote contains changes you don't have. Would you like to Pull and Merge now?")) {
+                    handlePull(index);
+                }
+            } else {
+                alert("Commit/Push Failed: " + msg);
+            }
         } finally {
             updateState({ loading: false });
+        }
+    };
+
+    const handlePull = async (index: number) => {
+        const state = collectionStates[index];
+        if (!state.repoRoot) return;
+
+        const updateState = (update: Partial<CollectionGitState>) => {
+            const newStates = [...collectionStates];
+            newStates[index] = { ...newStates[index], ...update };
+            setCollectionStates(newStates);
+        };
+
+        updateState({ loading: true, result: null });
+
+        try {
+            const pullResult = await invoke<string>('git_pull', { path: state.repoRoot });
+
+            if (pullResult === "Conflict") {
+                updateState({ result: "Conflict detected!", hasConflict: true });
+                handleStartMerge(index);
+            } else {
+                updateState({ result: pullResult });
+                loadStatus();
+            }
+        } catch (err) {
+            console.error(err);
+            updateState({ result: "Pull failed" });
+        } finally {
+            updateState({ loading: false });
+        }
+    };
+
+    const handleStartMerge = async (index: number) => {
+        const state = collectionStates[index];
+        if (!state.repoRoot) return;
+
+        try {
+            const versions = await invoke<{ local: string, remote: string, base: string }>('get_conflicted_versions', {
+                repoPath: state.repoRoot,
+                filePath: state.path.replace(/\\/g, '/').split('/').pop() || ""
+            });
+
+            if (versions.local && versions.remote) {
+                setMergeData({
+                    index,
+                    local: versions.local,
+                    remote: versions.remote,
+                    filename: state.name
+                });
+            } else {
+                alert("Could not retrieve conflicted versions.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error loading merge data");
+        }
+    };
+
+    const handleResolve = async (mergedContent: string) => {
+        if (!mergeData) return;
+        const state = collectionStates[mergeData.index];
+
+        try {
+            await invoke('save_workspace', { path: state.path, data: mergedContent });
+            await invoke('git_resolve_conflict', {
+                repoPath: state.repoRoot,
+                filePath: state.path.replace(/\\/g, '/').split('/').pop() || ""
+            });
+
+            setMergeData(null);
+            loadStatus();
+        } catch (err) {
+            console.error(err);
+            alert("Error resolving conflict");
         }
     };
 
@@ -199,46 +292,97 @@ export function GitPanel() {
                     <div key={state.id} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '10px', backgroundColor: 'var(--bg-surface)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                             <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{state.name}</span>
-                            <span style={{ fontSize: '0.75rem', color: state.status === 'Modified' ? 'var(--warning)' : 'var(--success)' }}>{state.status}</span>
+                            <span style={{ fontSize: '0.75rem', color: state.status === 'Conflict' || state.hasConflict ? 'var(--error)' : state.status === 'Modified' ? 'var(--warning)' : 'var(--success)' }}>{state.status}</span>
                         </div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', wordBreak: 'break-all' }}>
                             {state.repoRoot}
                         </div>
 
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <input
-                                placeholder="Commit message..."
-                                value={state.commitMsg}
-                                onInput={(e) => {
-                                    const newStates = [...collectionStates];
-                                    newStates[idx].commitMsg = e.currentTarget.value;
-                                    setCollectionStates(newStates);
-                                }}
-                                style={{ flex: 1, padding: '6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.85rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
-                            />
+                            {!state.hasConflict && (
+                                <input
+                                    placeholder="Commit message..."
+                                    value={state.commitMsg}
+                                    onInput={(e) => {
+                                        const newStates = [...collectionStates];
+                                        newStates[idx].commitMsg = e.currentTarget.value;
+                                        setCollectionStates(newStates);
+                                    }}
+                                    style={{ flex: 1, padding: '6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.85rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
+                                />
+                            )}
+
                             <button
-                                onClick={() => handleCommitAndPush(idx)}
-                                disabled={state.loading || !state.commitMsg}
-                                title="Commit & Push"
+                                onClick={() => handlePull(idx)}
+                                disabled={state.loading}
+                                title="Pull from Remote"
                                 style={{
-                                    backgroundColor: 'var(--accent-primary)',
-                                    color: 'var(--bg-base)',
-                                    border: 'none',
+                                    backgroundColor: 'transparent',
+                                    color: 'var(--accent-primary)',
+                                    border: '1px solid var(--accent-primary)',
                                     borderRadius: 'var(--radius-sm)',
                                     padding: '0 12px',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    opacity: (!state.commitMsg || state.loading) ? 0.6 : 1
+                                    opacity: state.loading ? 0.6 : 1
                                 }}
                             >
-                                <UploadCloud size={16} />
+                                <Download size={16} />
                             </button>
+
+                            {state.hasConflict ? (
+                                <button
+                                    onClick={() => handleStartMerge(idx)}
+                                    style={{
+                                        backgroundColor: 'var(--error)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-sm)',
+                                        padding: '0 12px',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.75rem',
+                                        flex: 1
+                                    }}
+                                >
+                                    RESOLVE CONFLICT
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleCommitAndPush(idx)}
+                                    disabled={state.loading || !state.commitMsg}
+                                    title="Commit & Push"
+                                    style={{
+                                        backgroundColor: 'var(--accent-primary)',
+                                        color: 'var(--bg-base)',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-sm)',
+                                        padding: '0 12px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        opacity: (!state.commitMsg || state.loading) ? 0.6 : 1
+                                    }}
+                                >
+                                    <UploadCloud size={16} />
+                                </button>
+                            )}
                         </div>
-                        {state.result && <div style={{ fontSize: '0.75rem', color: state.result.startsWith('Error') ? 'var(--error)' : 'var(--success)', marginTop: '4px' }}>{state.result}</div>}
+                        {state.result && <div style={{ fontSize: '0.75rem', color: state.result.startsWith('Error') || state.result.includes('Conflict') ? 'var(--error)' : 'var(--success)', marginTop: '4px' }}>{state.result}</div>}
                     </div>
                 ))}
             </div>
+
+            {mergeData && (
+                <MergeEditor
+                    local={mergeData.local}
+                    remote={mergeData.remote}
+                    filename={mergeData.filename}
+                    onCancel={() => setMergeData(null)}
+                    onResolve={handleResolve}
+                />
+            )}
         </div>
     );
 }

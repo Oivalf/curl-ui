@@ -110,6 +110,10 @@ pub fn run() {
             commands::stop_mock_server,
             commands::cancel_http_request,
             commands::check_for_updates,
+            commands::git_fetch,
+            commands::git_pull,
+            commands::get_conflicted_versions,
+            commands::git_resolve_conflict,
             refresh_projects_menu,
             enable_window_menu
         ])

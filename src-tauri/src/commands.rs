@@ -311,31 +311,123 @@ pub fn get_git_root(path: String) -> Result<String, String> {
 }
 
 #[command]
-pub fn git_push(path: String) -> Result<String, String> {
-    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
-    let mut remote = repo.find_remote("origin").map_err(|e| e.to_string())?;
+pub async fn git_push(path: String) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .arg("push")
+        .current_dir(&path)
+        .output()
+        .map_err(|e| format!("Failed to execute git: {}", e))?;
 
-    let mut callbacks = git2::RemoteCallbacks::new();
-    callbacks.credentials(|_url, username_from_url, allowed_types| {
-        if allowed_types.contains(git2::CredentialType::SSH_KEY) {
-            git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
-        } else {
-            git2::Cred::default()
+    if output.status.success() {
+        Ok("Pushed successfully".to_string())
+    } else {
+        Err(format!(
+            "Git push failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConflictedVersions {
+    pub base: Option<String>,
+    pub local: Option<String>,
+    pub remote: Option<String>,
+}
+
+#[command]
+pub async fn get_conflicted_versions(
+    repo_path: String,
+    file_path: String,
+) -> Result<ConflictedVersions, String> {
+    let repo = Repository::open(&repo_path).map_err(|e| e.to_string())?;
+    let index = repo.index().map_err(|e| e.to_string())?;
+
+    let mut base = None;
+    let mut local = None;
+    let mut remote = None;
+
+    if let Some(entry) = index.get_path(std::path::Path::new(&file_path), 1) {
+        if let Ok(blob) = repo.find_blob(entry.id) {
+            base = Some(String::from_utf8_lossy(blob.content()).to_string());
         }
-    });
+    }
+    if let Some(entry) = index.get_path(std::path::Path::new(&file_path), 2) {
+        if let Ok(blob) = repo.find_blob(entry.id) {
+            local = Some(String::from_utf8_lossy(blob.content()).to_string());
+        }
+    }
+    if let Some(entry) = index.get_path(std::path::Path::new(&file_path), 3) {
+        if let Ok(blob) = repo.find_blob(entry.id) {
+            remote = Some(String::from_utf8_lossy(blob.content()).to_string());
+        }
+    }
 
-    let mut push_opts = git2::PushOptions::new();
-    push_opts.remote_callbacks(callbacks);
+    Ok(ConflictedVersions {
+        base,
+        local,
+        remote,
+    })
+}
 
-    let head = repo.head().map_err(|e| e.to_string())?;
-    let branch_name = head.shorthand().unwrap_or("master");
-    let refspec = format!("refs/heads/{}:refs/heads/{}", branch_name, branch_name);
+#[command]
+pub async fn git_fetch(path: String) -> Result<(), String> {
+    let output = std::process::Command::new("git")
+        .arg("fetch")
+        .current_dir(&path)
+        .output()
+        .map_err(|e| format!("Failed to execute git: {}", e))?;
 
-    remote
-        .push(&[refspec], Some(&mut push_opts))
-        .map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "Git fetch failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+}
 
-    Ok("Pushed successfully".to_string())
+#[command]
+pub async fn git_pull(path: String) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .arg("pull")
+        .arg("--no-rebase") // Force merge behavior for consistency with cURL-UI merge workflow
+        .current_dir(&path)
+        .output()
+        .map_err(|e| format!("Failed to execute git: {}", e))?;
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    if output.status.success() {
+        if stdout.contains("Already up to date") {
+            return Ok("Already up to date".to_string());
+        }
+        return Ok("Success".to_string());
+    }
+
+    if stderr.contains("CONFLICT")
+        || stdout.contains("CONFLICT")
+        || stderr.contains("Unmerged paths")
+    {
+        return Ok("Conflict".to_string());
+    }
+
+    Err(format!("Git pull failed: {}", stderr))
+}
+
+#[command]
+pub async fn git_resolve_conflict(repo_path: String, file_path: String) -> Result<(), String> {
+    let repo = Repository::open(&repo_path).map_err(|e| e.to_string())?;
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+
+    // Adding the file to the index resolves the conflict in Git
+    let path = std::path::Path::new(&file_path);
+    index.add_path(path).map_err(|e| e.to_string())?;
+    index.write().map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 #[command]
