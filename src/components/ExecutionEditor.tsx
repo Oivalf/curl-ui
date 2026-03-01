@@ -3,7 +3,7 @@ import { useRef, useEffect, useCallback } from "preact/hooks";
 import { ArrowLeft, Play, XCircle, Loader2, Circle, CheckCircle } from "lucide-preact";
 import { formatBytes } from "../utils/format";
 import { invoke } from '@tauri-apps/api/core';
-import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, responseData, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName } from "../store";
+import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName, ResponseData } from "../store";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ResponsePanel } from "./ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
@@ -489,6 +489,14 @@ export function ExecutionEditor() {
         }
     };
 
+    const updateExecutionResponse = (data: ResponseData) => {
+        const id = activeExecutionId.peek();
+        if (!id) return;
+        executions.value = executions.peek().map(e =>
+            e.id === id ? { ...e, lastResponse: data } : e
+        );
+    };
+
     const handleCancel = async () => {
         if (!currentRequestId.value) return;
         try {
@@ -505,7 +513,13 @@ export function ExecutionEditor() {
         const requestId = Math.random().toString(36).substring(7);
         currentRequestId.value = requestId;
         isLoading.value = true;
-        responseData.value = null;
+        updateExecutionResponse({
+            status: 0,
+            headers: {},
+            body: 'Initializing...',
+            time: 0,
+            size: 0
+        });
         totalExecutionTime.value = null;
         lastResponseTime.value = null;
         responseSize.value = null;
@@ -657,7 +671,7 @@ export function ExecutionEditor() {
             const finalRequestUrl = getFinalUrl(true);
             const finalRequestMethod = method.value;
 
-            responseData.value = {
+            updateExecutionResponse({
                 status: 0, // Loading
                 headers: {},
                 body: 'Requesting...',
@@ -665,7 +679,7 @@ export function ExecutionEditor() {
                 requestCurl,
                 requestUrl: finalRequestUrl,
                 requestMethod: finalRequestMethod
-            };
+            });
 
             const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
             const finalHeaders: string[][] = [];
@@ -769,14 +783,14 @@ export function ExecutionEditor() {
             responseSize.value = res.body.length;
             responseStatus.value = res.status;
 
-            responseData.value = {
-                ...responseData.value!,
+            updateExecutionResponse({
+                ...currentExecution.lastResponse!,
                 status: res.status,
                 headers: res.headers,
                 body: res.body,
                 time: respTime,
                 size: res.body.length
-            };
+            });
 
             // 4. Post-scripts
             setStepStatus('post-scripts', 'running');
@@ -833,13 +847,13 @@ export function ExecutionEditor() {
                 );
             }
 
-            responseData.value = {
+            updateExecutionResponse({
                 status: 0,
                 headers: {},
                 body: isCanceled ? 'Request Canceled' : `Error: ${err}`,
                 size: 0,
                 time: 0
-            };
+            });
         } finally {
             isLoading.value = false;
             currentRequestId.value = null;
@@ -1258,7 +1272,7 @@ export function ExecutionEditor() {
                 />
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', minHeight: 0 }}>
-                    <ResponsePanel />
+                    <ResponsePanel response={currentExecution.lastResponse || null} />
                 </div>
             </div>
         </div>

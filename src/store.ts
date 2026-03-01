@@ -24,6 +24,18 @@ export interface MockResponse {
     enabled: boolean;
 }
 
+export interface ResponseData {
+    status: number;
+    headers: string[][] | Record<string, any>;
+    body: string;
+    time?: number;
+    size?: number;
+    requestRaw?: string;
+    requestCurl?: string;
+    requestUrl?: string;
+    requestMethod?: string;
+}
+
 export type AuthType = 'none' | 'inherit' | 'basic' | 'bearer';
 
 export interface AuthConfig {
@@ -103,6 +115,7 @@ export interface RequestItem {
     auth?: AuthConfig;
     collapsed?: boolean;
     mockResponse?: MockResponse;
+    lastResponse?: ResponseData;
 }
 
 export interface Folder {
@@ -139,6 +152,7 @@ export interface ExecutionItem {
     auth?: AuthConfig;
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];
+    lastResponse?: ResponseData;
 }
 
 export interface Environment {
@@ -357,7 +371,6 @@ export const addLog = (level: 'info' | 'error' | 'warn', message: string, source
     appLogs.value = [...appLogs.value, entry];
 };
 
-export const responseData = signal<any | null>(null);
 export const contextMenu = signal<ContextMenuState | null>(null);
 export const openTabs = signal<Tab[]>([]);
 

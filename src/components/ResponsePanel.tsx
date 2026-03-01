@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals";
-import { responseData } from '../store';
+import { ResponseData } from '../store';
 import { RequestCurlView } from "./request/RequestCurlView";
 import { formatBytes } from "../utils/format";
 import { save } from '@tauri-apps/plugin-dialog';
@@ -7,16 +7,20 @@ import { invoke } from '@tauri-apps/api/core';
 import { Download } from 'lucide-preact';
 import { CodeEditor } from "./CodeEditor";
 
-export function ResponsePanel() {
+interface ResponsePanelProps {
+    response: ResponseData | null;
+}
+
+export function ResponsePanel({ response }: ResponsePanelProps) {
     const activeResponseTab = useSignal<'body' | 'headers' | 'raw_response' | 'raw_request' | 'curl'>('body');
 
     const handleSaveBody = async () => {
-        if (!responseData.value?.body) return;
+        if (!response?.body) return;
 
         try {
             // Try to determine extension from content-type header
             let extension = 'bin';
-            const headers = responseData.value.headers as string[][];
+            const headers = response.headers as string[][];
             const contentType = headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1] || '';
 
             if (contentType.includes('json')) extension = 'json';
@@ -35,7 +39,7 @@ export function ResponsePanel() {
             });
 
             if (filePath) {
-                let content = responseData.value.body;
+                let content = response.body;
                 // If it's JSON, maybe the user wants it prettified as shown in UI?
                 // Let's stick to the raw body for accuracy, or whatever is currently displayed.
                 // In the UI we try to JSON.parse(body), let's do the same for the file if it's JSON.
@@ -63,19 +67,19 @@ export function ResponsePanel() {
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeResponseTab.value === 'raw_response' ? 1 : 0.5, borderBottom: activeResponseTab.value === 'raw_response' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeResponseTab.value = 'raw_response'}>Raw Response</h3>
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeResponseTab.value === 'raw_request' ? 1 : 0.5, borderBottom: activeResponseTab.value === 'raw_request' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeResponseTab.value = 'raw_request'}>Raw Request</h3>
                 <h3 style={{ margin: 0, fontSize: '0.9rem', cursor: 'pointer', opacity: activeResponseTab.value === 'curl' ? 1 : 0.5, borderBottom: activeResponseTab.value === 'curl' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => activeResponseTab.value = 'curl'}>Curl</h3>
-                {responseData.value && (
+                {response && (
                     <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', maxWidth: '50%' }}>
                         <span style={{
-                            color: responseData.value.status >= 200 && responseData.value.status < 300 ? 'var(--success)' :
-                                responseData.value.status >= 400 ? 'var(--error)' :
-                                    responseData.value.status === 0 ? 'var(--text-muted)' : 'var(--warning)',
+                            color: response.status >= 200 && response.status < 300 ? 'var(--success)' :
+                                response.status >= 400 ? 'var(--error)' :
+                                    response.status === 0 ? 'var(--text-muted)' : 'var(--warning)',
                             fontWeight: 'bold'
                         }}>
-                            {responseData.value.status === 0 ? '...' : responseData.value.status}
+                            {response.status === 0 ? '...' : response.status}
                         </span>
-                        {responseData.value.size !== undefined && (
+                        {response.size !== undefined && (
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                {formatBytes(responseData.value.size)}
+                                {formatBytes(response.size)}
                             </span>
                         )}
                     </div>
@@ -92,15 +96,15 @@ export function ResponsePanel() {
             }}>
                 <div style={{ height: '100%', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
                     {activeResponseTab.value === 'body' && (
-                        !responseData.value || responseData.value.status === 0 ? (
+                        !response || response.status === 0 ? (
                             <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>
-                                {responseData.value?.status === 0 ? 'Requesting...' : 'No response'}
+                                {response?.status === 0 ? 'Requesting...' : 'No response'}
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                                 <div style={{ flex: 1, minHeight: 0 }}>
                                     {(() => {
-                                        const headers = responseData.value.headers as string[][];
+                                        const headers = response.headers as string[][];
                                         const contentType = headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1] || '';
                                         let lang: 'json' | 'yaml' | 'html' | 'xml' | 'text' = 'text';
 
@@ -109,7 +113,7 @@ export function ResponsePanel() {
                                         else if (contentType.includes('html')) lang = 'html';
                                         else if (contentType.includes('xml')) lang = 'xml';
 
-                                        let content = responseData.value.body;
+                                        let content = response.body;
                                         if (lang === 'json') {
                                             try {
                                                 content = JSON.stringify(JSON.parse(content), null, 2);
@@ -155,9 +159,9 @@ export function ResponsePanel() {
                     )}
 
                     {activeResponseTab.value === 'headers' && (
-                        !responseData.value || responseData.value.status === 0 ? (
+                        !response || response.status === 0 ? (
                             <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>
-                                {responseData.value?.status === 0 ? 'Requesting...' : 'No response'}
+                                {response?.status === 0 ? 'Requesting...' : 'No response'}
                             </div>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -168,7 +172,7 @@ export function ResponsePanel() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {(responseData.value.headers as string[][]).map(([k, v], i) => (
+                                    {(response.headers as string[][]).map(([k, v], i) => (
                                         <tr key={i}>
                                             <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)' }}>{k}</td>
                                             <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>{v}</td>
@@ -180,17 +184,17 @@ export function ResponsePanel() {
                     )}
 
                     {activeResponseTab.value === 'raw_response' && (
-                        !responseData.value || responseData.value.status === 0 ? (
+                        !response || response.status === 0 ? (
                             <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>
-                                {responseData.value?.status === 0 ? 'Requesting...' : 'No response'}
+                                {response?.status === 0 ? 'Requesting...' : 'No response'}
                             </div>
                         ) : (
                             <CodeEditor
                                 value={
-                                    `HTTP/1.1 ${responseData.value.status}\n` +
-                                    (responseData.value.headers as string[][]).map(([k, v]) => `${k}: ${v}`).join('\n') +
+                                    `HTTP/1.1 ${response.status}\n` +
+                                    (response.headers as string[][]).map(([k, v]) => `${k}: ${v}`).join('\n') +
                                     '\n\n' +
-                                    responseData.value.body
+                                    response.body
                                 }
                                 language="text"
                                 readOnly={true}
@@ -200,9 +204,9 @@ export function ResponsePanel() {
                     )}
 
                     {activeResponseTab.value === 'raw_request' && (
-                        responseData.value?.requestRaw ? (
+                        response?.requestRaw ? (
                             <CodeEditor
-                                value={responseData.value.requestRaw}
+                                value={response.requestRaw}
                                 language="text"
                                 readOnly={true}
                                 height="100%"
@@ -213,8 +217,8 @@ export function ResponsePanel() {
                     )}
 
                     {activeResponseTab.value === 'curl' && (
-                        responseData.value?.requestCurl ? (
-                            <RequestCurlView curlCommand={responseData.value.requestCurl} />
+                        response?.requestCurl ? (
+                            <RequestCurlView curlCommand={response.requestCurl} />
                         ) : (
                             <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>No curl data</div>
                         )
