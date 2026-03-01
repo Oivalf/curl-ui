@@ -1,6 +1,6 @@
 {
   "id": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-  "name": "My Collection",
+  "name": "My Collection di prova",
   "requests": [
     {
       "id": "1",
@@ -582,7 +582,7 @@
       "requestId": "9ff2c3c4-fd7d-411d-a15f-c84dccda6338",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "sample",
-      "body": "{ \n\"ftr\":{ \"bho\": \"ll\"},\n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"],\n\"gino\": \"pino\"    \n}",
+      "body": "{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n",
       "headers": [
         {
           "key": "ciccio",
