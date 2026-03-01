@@ -5,6 +5,7 @@ import { formatBytes } from "../utils/format";
 import { save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { Download } from 'lucide-preact';
+import { CodeEditor } from "./CodeEditor";
 
 export function ResponsePanel() {
     const activeResponseTab = useSignal<'body' | 'headers' | 'raw_response' | 'raw_request' | 'curl'>('body');
@@ -97,13 +98,32 @@ export function ResponsePanel() {
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                <div style={{ flex: 1 }}>
+                                <div style={{ flex: 1, minHeight: 0 }}>
                                     {(() => {
-                                        try {
-                                            return JSON.stringify(JSON.parse(responseData.value.body), null, 2);
-                                        } catch {
-                                            return responseData.value.body;
+                                        const headers = responseData.value.headers as string[][];
+                                        const contentType = headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1] || '';
+                                        let lang: 'json' | 'yaml' | 'html' | 'xml' | 'text' = 'text';
+
+                                        if (contentType.includes('json')) lang = 'json';
+                                        else if (contentType.includes('yaml')) lang = 'yaml';
+                                        else if (contentType.includes('html')) lang = 'html';
+                                        else if (contentType.includes('xml')) lang = 'xml';
+
+                                        let content = responseData.value.body;
+                                        if (lang === 'json') {
+                                            try {
+                                                content = JSON.stringify(JSON.parse(content), null, 2);
+                                            } catch { /* ignore */ }
                                         }
+
+                                        return (
+                                            <CodeEditor
+                                                value={content}
+                                                language={lang}
+                                                readOnly={true}
+                                                height="100%"
+                                            />
+                                        );
                                     })()}
                                 </div>
                                 <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
@@ -165,18 +185,28 @@ export function ResponsePanel() {
                                 {responseData.value?.status === 0 ? 'Requesting...' : 'No response'}
                             </div>
                         ) : (
-                            `HTTP/1.1 ${responseData.value.status}\n` +
-                            (responseData.value.headers as string[][]).map(([k, v]) => `${k}: ${v}`).join('\n') +
-                            '\n\n' +
-                            responseData.value.body
+                            <CodeEditor
+                                value={
+                                    `HTTP/1.1 ${responseData.value.status}\n` +
+                                    (responseData.value.headers as string[][]).map(([k, v]) => `${k}: ${v}`).join('\n') +
+                                    '\n\n' +
+                                    responseData.value.body
+                                }
+                                language="text"
+                                readOnly={true}
+                                height="100%"
+                            />
                         )
                     )}
 
                     {activeResponseTab.value === 'raw_request' && (
                         responseData.value?.requestRaw ? (
-                            <div style={{ color: 'var(--text-secondary)' }}>
-                                {responseData.value.requestRaw}
-                            </div>
+                            <CodeEditor
+                                value={responseData.value.requestRaw}
+                                language="text"
+                                readOnly={true}
+                                height="100%"
+                            />
                         ) : (
                             <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>No request data</div>
                         )

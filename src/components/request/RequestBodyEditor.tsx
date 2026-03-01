@@ -3,6 +3,7 @@ import { FolderOpen } from 'lucide-preact';
 import { open } from '@tauri-apps/plugin-dialog';
 import { OverrideIndicator } from "../OverrideIndicator";
 import { VariableInput } from "../VariableInput";
+import { CodeEditor } from "../CodeEditor";
 
 interface RequestBodyEditorProps {
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
@@ -197,18 +198,28 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                 <span style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>Body overridden</span>
                             </div>
                         )}
-                        <VariableInput
-                            value={body.value}
-                            onInput={(val) => body.value = val}
-                            multiline={true}
-                            style={{
-                                flex: 1,
-                                width: '100%',
-                            }}
-                            placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
-                            readOnly={isReadOnly}
-                            parentId={parentId}
-                        />
+                        {(bodyType.value === 'json' || bodyType.value === 'yaml' || bodyType.value === 'html' || bodyType.value === 'xml') ? (
+                            <CodeEditor
+                                value={body.value}
+                                onChange={(val) => body.value = val}
+                                language={bodyType.value}
+                                readOnly={isReadOnly}
+                                height="300px"
+                            />
+                        ) : (
+                            <VariableInput
+                                value={body.value}
+                                onInput={(val) => body.value = val}
+                                multiline={true}
+                                style={{
+                                    flex: 1,
+                                    width: '100%',
+                                }}
+                                placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
+                                readOnly={isReadOnly}
+                                parentId={parentId}
+                            />
+                        )}
                     </div>
                 )
             )}

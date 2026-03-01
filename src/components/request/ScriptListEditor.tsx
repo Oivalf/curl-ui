@@ -1,6 +1,7 @@
 import { Signal, useSignal } from "@preact/signals";
 import { Plus, Trash2, CheckSquare, Square, ChevronRight, ChevronDown, ArrowUp, ArrowDown } from 'lucide-preact';
 import { ScriptItem } from "../../store";
+import { CodeEditor } from "../CodeEditor";
 
 interface ScriptListEditorProps {
     scripts: Signal<ScriptItem[]>;
@@ -137,20 +138,12 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false }: S
                                         />
                                     </div>
                                 )}
-                                <textarea
+                                <CodeEditor
                                     value={script.content}
-                                    onInput={(e) => updateScript(script.id, { content: e.currentTarget.value })}
-                                    style={{
-                                        flex: 1,
-                                        resize: 'none',
-                                        fontFamily: 'var(--font-mono)',
-                                        padding: '8px',
-                                        backgroundColor: 'var(--bg-input)',
-                                        border: '1px solid var(--border-color)',
-                                        color: 'var(--text-primary)',
-                                        borderRadius: 'var(--radius-sm)'
-                                    }}
-                                    placeholder="// Enter script here..."
+                                    onChange={(val) => updateScript(script.id, { content: val })}
+                                    language="javascript"
+                                    height="100%"
+                                    enableScriptAutocompletion={true}
                                 />
                             </div>
                         )}
