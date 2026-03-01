@@ -146,7 +146,7 @@ export function GitPanel() {
 
             if (msg.includes("fetch first") || msg.includes("rejected")) {
                 if (confirm("Push was rejected because the remote contains changes you don't have. Would you like to Pull and Merge now?")) {
-                    handlePull(id);
+                    await handlePull(id);
                 }
             } else {
                 alert("Commit/Push Failed: " + msg);
@@ -171,9 +171,10 @@ export function GitPanel() {
 
             if (pullResult === "Conflict") {
                 updateState({ result: "Conflict detected!", hasConflict: true });
+                alert("Conflict detected for " + state.name + ". Opening the merge editor...");
                 await loadStatus();
-                // We trigger merge start after a short delay to ensure state has propagated
-                setTimeout(() => handleStartMerge(id), 200);
+                // Ensure we start merge with the latest data from the lists
+                handleStartMerge(id);
             } else {
                 updateState({ result: pullResult });
                 loadStatus();
@@ -187,8 +188,13 @@ export function GitPanel() {
     };
 
     const handleStartMerge = async (id: string) => {
-        // Find latest state by ID from current collectionStates
-        // NOTE: we use the latest state directly from the list as it might have been updated by loadStatus
+        // We need to find the LATEST state. Since we just called loadStatus,
+        // we might need to wait for the state update or use the ref/latest value.
+        // For simplicity in Preact, we can use a functional update to get the latest value
+        // WITHOUT triggering another state change if we return the same.
+        // But better: since loadStatus is awaited, it has already called setCollectionStates.
+        // However, React/Preact state updates are batched.
+
         setCollectionStates(current => {
             const state = current.find(s => s.id === id);
             if (!state?.repoRoot || !state?.gitPath) {
@@ -196,25 +202,30 @@ export function GitPanel() {
                 return current;
             }
 
-            invoke<{ local: string, remote: string, base: string }>('get_conflicted_versions', {
-                repoPath: state.repoRoot,
-                filePath: state.gitPath
-            }).then(versions => {
-                if (versions.local && versions.remote) {
-                    setMergeData({
-                        id, // Use ID here too
-                        local: versions.local,
-                        remote: versions.remote,
-                        filename: state.name
+            // Trigger the async call OUTSIDE the returned state
+            (async () => {
+                try {
+                    const versions = await invoke<{ local: string, remote: string, base: string }>('get_conflicted_versions', {
+                        repoPath: state.repoRoot,
+                        filePath: state.gitPath
                     });
-                } else {
-                    console.error("Conflict data missing in index", versions);
-                    alert(`Could not retrieve conflicted versions for ${state.gitPath}.\n\nThis happens if the file has merge markers but Git doesn't report it as 'Unmerged' in the index.\nPlease resolve manually or check the file.`);
+
+                    if (versions.local && versions.remote) {
+                        setMergeData({
+                            id,
+                            local: versions.local,
+                            remote: versions.remote,
+                            filename: state.name
+                        });
+                    } else {
+                        console.error("Conflict data missing in index", versions);
+                        alert(`Could not retrieve conflicted versions for ${state.gitPath}.\n\nThis happens if the file has merge markers but Git doesn't report it as 'Unmerged' in the index.\nPlease resolve manually or check the file.`);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Error loading merge data: " + err);
                 }
-            }).catch(err => {
-                console.error(err);
-                alert("Error loading merge data: " + err);
-            });
+            })();
 
             return current;
         });
