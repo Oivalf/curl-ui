@@ -341,7 +341,8 @@ pub async fn get_conflicted_versions(
     file_path: String,
 ) -> Result<ConflictedVersions, String> {
     let repo = Repository::open(&repo_path).map_err(|e| e.to_string())?;
-    let index = repo.index().map_err(|e| e.to_string())?;
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+    index.read(true).map_err(|e| e.to_string())?; // Ensure we see changes from CLI pull
 
     let mut base = None;
     let mut local = None;

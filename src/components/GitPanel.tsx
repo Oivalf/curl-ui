@@ -19,10 +19,11 @@ interface CollectionGitState {
     loading: boolean;
     result: string | null;
     hasConflict: boolean;
+    gitPath: string | null;
 }
 
 interface MergeData {
-    index: number;
+    id: string;
     local: string;
     remote: string;
     filename: string;
@@ -59,7 +60,8 @@ export function GitPanel() {
                             commitMsg: "",
                             loading: false,
                             result: null,
-                            hasConflict: relativePath.status === 'Conflict' || relativePath.status === 'Unmerged'
+                            hasConflict: relativePath.status === 'Conflict' || relativePath.status === 'Unmerged',
+                            gitPath: relativePath.path
                         });
                     }
 
@@ -120,14 +122,12 @@ export function GitPanel() {
         }
     };
 
-    const handleCommitAndPush = async (index: number) => {
-        const state = collectionStates[index];
-        if (!state.commitMsg || !state.repoRoot) return;
+    const handleCommitAndPush = async (id: string) => {
+        const state = collectionStates.find(s => s.id === id);
+        if (!state || !state.commitMsg || !state.repoRoot) return;
 
         const updateState = (update: Partial<CollectionGitState>) => {
-            const newStates = [...collectionStates];
-            newStates[index] = { ...newStates[index], ...update };
-            setCollectionStates(newStates);
+            setCollectionStates(prev => prev.map(s => s.id === id ? { ...s, ...update } : s));
         };
 
         updateState({ loading: true, result: null });
@@ -138,11 +138,7 @@ export function GitPanel() {
             await invoke('git_push', { path: state.repoRoot });
 
             updateState({ result: "Success!", commitMsg: "" });
-
-            setTimeout(() => {
-                loadStatus();
-            }, 1000);
-
+            setTimeout(() => loadStatus(), 1000);
         } catch (err) {
             console.error(err);
             const msg = typeof err === 'string' ? err : (err as any).message || JSON.stringify(err);
@@ -150,7 +146,7 @@ export function GitPanel() {
 
             if (msg.includes("fetch first") || msg.includes("rejected")) {
                 if (confirm("Push was rejected because the remote contains changes you don't have. Would you like to Pull and Merge now?")) {
-                    handlePull(index);
+                    handlePull(id);
                 }
             } else {
                 alert("Commit/Push Failed: " + msg);
@@ -160,14 +156,12 @@ export function GitPanel() {
         }
     };
 
-    const handlePull = async (index: number) => {
-        const state = collectionStates[index];
-        if (!state.repoRoot) return;
+    const handlePull = async (id: string) => {
+        const state = collectionStates.find(s => s.id === id);
+        if (!state || !state.repoRoot) return;
 
         const updateState = (update: Partial<CollectionGitState>) => {
-            const newStates = [...collectionStates];
-            newStates[index] = { ...newStates[index], ...update };
-            setCollectionStates(newStates);
+            setCollectionStates(prev => prev.map(s => s.id === id ? { ...s, ...update } : s));
         };
 
         updateState({ loading: true, result: null });
@@ -177,7 +171,9 @@ export function GitPanel() {
 
             if (pullResult === "Conflict") {
                 updateState({ result: "Conflict detected!", hasConflict: true });
-                handleStartMerge(index);
+                await loadStatus();
+                // We trigger merge start after a short delay to ensure state has propagated
+                setTimeout(() => handleStartMerge(id), 200);
             } else {
                 updateState({ result: pullResult });
                 loadStatus();
@@ -186,52 +182,61 @@ export function GitPanel() {
             console.error(err);
             updateState({ result: "Pull failed" });
         } finally {
-            updateState({ loading: false });
+            updateState({ loading: false }); // ensure loading labels are cleared
         }
     };
 
-    const handleStartMerge = async (index: number) => {
-        const state = collectionStates[index];
-        if (!state.repoRoot) return;
+    const handleStartMerge = async (id: string) => {
+        // Find latest state by ID from current collectionStates
+        // NOTE: we use the latest state directly from the list as it might have been updated by loadStatus
+        setCollectionStates(current => {
+            const state = current.find(s => s.id === id);
+            if (!state?.repoRoot || !state?.gitPath) {
+                console.warn("State not ready for merge", id);
+                return current;
+            }
 
-        try {
-            const versions = await invoke<{ local: string, remote: string, base: string }>('get_conflicted_versions', {
+            invoke<{ local: string, remote: string, base: string }>('get_conflicted_versions', {
                 repoPath: state.repoRoot,
-                filePath: state.path.replace(/\\/g, '/').split('/').pop() || ""
+                filePath: state.gitPath
+            }).then(versions => {
+                if (versions.local && versions.remote) {
+                    setMergeData({
+                        id, // Use ID here too
+                        local: versions.local,
+                        remote: versions.remote,
+                        filename: state.name
+                    });
+                } else {
+                    console.error("Conflict data missing in index", versions);
+                    alert(`Could not retrieve conflicted versions for ${state.gitPath}.\n\nThis happens if the file has merge markers but Git doesn't report it as 'Unmerged' in the index.\nPlease resolve manually or check the file.`);
+                }
+            }).catch(err => {
+                console.error(err);
+                alert("Error loading merge data: " + err);
             });
 
-            if (versions.local && versions.remote) {
-                setMergeData({
-                    index,
-                    local: versions.local,
-                    remote: versions.remote,
-                    filename: state.name
-                });
-            } else {
-                alert("Could not retrieve conflicted versions.");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Error loading merge data");
-        }
+            return current;
+        });
     };
 
     const handleResolve = async (mergedContent: string) => {
         if (!mergeData) return;
-        const state = collectionStates[mergeData.index];
+        const state = collectionStates.find(s => s.id === mergeData.id);
+        if (!state || !state.gitPath) return;
 
         try {
             await invoke('save_workspace', { path: state.path, data: mergedContent });
             await invoke('git_resolve_conflict', {
                 repoPath: state.repoRoot,
-                filePath: state.path.replace(/\\/g, '/').split('/').pop() || ""
+                filePath: state.gitPath
             });
 
             setMergeData(null);
             loadStatus();
         } catch (err) {
             console.error(err);
-            alert("Error resolving conflict");
+            alert("Error resolving conflict: " + err);
         }
     };
 
@@ -288,7 +293,7 @@ export function GitPanel() {
                     </div>
                 )}
 
-                {collectionStates.map((state, idx) => (
+                {collectionStates.map((state) => (
                     <div key={state.id} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '10px', backgroundColor: 'var(--bg-surface)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                             <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{state.name}</span>
@@ -304,16 +309,14 @@ export function GitPanel() {
                                     placeholder="Commit message..."
                                     value={state.commitMsg}
                                     onInput={(e) => {
-                                        const newStates = [...collectionStates];
-                                        newStates[idx].commitMsg = e.currentTarget.value;
-                                        setCollectionStates(newStates);
+                                        setCollectionStates(prev => prev.map(s => s.id === state.id ? { ...s, commitMsg: e.currentTarget.value } : s));
                                     }}
                                     style={{ flex: 1, padding: '6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.85rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
                                 />
                             )}
 
                             <button
-                                onClick={() => handlePull(idx)}
+                                onClick={() => handlePull(state.id)}
                                 disabled={state.loading}
                                 title="Pull from Remote"
                                 style={{
@@ -333,7 +336,7 @@ export function GitPanel() {
 
                             {state.hasConflict ? (
                                 <button
-                                    onClick={() => handleStartMerge(idx)}
+                                    onClick={() => handleStartMerge(state.id)}
                                     style={{
                                         backgroundColor: 'var(--error)',
                                         color: 'white',
@@ -350,7 +353,7 @@ export function GitPanel() {
                                 </button>
                             ) : (
                                 <button
-                                    onClick={() => handleCommitAndPush(idx)}
+                                    onClick={() => handleCommitAndPush(state.id)}
                                     disabled={state.loading || !state.commitMsg}
                                     title="Commit & Push"
                                     style={{
