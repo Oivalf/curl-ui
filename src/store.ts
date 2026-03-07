@@ -912,7 +912,7 @@ export const ensureDefaultExecutions = (requestIds: string[]) => {
                     id: crypto.randomUUID(),
                     requestId: reqId,
                     collectionId: req.collectionId,
-                    name: "sample"
+                    name: "default"
                 });
             }
         }
@@ -1103,4 +1103,16 @@ export const resolveHeaders = (itemId: string): { key: string, values: string[],
     });
 
     return finalHeaders;
+};
+
+export const createNewRequest = (name: string, collectionId: string, parentId: string | null = null): RequestItem => {
+    return {
+        id: crypto.randomUUID(),
+        collectionId,
+        parentId,
+        name: name,
+        method: "GET",
+        url: "https://example.com",
+        headers: []
+    };
 };

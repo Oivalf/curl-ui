@@ -9,7 +9,7 @@ export interface BaseSidebarItemProps {
     /** Collection ID for context menu */
     collectionId: string;
     /** Context menu type identifier */
-    contextMenuType: string;
+    contextMenuType: 'request' | 'folder' | 'execution' | 'collection';
     /** Nesting depth for indentation */
     depth: number;
     /** Whether this item is currently active/selected */

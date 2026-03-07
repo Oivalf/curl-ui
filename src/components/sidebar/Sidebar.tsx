@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog, FileJson, ListTree } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases } from '../../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases, createNewRequest } from '../../store';
 import { FolderSidebarItem } from './FolderSidebarItem';
 import { RequestSidebarItem } from './RequestSidebarItem';
 
@@ -318,17 +318,9 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                     setOpenMenuCollectionId(null);
                                                     const name = await showPrompt("Request Name:", "New Request");
                                                     if (name) {
-                                                        const newId = crypto.randomUUID();
-                                                        requests.value = [...requests.value, {
-                                                            id: newId,
-                                                            collectionId: collection.id, // Assign to this collection
-                                                            name: name,
-                                                            method: "GET",
-                                                            url: "https://example.com",
-                                                            headers: [],
-                                                            parentId: null
-                                                        }];
-                                                        activeRequestId.value = newId;
+                                                        const newReq = createNewRequest(name, collection.id, null);
+                                                        requests.value = [...requests.value, newReq];
+                                                        activeRequestId.value = newReq.id;
                                                     }
                                                 }}
                                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}

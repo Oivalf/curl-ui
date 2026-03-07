@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt } from '../../store';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt, createNewRequest } from '../../store';
 import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog } from 'lucide-preact';
 
 const SaveIcon = Save as any;
@@ -145,21 +145,18 @@ export function SidebarContextMenu() {
         const name = await showPrompt("Enter request name:", "New Request");
         if (name === null) return;
 
-        const newId = crypto.randomUUID();
-        requests.value = [...requests.value, {
-            id: newId,
-            name: name || "New Request",
-            method: "GET",
-            url: "https://example.com",
-            headers: [],
-            parentId: menu.itemId,
-            collectionId: menu.collectionId
-        }];
-        activeRequestId.value = newId;
+        const newReq = createNewRequest(name || "New Request", menu.collectionId, menu.itemId);
+        requests.value = [...requests.value, newReq];
+        activeRequestId.value = newReq.id;
 
         // Auto-create sample execution
         import('../../store').then(({ ensureDefaultExecutions }) => {
-            ensureDefaultExecutions([newId]);
+            ensureDefaultExecutions([newReq.id]);
+        });
+
+        // Auto-create sample execution
+        import('../../store').then(({ ensureDefaultExecutions }) => {
+            ensureDefaultExecutions([newReq.id]);
         });
 
         contextMenu.value = null;
@@ -327,21 +324,18 @@ export function SidebarContextMenu() {
                         onClick={async () => {
                             const name = await showPrompt("Enter request name:", "New Request");
                             if (name) {
-                                const newId = crypto.randomUUID();
-                                requests.value = [...requests.value, {
-                                    id: newId,
-                                    name: name,
-                                    method: "GET",
-                                    url: "https://example.com",
-                                    headers: [],
-                                    parentId: null, // Root of collection
-                                    collectionId: menu.collectionId
-                                }];
-                                activeRequestId.value = newId;
+                                const newReq = createNewRequest(name, menu.collectionId, null);
+                                requests.value = [...requests.value, newReq];
+                                activeRequestId.value = newReq.id;
 
                                 // Auto-create sample execution
                                 import('../../store').then(({ ensureDefaultExecutions }) => {
-                                    ensureDefaultExecutions([newId]);
+                                    ensureDefaultExecutions([newReq.id]);
+                                });
+
+                                // Auto-create sample execution
+                                import('../../store').then(({ ensureDefaultExecutions }) => {
+                                    ensureDefaultExecutions([newReq.id]);
                                 });
                             }
                             contextMenu.value = null;
