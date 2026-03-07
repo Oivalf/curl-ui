@@ -216,6 +216,7 @@ export function ExecutionEditor() {
     const progress = useComputed(() => executionProgressMap.value[activeExecutionId.value || ''] || {
         isLoading: false,
         steps: [],
+        startTime: null,
         totalTime: null,
         lastResponseTime: null,
         responseSize: null,
@@ -224,6 +225,7 @@ export function ExecutionEditor() {
 
     const isLoadingSignal = useSignal(progress.value.isLoading);
     const stepsSignal = useSignal(progress.value.steps);
+    const startTimeSignal = useSignal(progress.value.startTime);
     const totalTimeSignal = useSignal(progress.value.totalTime);
     const lastResponseTimeSignal = useSignal(progress.value.lastResponseTime);
     const responseSizeSignal = useSignal(progress.value.responseSize);
@@ -232,6 +234,7 @@ export function ExecutionEditor() {
     useSignalEffect(() => {
         isLoadingSignal.value = progress.value.isLoading;
         stepsSignal.value = progress.value.steps as any;
+        startTimeSignal.value = progress.value.startTime;
         totalTimeSignal.value = progress.value.totalTime;
         lastResponseTimeSignal.value = progress.value.lastResponseTime;
         responseSizeSignal.value = progress.value.responseSize;
@@ -671,10 +674,12 @@ export function ExecutionEditor() {
             <ExecutionProgress
                 isLoading={isLoadingSignal}
                 executionSteps={stepsSignal}
+                startTime={startTimeSignal}
                 totalExecutionTime={totalTimeSignal}
                 lastResponseTime={lastResponseTimeSignal}
                 responseSize={responseSizeSignal}
                 responseStatus={responseStatusSignal}
+                compact={false}
             />
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>

@@ -172,6 +172,7 @@ export interface ExecutionStep {
 export interface ExecutionProgressState {
     isLoading: boolean;
     steps: ExecutionStep[];
+    startTime: number | null;
     totalTime: number | null;
     lastResponseTime: number | null;
     responseSize: number | null;

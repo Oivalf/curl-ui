@@ -244,12 +244,31 @@ export function RequestEditor() {
         (defaultExecution.value && executionProgressMap.value[defaultExecution.value.id]) || {
             isLoading: false,
             steps: [],
+            startTime: null,
             totalTime: null,
             lastResponseTime: null,
             responseSize: null,
             responseStatus: null
         }
     );
+
+    const isLoadingSignal = useSignal(progress.value.isLoading);
+    const stepsSignal = useSignal(progress.value.steps);
+    const startTimeSignal = useSignal(progress.value.startTime);
+    const totalTimeSignal = useSignal(progress.value.totalTime);
+    const lastResponseTimeSignal = useSignal(progress.value.lastResponseTime);
+    const responseSizeSignal = useSignal(progress.value.responseSize);
+    const responseStatusSignal = useSignal(progress.value.responseStatus);
+
+    useSignalEffect(() => {
+        isLoadingSignal.value = progress.value.isLoading;
+        stepsSignal.value = progress.value.steps as any;
+        startTimeSignal.value = progress.value.startTime;
+        totalTimeSignal.value = progress.value.totalTime;
+        lastResponseTimeSignal.value = progress.value.lastResponseTime;
+        responseSizeSignal.value = progress.value.responseSize;
+        responseStatusSignal.value = progress.value.responseStatus;
+    });
 
     const showResults = useSignal(defaultExecution.peek()?.resultsVisible || false);
 
@@ -421,7 +440,20 @@ export function RequestEditor() {
             </div>
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0, gap: 'var(--spacing-md)' }}>
+                    {/* Compact progress shown ONLY when loading and results panel is closed */}
+                    {isLoadingSignal.value && !showResults.value && (
+                        <ExecutionProgress
+                            isLoading={isLoadingSignal}
+                            executionSteps={stepsSignal}
+                            startTime={startTimeSignal}
+                            totalExecutionTime={totalTimeSignal}
+                            lastResponseTime={lastResponseTimeSignal}
+                            responseSize={responseSizeSignal}
+                            responseStatus={responseStatusSignal}
+                            compact={true}
+                        />
+                    )}
                     <RequestPanel
                         headers={headers}
                         bodyType={bodyType}
@@ -504,12 +536,14 @@ export function RequestEditor() {
 
                             <div style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>
                                 <ExecutionProgress
-                                    isLoading={useComputed(() => progress.value.isLoading)}
-                                    executionSteps={useComputed(() => progress.value.steps as any)}
-                                    totalExecutionTime={useComputed(() => progress.value.totalTime)}
-                                    lastResponseTime={useComputed(() => progress.value.lastResponseTime)}
-                                    responseSize={useComputed(() => progress.value.responseSize)}
-                                    responseStatus={useComputed(() => progress.value.responseStatus)}
+                                    isLoading={isLoadingSignal}
+                                    executionSteps={stepsSignal}
+                                    startTime={startTimeSignal}
+                                    totalExecutionTime={totalTimeSignal}
+                                    lastResponseTime={lastResponseTimeSignal}
+                                    responseSize={responseSizeSignal}
+                                    responseStatus={responseStatusSignal}
+                                    compact={false}
                                 />
                             </div>
 

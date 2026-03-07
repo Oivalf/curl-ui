@@ -126,6 +126,7 @@ export const runExecution = async (
             { id: 'http', name: 'HTTP Request', status: 'pending' },
             { id: 'post-scripts', name: 'Post-request Scripts', status: 'pending' },
         ],
+        startTime: Date.now(),
         totalTime: null,
         lastResponseTime: null,
         responseSize: null,
