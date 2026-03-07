@@ -16,13 +16,15 @@ The Execution Editor is where you run requests and view responses. Each request 
 - **Cookie Management**: Each project maintains its own isolated cookie store. When a request returns a `Set-Cookie` header, subsequent requests to the same domain within that project will automatically include the stored cookies.
 - **Body & Form-Data Persistence**: The selected payload type (e.g., Multipart, Form Urlencoded) and all its defined fields (`formData`) are safely preserved during execution state changes.
 - **Inheritance Protection**: Items (headers or parameters) inherited from a parent request are protected. You can toggle them off, but the delete (`×`) icon is hidden until you add a new override.
-- **Response Panel**: View the detailed headers and body of the returned response. Responses are **isolated and persisted per execution**, meaning you can run multiple requests and switch between their tabs without losing or sharing response data.
+- **Response Panel**: View the detailed headers and body of the returned response. Responses are **isolated and persisted per execution**.
+- **Cross-Tab Persistence**: The state of the execution result panel is persisted when switching between tabs. If you leave a request results panel open, it will still be there when you return.
 - **Console**: Inspect logs from scripts and application information in the integrated Console Panel.
 
 ## Progress Summary
 The progress summary provides transparency into the request lifecycle:
 - **Total Time**: The overall duration from initiating the run to the completion of all steps.
 - **Step Durations**: Individual timings for each phase of the execution, which update in real-time while a step is active. All durations are formatted with Italian localization (e.g., `1.234ms`).
+- **Integration**: The progress and results are automatically displayed side-by-side with the editor in the **Request Editor** view after clicking **Run Default**.
 
 ## Override Indicators
 A yellow dot next to an input field indicates that the value has been customized and is no longer following the parent Request template. Hover over the dot to see more details.
