@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core';
-import { batch } from "@preact/signals";
 import { 
     executions, requests, folders, environments, 
     activeEnvironmentName, activeProjectName, 
@@ -268,7 +267,7 @@ export const runExecution = async (
         let finalUrl = substituteVariables(effectiveUrlBase, parentRequest.id);
         // Substitute Path Params
         Object.entries(effectivePathParams).forEach(([k, v]) => {
-            finalUrl = finalUrl.replace(`{${k}}`, substituteVariables(v, parentRequest.id));
+            finalUrl = finalUrl.replace(`{${k}}`, substituteVariables(String(v), parentRequest.id));
         });
 
         const searchParams = new URLSearchParams();

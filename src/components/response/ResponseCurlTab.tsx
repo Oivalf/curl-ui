@@ -1,4 +1,4 @@
-import { RequestCurlView } from '../request/RequestCurlView';
+import { RequestCurlView } from './RequestCurlView';
 
 interface ResponseCurlTabProps {
     requestCurl: string;

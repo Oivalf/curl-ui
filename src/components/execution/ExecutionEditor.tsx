@@ -1,7 +1,7 @@
 import { useSignal, useSignalEffect, useComputed, batch } from "@preact/signals";
 import { useRef, useEffect, useCallback } from "preact/hooks";
 import { ArrowLeft, Play, XCircle } from "lucide-preact";
-import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, triggerExecutionRun, executionProgressMap } from "../../store";
+import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, openTabs, activeTabId, activeFolderId, triggerExecutionRun, executionProgressMap } from "../../store";
 import { runExecution, cancelExecution } from "../../utils/execution";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ExecutionProgress } from "./ExecutionProgress";
