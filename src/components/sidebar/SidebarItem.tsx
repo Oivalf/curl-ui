@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Folder as FolderIcon, FolderOpen, FileJson, ChevronRight, ChevronDown, Trash2 } from 'lucide-preact';
-import { activeRequestId, activeFolderId, activeExecutionId, folders, requests, executions, RequestItem, Folder, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
+import { activeRequestId, activeFolderId, activeExecutionId, folders, requests, executions, RequestItem, Folder, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../../store';
 import { ExecutionSidebarItem } from './ExecutionSidebarItem';
 
 interface SidebarItemProps {
@@ -136,7 +136,7 @@ export function SidebarItem({ item, type, depth = 0 }: SidebarItemProps) {
         };
 
         // Trigger Modal
-        import('../store').then(({ confirmationState }) => {
+        import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
                 title: `Delete ${itemType}?`,

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt } from '../store';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt } from '../../store';
 import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog } from 'lucide-preact';
 
 const SaveIcon = Save as any;
@@ -63,7 +63,7 @@ export function SidebarContextMenu() {
 
             // Ensure duplicated requests have executions
             const duplicatedRequestIds = newRequests.filter(r => !requests.peek().some(old => old.id === r.id)).map(r => r.id);
-            import('../store').then(({ ensureDefaultExecutions }) => {
+            import('../../store').then(({ ensureDefaultExecutions }) => {
                 ensureDefaultExecutions(duplicatedRequestIds);
             });
         } else {
@@ -79,7 +79,7 @@ export function SidebarContextMenu() {
             activeRequestId.value = newId;
 
             // Auto-create sample execution
-            import('../store').then(({ ensureDefaultExecutions }) => {
+            import('../../store').then(({ ensureDefaultExecutions }) => {
                 ensureDefaultExecutions([newId]);
             });
         }
@@ -158,7 +158,7 @@ export function SidebarContextMenu() {
         activeRequestId.value = newId;
 
         // Auto-create sample execution
-        import('../store').then(({ ensureDefaultExecutions }) => {
+        import('../../store').then(({ ensureDefaultExecutions }) => {
             ensureDefaultExecutions([newId]);
         });
 
@@ -257,7 +257,7 @@ export function SidebarContextMenu() {
         const execution = executions.value.find(e => e.id === menu.itemId);
         if (!execution) return;
 
-        import('../store').then(({ confirmationState }) => {
+        import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
                 title: 'Delete execution?',
@@ -313,7 +313,7 @@ export function SidebarContextMenu() {
                     <div
                         className="context-menu-item"
                         onClick={() => {
-                            import('../store').then(({ saveCollectionToDisk }) => {
+                            import('../../store').then(({ saveCollectionToDisk }) => {
                                 saveCollectionToDisk(menu.collectionId);
                             });
                             contextMenu.value = null;
@@ -340,7 +340,7 @@ export function SidebarContextMenu() {
                                 activeRequestId.value = newId;
 
                                 // Auto-create sample execution
-                                import('../store').then(({ ensureDefaultExecutions }) => {
+                                import('../../store').then(({ ensureDefaultExecutions }) => {
                                     ensureDefaultExecutions([newId]);
                                 });
                             }
@@ -389,7 +389,7 @@ export function SidebarContextMenu() {
                         className="context-menu-item"
                         onClick={() => {
                             contextMenu.value = null;
-                            import('../store').then(({ collections, syncProjectManifest, activeProjectName, confirmationState }) => {
+                            import('../../store').then(({ collections, syncProjectManifest, activeProjectName, confirmationState }) => {
                                 const collection = collections.peek().find(c => c.id === menu.collectionId);
                                 if (!collection) return;
 

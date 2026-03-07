@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog, FileJson, ListTree } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases } from '../store';
-import { SidebarItem } from './SidebarItem';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases } from '../../store';
+import { FolderSidebarItem } from './FolderSidebarItem';
+import { RequestSidebarItem } from './RequestSidebarItem';
 
 import { SidebarContextMenu } from './SidebarContextMenu';
-import { Modal } from './Modal';
-import { GitPanel } from './GitPanel';
+import { Modal } from '../Modal';
+import { GitPanel } from '../GitPanel';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
-import '../styles/global.css';
+import '../../styles/global.css';
 
 // Cast icons to any to avoid Preact/React type conflicts
 const LayoutIcon = Layout as any;
@@ -140,7 +141,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
         };
 
         // Trigger Modal
-        import('../store').then(({ confirmationState }) => {
+        import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
                 title: `Delete project "${projectName}"?`,
@@ -221,7 +222,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0', cursor: 'pointer', fontWeight: 'bold', color: 'var(--text-primary)' }}
                             onContextMenu={(e) => {
                                 e.preventDefault();
-                                import('../store').then(({ contextMenu }) => {
+                                import('../../store').then(({ contextMenu }) => {
                                     contextMenu.value = {
                                         x: e.clientX,
                                         y: e.clientY,
@@ -368,13 +369,13 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                     const performRemove = () => {
                                                         collections.value = collections.value.filter(c => c.id !== collection.id);
                                                         // Sync manifest to persist removal
-                                                        import('../store').then(({ syncProjectManifest, activeProjectName }) => {
+                                                        import('../../store').then(({ syncProjectManifest, activeProjectName }) => {
                                                             syncProjectManifest(activeProjectName.peek());
                                                         });
                                                     };
 
                                                     // Trigger Modal using the store's confirmationState
-                                                    import('../store').then(({ confirmationState }) => {
+                                                    import('../../store').then(({ confirmationState }) => {
                                                         confirmationState.value = {
                                                             isOpen: true,
                                                             title: `Remove collection "${collection.name}"?`,
@@ -405,12 +406,12 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                 {folders.value
                                     .filter(f => f.collectionId === collection.id && !f.parentId)
                                     .map(f => (
-                                        <SidebarItem key={f.id} item={f} type="folder" />
+                                        <FolderSidebarItem key={f.id} folder={f} />
                                     ))}
                                 {requests.value
                                     .filter(r => r.collectionId === collection.id && !r.parentId)
                                     .map(r => (
-                                        <SidebarItem key={r.id} item={r} type="request" />
+                                        <RequestSidebarItem key={r.id} request={r} />
                                     ))}
                                 {/* Mock Manager node at the top */}
                                 <div
@@ -429,7 +430,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     onContextMenu={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        import('../store').then(({ contextMenu }) => {
+                                        import('../../store').then(({ contextMenu }) => {
                                             contextMenu.value = {
                                                 x: e.clientX,
                                                 y: e.clientY,

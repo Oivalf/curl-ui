@@ -1,5 +1,5 @@
 import { ComponentChildren } from 'preact';
-import { Sidebar } from './Sidebar';
+import { Sidebar } from './sidebar/Sidebar';
 import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject, updateInfo, UpdateInfo } from '../store';
 import { useSignalEffect, useSignal } from '@preact/signals';
 import { Modal } from './Modal';
