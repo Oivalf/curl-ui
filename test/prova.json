@@ -164,7 +164,9 @@
           "enabled": true
         }
       ],
-      "collapsed": true
+      "collapsed": false,
+      "bodyType": "none",
+      "formData": []
     },
     {
       "id": "3fb20f96-9be9-49ac-95e8-3bcd89249f74",
@@ -185,7 +187,7 @@
       "id": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
       "name": "sample get",
       "method": "GET",
-      "url": "{{sampleURL}}/12",
+      "url": "http://localhost:4000/pet/1",
       "headers": [
         {
           "key": "ciao",
@@ -304,6 +306,50 @@
       },
       "preScripts": [],
       "postScripts": []
+    },
+    {
+      "id": "bf482369-35f2-4520-bc6f-b1ec5d156c63",
+      "name": "Get Todos",
+      "method": "GET",
+      "url": "https://jsonplaceholder.{{gvar}}.com/todos/12",
+      "headers": [],
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "bodyType": "none",
+      "body": "",
+      "formData": [],
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [
+        {
+          "id": "e02eb967-27d7-4f0f-a3af-b709d67b699f",
+          "name": "Ndue",
+          "content": "console.log('pre-Script ndue');",
+          "enabled": true
+        },
+        {
+          "id": "466ff4b5-41f0-4a81-aec6-d36bef4c2afa",
+          "name": "uno",
+          "content": "console.log('pre-Script uno');",
+          "enabled": false
+        }
+      ],
+      "postScripts": [
+        {
+          "id": "8eacbabf-f01c-483b-a0a5-03b9857e0bcb",
+          "name": "p2",
+          "content": "console.log('Script');",
+          "enabled": true,
+          "executeOnStatusCodes": "2xx"
+        },
+        {
+          "id": "7c5b0c39-11f5-4a21-b25f-69bb77d798b1",
+          "name": "p1",
+          "content": "console.log('post-Script p1');",
+          "enabled": true
+        }
+      ]
     }
   ],
   "folders": [
@@ -575,7 +621,14 @@
             "hyhyhy"
           ]
         }
-      ]
+      ],
+      "lastResponse": {
+        "status": 0,
+        "headers": {},
+        "body": "Error: Request failed: error sending request for url (http://localhost:8080/pet/1)",
+        "size": 0,
+        "time": 0
+      }
     },
     {
       "id": "f5951d74-1252-4beb-b024-1aac9c9184a5",
@@ -690,6 +743,12 @@
     {
       "id": "9ab72366-61f7-4ac9-ac0d-a424ae3d3a05",
       "requestId": "8657b610-b89c-47a6-9603-46868ff5917a",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "sample"
+    },
+    {
+      "id": "18925032-2912-47ca-8e8f-953efb71ffaf",
+      "requestId": "bf482369-35f2-4520-bc6f-b1ec5d156c63",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "sample"
     }

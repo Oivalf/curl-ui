@@ -222,7 +222,7 @@ export function CodeEditor({ value, onChange, language = 'text', readOnly = fals
     }
 
     return (
-        <div style={{ ...style, height, overflow: 'hidden', borderRadius: 'var(--radius-md)', position: 'relative' }}>
+        <div style={{ ...style, height, borderRadius: 'var(--radius-md)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {!readOnly && language !== 'text' && (
                 <button
                     onClick={handleFormat}
@@ -260,6 +260,7 @@ export function CodeEditor({ value, onChange, language = 'text', readOnly = fals
                 extensions={extensions}
                 onChange={onChange}
                 editable={!readOnly}
+                style={{ flex: 1, minHeight: 0 }}
                 basicSetup={{
                     lineNumbers: true,
                     foldGutter: true,
