@@ -1,4 +1,4 @@
-import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds } from "../store";
+import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds, contextMenu } from "../store";
 import { X, FileJson, Folder, ChevronDown, Play, ServerCog } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
@@ -66,6 +66,18 @@ export function TabBar() {
         isMenuOpen.value = !isMenuOpen.value;
     };
 
+    const handleContextMenu = (e: MouseEvent, tabId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        contextMenu.value = {
+            x: e.clientX,
+            y: e.clientY,
+            itemId: tabId,
+            type: 'tab',
+            collectionId: '' // Not strictly needed for tabs
+        };
+    };
+
     // Close menu on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -120,6 +132,7 @@ export function TabBar() {
                         <div
                             key={tab.id}
                             onClick={() => activateTab(tab)}
+                            onContextMenu={(e) => handleContextMenu(e, tab.id)}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',

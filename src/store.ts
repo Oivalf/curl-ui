@@ -210,7 +210,7 @@ export interface ContextMenuState {
     x: number;
     y: number;
     itemId: string;
-    type: 'request' | 'folder' | 'collection' | 'execution';
+    type: 'request' | 'folder' | 'collection' | 'execution' | 'tab';
     collectionId: string;
 }
 

@@ -283,6 +283,38 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
+    const handleCloseAllTabs = () => {
+        openTabs.value = [];
+        activeTabId.value = null;
+        activeExecutionId.value = null;
+        activeRequestId.value = null;
+        activeFolderId.value = null;
+        contextMenu.value = null;
+    };
+
+    const handleCloseOthersTabs = () => {
+        const tabToKeep = openTabs.value.find(t => t.id === menu.itemId);
+        if (tabToKeep) {
+            openTabs.value = [tabToKeep];
+            activeTabId.value = tabToKeep.id;
+            // Activate the tab to sync legacy stores
+            if (tabToKeep.type === 'request') {
+                activeRequestId.value = tabToKeep.id;
+                activeFolderId.value = null;
+                activeExecutionId.value = null;
+            } else if (tabToKeep.type === 'execution') {
+                activeExecutionId.value = tabToKeep.id;
+                activeRequestId.value = null;
+                activeFolderId.value = null;
+            } else if (tabToKeep.type === 'folder') {
+                activeFolderId.value = tabToKeep.id;
+                activeRequestId.value = null;
+                activeExecutionId.value = null;
+            }
+        }
+        contextMenu.value = null;
+    };
+
     return (
         <div
             ref={menuRef}
@@ -487,6 +519,25 @@ export function SidebarContextMenu() {
                             </>
                         );
                     })()}
+
+                    {menu.type === 'tab' && (
+                        <>
+                            <div
+                                className="context-menu-item"
+                                onClick={handleCloseOthersTabs}
+                                style={itemStyle}
+                            >
+                                <XIcon size={14} /> Close Others
+                            </div>
+                            <div
+                                className="context-menu-item"
+                                onClick={handleCloseAllTabs}
+                                style={{ ...itemStyle, color: 'var(--error)' }}
+                            >
+                                <XIcon size={14} /> Close All
+                            </div>
+                        </>
+                    )}
                 </>
             )}
         </div>
