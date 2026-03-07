@@ -10,6 +10,7 @@ The Request Editor is used to define the base configuration (template) for an HT
 - **Headers**: Define key-value pairs for HTTP headers. Multiple values for the same key are supported by grouping them under a single key input with `+` and `-` buttons.
 - **Auth**: Configure authentication (Inherit, Basic, or Bearer).
 - **Body**: Define the default payload structure (JSON, Form-data, Text, etc.). The selected body type and its content (including form-data fields) are automatically persisted.
+- **Quick Run**: Use the **Run Default** button in the header (Play icon) to instantly trigger the default execution without leaving the Request Editor.
 - **Scripts**: Configure JavaScript logic to run before or after executions.
 
 ## 💻 Advanced Code Editor
