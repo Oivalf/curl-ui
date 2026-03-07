@@ -1,7 +1,7 @@
 import { Signal, useSignal } from "@preact/signals";
-import { ExecutionParamsEditor } from "../request/ExecutionParamsEditor";
+import { ExecutionParamsEditor } from "./ExecutionParamsEditor";
 import { RequestBodyEditor } from "../request/RequestBodyEditor";
-import { ExecutionHeadersEditor } from "../request/ExecutionHeadersEditor";
+import { ExecutionHeadersEditor } from "./ExecutionHeadersEditor";
 import { ScriptListEditor } from "../request/ScriptListEditor";
 import { AuthEditor } from "../AuthEditor";
 import { AuthConfig, ScriptItem } from "../../store";
