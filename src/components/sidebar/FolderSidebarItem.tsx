@@ -1,5 +1,5 @@
 import { Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown } from 'lucide-preact';
-import { activeFolderId, activeRequestId, activeExecutionId, folders, requests, Folder, openTabs, activeTabId } from '../../store';
+import { activeFolderId, activeRequestId, activeExecutionId, folders, requests, Folder, openTabs, activeTabId, expandedFolderIds } from '../../store';
 import { BaseSidebarItem } from './BaseSidebarItem';
 import { RequestSidebarItem } from './RequestSidebarItem';
 
@@ -12,9 +12,11 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
 
     const toggleCollapse = (e: MouseEvent) => {
         e.stopPropagation();
-        folders.value = folders.value.map(f =>
-            f.id === folder.id ? { ...f, collapsed: !f.collapsed } : f
-        );
+        if (expandedFolderIds.value.includes(folder.id)) {
+            expandedFolderIds.value = expandedFolderIds.value.filter(id => id !== folder.id);
+        } else {
+            expandedFolderIds.value = [...expandedFolderIds.value, folder.id];
+        }
     };
 
     const handleSelect = () => {
@@ -124,7 +126,7 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
 
     // Children
     const renderChildren = () => {
-        if (folder.collapsed) return null;
+        if (!expandedFolderIds.value.includes(folder.id)) return null;
         const childFolders = folders.value.filter(f => f.parentId === folder.id);
         const childRequests = requests.value.filter(r => r.parentId === folder.id);
         if (childFolders.length === 0 && childRequests.length === 0) return null;
@@ -141,13 +143,14 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
         );
     };
 
+    const isExpanded = expandedFolderIds.value.includes(folder.id);
     const arrowContent = (
         <div onClick={toggleCollapse}>
-            {folder.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            {!isExpanded ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
         </div>
     );
 
-    const icon = folder.collapsed
+    const icon = !isExpanded
         ? <FolderIcon size={16} style={{ color: 'var(--accent-primary)' }} />
         : <FolderOpen size={16} style={{ color: 'var(--accent-primary)' }} />;
 

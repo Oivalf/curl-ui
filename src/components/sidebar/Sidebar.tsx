@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog, FileJson, ListTree } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases, createNewRequest } from '../../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases, createNewRequest, isExternalMocksExpanded, expandedCollectionIds } from '../../store';
 import { FolderSidebarItem } from './FolderSidebarItem';
 import { RequestSidebarItem } from './RequestSidebarItem';
 
@@ -34,12 +34,8 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     const [isGitOpen, setGitOpen] = useState(false);
     const [openMenuCollectionId, setOpenMenuCollectionId] = useState<string | null>(null);
 
-    // Simple local state to track expanded collections. 
-    // In a larger app, this might go into store or a persistent local state.
-    const [expandedCollections, setExpandedCollections] = useState<Record<string, boolean>>({});
-
+    // Sidebar expanded state now lives in the store as signals
     const [collectionGitStatus, setCollectionGitStatus] = useState<Record<string, boolean>>({});
-    const [isExternalMocksExpanded, setExternalMocksExpanded] = useState(false);
     const [isMockMenuOpen, setMockMenuOpen] = useState(false);
 
     useEffect(() => {
@@ -61,14 +57,22 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     }, [collections.value]);
 
     const toggleCollection = (id: string) => {
-        setExpandedCollections(prev => ({ ...prev, [id]: !prev[id] }));
+        if (expandedCollectionIds.value.includes(id)) {
+            expandedCollectionIds.value = expandedCollectionIds.value.filter(x => x !== id);
+        } else {
+            expandedCollectionIds.value = [...expandedCollectionIds.value, id];
+        }
     };
 
-    // Auto-expand all collections by default initially? Or just the first one?
-    // For now, default closed unless toggled.
-    // Actually, let's default all open
     const isCollectionExpanded = (id: string) => {
-        return expandedCollections[id] !== false; // Default true
+        // If we have no items in expandedCollectionIds and it's a new session,
+        // we might want to default to true. But for now, let's respect the list.
+        // Actually, let's auto-populate it on load in store.ts if needed, or:
+        return expandedCollectionIds.value.includes(id);
+    };
+
+    const toggleExternalMocks = () => {
+        isExternalMocksExpanded.value = !isExternalMocksExpanded.value;
     };
 
     const openNewProjectWindow = async () => {
@@ -125,7 +129,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
             }
 
             // Auto expand the new collection
-            setExpandedCollections(prev => ({ ...prev, [newId]: true }));
+            expandedCollectionIds.value = [...expandedCollectionIds.value, newId];
         }
     };
 
@@ -474,7 +478,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
             <div style={{ padding: '8px 0', borderTop: '1px solid var(--border-color)', marginBottom: '8px' }}>
                 <div
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', cursor: 'pointer', color: 'var(--text-primary)' }}
-                    onClick={() => setExternalMocksExpanded(!isExternalMocksExpanded)}
+                    onClick={toggleExternalMocks}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {isExternalMocksExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
@@ -565,7 +569,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                     </div>
                 </div>
 
-                {isExternalMocksExpanded && (
+                {isExternalMocksExpanded.value && (
                     <div style={{ marginLeft: '12px' }}>
                         {externalMocks.value.length === 0 && (
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>No External Mocks</div>

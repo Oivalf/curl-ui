@@ -472,6 +472,13 @@ pub struct UseCase {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct Tab {
+    pub id: String,
+    pub r#type: String,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectManifest {
     pub name: String,
     pub collections: Vec<String>,
@@ -479,6 +486,16 @@ pub struct ProjectManifest {
     pub external_mocks: Vec<String>,
     #[serde(default)]
     pub use_cases: Vec<UseCase>,
+    #[serde(default)]
+    pub open_tabs: Vec<Tab>,
+    #[serde(default)]
+    pub active_tab_id: Option<String>,
+    #[serde(default)]
+    pub is_external_mocks_expanded: bool,
+    #[serde(default)]
+    pub expanded_collection_ids: Vec<String>,
+    #[serde(default)]
+    pub expanded_folder_ids: Vec<String>,
 }
 
 #[command]
@@ -488,6 +505,11 @@ pub async fn sync_project_manifest(
     collection_paths: Vec<String>,
     external_mock_paths: Vec<String>,
     use_cases: Vec<UseCase>,
+    open_tabs: Vec<Tab>,
+    active_tab_id: Option<String>,
+    is_external_mocks_expanded: bool,
+    expanded_collection_ids: Vec<String>,
+    expanded_folder_ids: Vec<String>,
 ) -> Result<(), String> {
     use tauri::Manager;
 
@@ -505,6 +527,11 @@ pub async fn sync_project_manifest(
         collections: collection_paths,
         external_mocks: external_mock_paths,
         use_cases,
+        open_tabs,
+        active_tab_id,
+        is_external_mocks_expanded,
+        expanded_collection_ids,
+        expanded_folder_ids,
     };
 
     let data = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;

@@ -282,6 +282,9 @@ export const activeProjectName = signal<string>("Default Project");
 export const knownProjects = signal<string[]>([]);
 export const isInitializing = signal<boolean>(true);
 export const triggerExecutionRun = signal<string | null>(null);
+export const isExternalMocksExpanded = signal<boolean>(false);
+export const expandedCollectionIds = signal<string[]>([]);
+export const expandedFolderIds = signal<string[]>([]);
 
 import { computed } from "@preact/signals";
 
@@ -561,7 +564,12 @@ export const syncProjectManifest = async (projectName: string) => {
                 name: projectName,
                 collectionPaths: paths,
                 externalMockPaths: mockPaths,
-                useCases: useCases.value
+                useCases: useCases.value,
+                openTabs: openTabs.peek(),
+                activeTabId: activeTabId.peek(),
+                isExternalMocksExpanded: isExternalMocksExpanded.peek(),
+                expandedCollectionIds: expandedCollectionIds.peek(),
+                expandedFolderIds: expandedFolderIds.peek()
             });
             await refreshMenu();
         }
@@ -580,10 +588,11 @@ export const openProject = async (name: string) => {
         externalMocks.value = [];
         requests.value = [];
         folders.value = [];
-        openTabs.value = [];
-        activeRequestId.value = null;
-        activeFolderId.value = null;
-        activeExternalMockId.value = null;
+        openTabs.value = manifest.open_tabs || [];
+        activeTabId.value = manifest.active_tab_id || null;
+        isExternalMocksExpanded.value = manifest.is_external_mocks_expanded || false;
+        expandedCollectionIds.value = manifest.expanded_collection_ids || [];
+        expandedFolderIds.value = manifest.expanded_folder_ids || [];
         useCases.value = manifest.use_cases || [];
 
         for (const path of manifest.collections) {
@@ -606,6 +615,23 @@ export const openProject = async (name: string) => {
         console.error('Failed to open project:', err);
     }
 };
+
+// Auto-sync project manifest on UI state changes
+effect(() => {
+    const name = activeProjectName.value;
+    if (name && !isInitializing.value) {
+        // Track these signals
+        openTabs.value;
+        activeTabId.value;
+        isExternalMocksExpanded.value;
+        expandedCollectionIds.value;
+        expandedFolderIds.value;
+        useCases.value;
+        
+        // Debounce slightly or just call
+        syncProjectManifest(name);
+    }
+});
 
 export const saveCollectionToDisk = async (collectionId: string, saveAs: boolean = false, suppressAlert: boolean = false): Promise<{ success: boolean, message: string }> => {
     try {
