@@ -305,7 +305,9 @@
         "type": "inherit"
       },
       "preScripts": [],
-      "postScripts": []
+      "postScripts": [],
+      "bodyType": "json",
+      "formData": []
     },
     {
       "id": "bf482369-35f2-4520-bc6f-b1ec5d156c63",
@@ -350,6 +352,23 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "9205dde5-e224-4381-b658-a80a27582449",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "name": "prot",
+      "method": "GET",
+      "url": "http://localhost:8080/sample/1",
+      "headers": [],
+      "bodyType": "none",
+      "body": "",
+      "formData": [],
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": []
     }
   ],
   "folders": [
@@ -751,6 +770,32 @@
       "requestId": "bf482369-35f2-4520-bc6f-b1ec5d156c63",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "sample"
+    },
+    {
+      "id": "0acbbe50-bd83-4072-9d90-aab439302ee0",
+      "requestId": "9205dde5-e224-4381-b658-a80a27582449",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "default",
+      "lastResponse": {
+        "status": 404,
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "transfer-encoding",
+            "chunked"
+          ],
+          [
+            "date",
+            "Sat, 07 Mar 2026 08:18:02 GMT"
+          ]
+        ],
+        "body": "{\"timestamp\":\"2026-03-07T08:18:02.122Z\",\"status\":404,\"error\":\"Not Found\",\"path\":\"/example/1\"}",
+        "size": 93,
+        "time": 152
+      }
     }
   ],
   "environments": [

@@ -27,7 +27,7 @@ export interface BaseSidebarItemProps {
     /** Called when the item row is clicked */
     onSelect: () => void;
     /** Called when delete is confirmed */
-    onDelete: (e: MouseEvent) => void;
+    onDelete?: (e: MouseEvent) => void;
     /** Whether this item is draggable */
     draggable?: boolean;
     /** Drag start handler */
@@ -145,7 +145,7 @@ export function BaseSidebarItem({
                 </div>
 
                 {/* Actions */}
-                {isHovered && (
+                {isHovered && onDelete && (
                     <div
                         onClick={onDelete}
                         style={{ opacity: 0.6, padding: '2px', cursor: 'pointer' }}

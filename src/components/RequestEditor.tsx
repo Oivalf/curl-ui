@@ -1,9 +1,12 @@
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
 import { useRef } from "preact/hooks";
-import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem } from "../store";
+import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, openTabs, activeTabId, activeExecutionId, activeFolderId, triggerExecutionRun } from "../store";
 import { RequestPanel } from "./RequestPanel";
 import { MethodSelect } from "./MethodSelect";
 import { VariableInput } from "./VariableInput";
+import { Play } from "lucide-preact";
+
+const PlayIcon = Play as any;
 
 export function RequestEditor() {
     const currentRequest = requests.value.find(r => r.id === activeRequestId.value);
@@ -298,6 +301,36 @@ export function RequestEditor() {
                         Preview: {finalUrlPreview.value}
                     </div>
                 </div>
+                <button
+                    onClick={() => {
+                        const defaultExec = executions.peek().find(e => e.requestId === currentRequest.id && e.name === 'default');
+                        if (defaultExec) {
+                            if (!openTabs.peek().find(t => t.id === defaultExec.id)) {
+                                openTabs.value = [...openTabs.peek(), { id: defaultExec.id, type: 'execution', name: defaultExec.name }];
+                            }
+                            activeTabId.value = defaultExec.id;
+                            activeExecutionId.value = defaultExec.id;
+                            activeRequestId.value = null;
+                            activeFolderId.value = null;
+                            triggerExecutionRun.value = defaultExec.id;
+                        }
+                    }}
+                    style={{
+                        padding: '8px 16px',
+                        backgroundColor: 'var(--accent-primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    <PlayIcon size={16} /> Run Default
+                </button>
             </div>
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>

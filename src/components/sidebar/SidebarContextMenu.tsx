@@ -471,24 +471,32 @@ export function SidebarContextMenu() {
                         </>
                     )}
 
-                    {menu.type === 'execution' && (
-                        <>
-                            <div
-                                className="context-menu-item"
-                                onClick={handleRenameExecution}
-                                style={itemStyle}
-                            >
-                                <Edit2 size={14} /> Rename
-                            </div>
-                            <div
-                                className="context-menu-item"
-                                onClick={handleDeleteExecution}
-                                style={{ ...itemStyle, color: 'var(--error)' }}
-                            >
-                                <Trash2 size={14} /> Delete
-                            </div>
-                        </>
-                    )}
+                    {menu.type === 'execution' && (() => {
+                        const execution = executions.value.find(e => e.id === menu.itemId);
+                        const isDefault = execution?.name === 'default';
+                        return (
+                            <>
+                                {!isDefault && (
+                                    <>
+                                        <div
+                                            className="context-menu-item"
+                                            onClick={handleRenameExecution}
+                                            style={itemStyle}
+                                        >
+                                            <Edit2 size={14} /> Rename
+                                        </div>
+                                        <div
+                                            className="context-menu-item"
+                                            onClick={handleDeleteExecution}
+                                            style={{ ...itemStyle, color: 'var(--error)' }}
+                                        >
+                                            <Trash2 size={14} /> Delete
+                                        </div>
+                                    </>
+                                )}
+                            </>
+                        );
+                    })()}
                 </>
             )}
         </div>

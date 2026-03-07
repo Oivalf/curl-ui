@@ -85,7 +85,7 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
             label={displayName}
             labelStyle={{ fontStyle: 'italic' }}
             onSelect={handleSelect}
-            onDelete={handleDelete}
+            onDelete={execution.name === 'default' ? undefined : handleDelete}
         />
     );
 }

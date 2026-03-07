@@ -3,7 +3,7 @@ import { useRef, useEffect, useCallback } from "preact/hooks";
 import { ArrowLeft, Play, XCircle, Loader2, Circle, CheckCircle } from "lucide-preact";
 import { formatBytes } from "../utils/format";
 import { invoke } from '@tauri-apps/api/core';
-import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName, ResponseData } from "../store";
+import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName, ResponseData, triggerExecutionRun } from "../store";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ResponsePanel } from "./response/ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
@@ -860,6 +860,13 @@ export function ExecutionEditor() {
         }
     };
 
+    useSignalEffect(() => {
+        if (triggerExecutionRun.value === activeExecutionId.value && activeExecutionId.value !== null) {
+            triggerExecutionRun.value = null;
+            handleSend();
+        }
+    });
+
     const generateRawRequest = () => {
         const urlWithQuery = getFinalUrl(true);
         const methodStr = method.value;
@@ -1092,6 +1099,7 @@ export function ExecutionEditor() {
                 value={name.value}
                 onInput={(e) => name.value = e.currentTarget.value}
                 placeholder="Execution Name"
+                readOnly={currentExecution.name === 'default'}
                 style={{
                     width: '100%',
                     fontSize: '1.2rem',
@@ -1099,7 +1107,7 @@ export function ExecutionEditor() {
                     border: 'none',
                     background: 'transparent',
                     outline: 'none',
-                    color: 'var(--text-primary)',
+                    color: currentExecution.name === 'default' ? 'var(--text-muted)' : 'var(--text-primary)',
                     marginBottom: '8px'
                 }}
             />

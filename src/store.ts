@@ -261,6 +261,7 @@ export const activeTabId = signal<string | null>(null);
 export const activeProjectName = signal<string>("Default Project");
 export const knownProjects = signal<string[]>([]);
 export const isInitializing = signal<boolean>(true);
+export const triggerExecutionRun = signal<string | null>(null);
 
 import { computed } from "@preact/signals";
 
