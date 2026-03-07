@@ -3,7 +3,7 @@ import { useCases, executions, syncProjectManifest, activeProjectName, activeUse
 import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-preact';
 import { invoke } from '@tauri-apps/api/core';
 import { ResponseData } from '../store';
-import { ResponsePanel } from './ResponsePanel';
+import { ResponsePanel } from './response/ResponsePanel';
 
 export function UseCaseManager() {
     const activeUseCase = useCases.value.find(u => u.id === activeUseCaseId.value);

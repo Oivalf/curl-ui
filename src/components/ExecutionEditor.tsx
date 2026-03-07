@@ -5,7 +5,7 @@ import { formatBytes } from "../utils/format";
 import { invoke } from '@tauri-apps/api/core';
 import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName, ResponseData } from "../store";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
-import { ResponsePanel } from "./ResponsePanel";
+import { ResponsePanel } from "./response/ResponsePanel";
 import { MethodSelect } from "./MethodSelect";
 import { VariableInput } from "./VariableInput";
 
