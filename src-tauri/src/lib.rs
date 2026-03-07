@@ -16,6 +16,7 @@ pub struct MockServerState {
 pub struct HttpRequestState {
     pub handles: Arc<Mutex<HashMap<String, oneshot::Sender<()>>>>,
     pub clients: Arc<Mutex<HashMap<String, reqwest::Client>>>,
+    pub jars: Arc<Mutex<HashMap<String, Arc<reqwest::cookie::Jar>>>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -27,6 +28,7 @@ pub fn run() {
         .manage(HttpRequestState {
             handles: Arc::new(Mutex::new(HashMap::new())),
             clients: Arc::new(Mutex::new(HashMap::new())),
+            jars: Arc::new(Mutex::new(HashMap::new())),
         })
         .setup(|app| {
             let handle = app.handle();
@@ -89,6 +91,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            commands::reconstruct_request,
             commands::http_request,
             commands::git_init,
             commands::git_status,

@@ -73,7 +73,7 @@ export function ResponsePanel({ response }: ResponsePanelProps) {
                 <h3 style={tabStyle('headers')} onClick={() => activeResponseTab.value = 'headers'}>Headers</h3>
                 <h3 style={tabStyle('raw_response')} onClick={() => activeResponseTab.value = 'raw_response'}>Raw Response</h3>
                 <h3 style={tabStyle('raw_request')} onClick={() => activeResponseTab.value = 'raw_request'}>Raw Request</h3>
-                <h3 style={tabStyle('curl')} onClick={() => activeResponseTab.value = 'curl'}>Curl</h3>
+                <h3 style={tabStyle('curl')} onClick={() => activeResponseTab.value = 'curl'}>cURL</h3>
                 {response && (
                     <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', maxWidth: '50%' }}>
                         <span style={{

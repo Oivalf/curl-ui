@@ -309,10 +309,35 @@ export const runExecution = async (
 
         setStepStatus('prep', 'completed', undefined, Date.now() - prepStartTime);
 
+        // Early Request Reconstruction for UI
+        try {
+            const [raw, curl] = await invoke<[string, string]>('reconstruct_request', {
+                args: {
+                    method: String(effectiveMethod || 'GET'),
+                    url: String(finalUrl || ''),
+                    headers: finalHeaders,
+                    body: finalBody,
+                    form_data: formDataArgs,
+                    project_name: activeProjectName.peek()
+                }
+            });
+            updateExecutionResponse({
+                status: 0,
+                headers: {},
+                body: 'Requesting...',
+                time: 0,
+                size: 0,
+                requestRaw: raw,
+                requestCurl: curl
+            });
+        } catch (e) {
+            console.error("Early request reconstruction failed:", e);
+        }
+
         // 3. HTTP Request
         const httpStartTime = Date.now();
         setStepStatus('http', 'running', undefined, httpStartTime);
-        const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number }>('http_request', {
+        const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number, request_raw: string, request_curl: string }>('http_request', {
             args: {
                 method: String(effectiveMethod || 'GET'),
                 url: String(finalUrl || ''),
@@ -341,7 +366,9 @@ export const runExecution = async (
             time: finalHttpTime,
             size: res.body.length,
             requestUrl: finalUrl,
-            requestMethod: effectiveMethod
+            requestMethod: effectiveMethod,
+            requestRaw: res.request_raw,
+            requestCurl: res.request_curl,
         };
         updateExecutionResponse(lastResponse);
 

@@ -6,6 +6,7 @@ use axum::{
     Router,
 };
 use git2::{IndexAddOption, Repository, Signature, StatusOptions};
+use reqwest::cookie::CookieStore;
 use reqwest::{multipart, Method};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -20,6 +21,8 @@ pub struct HttpResponse {
     status: u16,
     headers: Vec<Vec<String>>,
     body: String,
+    request_raw: String,
+    request_curl: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,6 +59,60 @@ pub struct GitCommitArgs {
     message: String,
 }
 
+fn generate_request_data(args: &HttpRequestArgs, jar: &reqwest::cookie::Jar) -> (String, String) {
+    let method = args.method.to_uppercase();
+    let mut request_raw = format!("{} {} HTTP/1.1\r\n", method, args.url);
+    let mut request_curl = format!("curl -X {} \"{}\"", method, args.url);
+
+    for pair in &args.headers {
+        if pair.len() == 2 {
+            request_raw.push_str(&format!("{}: {}\r\n", pair[0], pair[1]));
+            request_curl.push_str(&format!(" -H \"{}: {}\"", pair[0], pair[1]));
+        }
+    }
+
+    // Cookies
+    if let Ok(url_parsed) = reqwest::Url::parse(&args.url) {
+        if let Some(cookie_header) = jar.cookies(&url_parsed) {
+            if let Ok(header_val) = cookie_header.to_str() {
+                if !header_val.is_empty() {
+                    request_raw.push_str(&format!("Cookie: {}\r\n", header_val));
+                    request_curl.push_str(&format!(" -H \"Cookie: {}\"", header_val));
+                }
+            }
+        }
+    }
+
+    if let Some(form_data) = &args.form_data {
+        for item in form_data {
+            request_curl.push_str(&format!(" -F \"{}={}\"", item.key, item.value));
+        }
+        request_raw.push_str("Content-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]");
+    } else if let Some(body_content) = &args.body {
+        request_raw.push_str(&format!("Content-Length: {}\r\n\r\n", body_content.len()));
+        request_raw.push_str(body_content);
+        request_curl.push_str(&format!(" -d '{}'", body_content.replace('\'', "'\\''")));
+    } else {
+        request_raw.push_str("\r\n");
+    }
+
+    (request_raw, request_curl)
+}
+
+#[command]
+pub async fn reconstruct_request(
+    state: tauri::State<'_, crate::HttpRequestState>,
+    args: HttpRequestArgs,
+) -> Result<(String, String), String> {
+    let jar = {
+        let jars = state.jars.lock().await;
+        let p_name = args.project_name.as_deref().unwrap_or("default");
+        jars.get(p_name).cloned().unwrap_or_else(|| Arc::new(reqwest::cookie::Jar::default()))
+    };
+
+    Ok(generate_request_data(&args, &jar))
+}
+
 #[command]
 pub async fn http_request(
     state: tauri::State<'_, crate::HttpRequestState>,
@@ -69,25 +126,34 @@ pub async fn http_request(
         handles.insert(id.clone(), tx);
     }
 
-    let client = {
+    let (client, jar) = {
         let mut clients = state.clients.lock().await;
+        let mut jars = state.jars.lock().await;
         let p_name = args
             .project_name
             .clone()
             .unwrap_or_else(|| "default".to_string());
         if !clients.contains_key(&p_name) {
+            let jar = Arc::new(reqwest::cookie::Jar::default());
             let new_client = reqwest::Client::builder()
-                .cookie_store(true)
+                .cookie_provider(Arc::clone(&jar))
                 .build()
                 .map_err(|e| format!("Failed to create client with cookie store: {}", e))?;
             clients.insert(p_name.clone(), new_client);
+            jars.insert(p_name.clone(), jar);
         }
-        clients.get(&p_name).unwrap().clone()
+        (
+            clients.get(&p_name).unwrap().clone(),
+            jars.get(&p_name).unwrap().clone(),
+        )
     };
 
     let request_future = async move {
         let method = Method::from_str(&args.method.to_uppercase())
             .map_err(|e| format!("Invalid method: {}", e))?;
+
+        // Generate Raw Request and Curl (Best effort) - Generate these before we move fields out of args
+        let (request_raw, request_curl) = generate_request_data(&args, &jar);
 
         let mut request_builder = client.request(method, &args.url);
 
@@ -153,6 +219,8 @@ pub async fn http_request(
             status,
             headers,
             body,
+            request_raw,
+            request_curl,
         })
     };
 
