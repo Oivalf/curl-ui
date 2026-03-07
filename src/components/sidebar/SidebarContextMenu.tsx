@@ -78,7 +78,7 @@ export function SidebarContextMenu() {
             }];
             activeRequestId.value = newId;
 
-            // Auto-create sample execution
+            // Ensure default execution exists
             import('../../store').then(({ ensureDefaultExecutions }) => {
                 ensureDefaultExecutions([newId]);
             });
@@ -149,12 +149,7 @@ export function SidebarContextMenu() {
         requests.value = [...requests.value, newReq];
         activeRequestId.value = newReq.id;
 
-        // Auto-create sample execution
-        import('../../store').then(({ ensureDefaultExecutions }) => {
-            ensureDefaultExecutions([newReq.id]);
-        });
-
-        // Auto-create sample execution
+        // Ensure default execution exists
         import('../../store').then(({ ensureDefaultExecutions }) => {
             ensureDefaultExecutions([newReq.id]);
         });
@@ -328,12 +323,7 @@ export function SidebarContextMenu() {
                                 requests.value = [...requests.value, newReq];
                                 activeRequestId.value = newReq.id;
 
-                                // Auto-create sample execution
-                                import('../../store').then(({ ensureDefaultExecutions }) => {
-                                    ensureDefaultExecutions([newReq.id]);
-                                });
-
-                                // Auto-create sample execution
+                                // Ensure default execution exists
                                 import('../../store').then(({ ensureDefaultExecutions }) => {
                                     ensureDefaultExecutions([newReq.id]);
                                 });

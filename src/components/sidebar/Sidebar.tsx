@@ -321,6 +321,11 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                         const newReq = createNewRequest(name, collection.id, null);
                                                         requests.value = [...requests.value, newReq];
                                                         activeRequestId.value = newReq.id;
+
+                                                        // Ensure default execution exists
+                                                        import('../../store').then(({ ensureDefaultExecutions }) => {
+                                                            ensureDefaultExecutions([newReq.id]);
+                                                        });
                                                     }
                                                 }}
                                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}

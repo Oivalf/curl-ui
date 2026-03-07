@@ -905,8 +905,11 @@ export const ensureDefaultExecutions = (requestIds: string[]) => {
     const newExecs: ExecutionItem[] = [];
 
     requestIds.forEach(reqId => {
-        const hasExec = currentExecs.some(e => e.requestId === reqId) || newExecs.some(e => e.requestId === reqId);
-        if (!hasExec) {
+        // Specifically check for an execution named "default"
+        const hasDefaultExec = currentExecs.some(e => e.requestId === reqId && e.name === "default") ||
+            newExecs.some(e => e.requestId === reqId && e.name === "default");
+
+        if (!hasDefaultExec) {
             const req = currentRequests.find(r => r.id === reqId);
             if (req) {
                 newExecs.push({
