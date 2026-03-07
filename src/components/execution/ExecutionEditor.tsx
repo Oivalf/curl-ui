@@ -646,8 +646,8 @@ export function ExecutionEditor() {
             };
 
             // 1. Pre-scripts
-            setStepStatus('pre-scripts', 'running');
             const preStartTime = Date.now();
+            setStepStatus('pre-scripts', 'running', undefined, preStartTime);
             const enabledPreScripts = preScripts.peek().filter(s => s.enabled);
             if (enabledPreScripts.length > 0) {
                 for (const script of enabledPreScripts) {
@@ -663,8 +663,8 @@ export function ExecutionEditor() {
             setStepStatus('pre-scripts', 'completed', undefined, Date.now() - preStartTime);
 
             // 2. Prep
-            setStepStatus('prep', 'running');
             const prepStartTime = Date.now();
+            setStepStatus('prep', 'running', undefined, prepStartTime);
             // Snapshot Request Data
             const requestRaw = generateRawRequest();
             const requestCurl = generateCurl();
@@ -760,8 +760,8 @@ export function ExecutionEditor() {
             setStepStatus('prep', 'completed', undefined, Date.now() - prepStartTime);
 
             // 3. HTTP Request
-            setStepStatus('http', 'running');
             const httpStartTime = Date.now();
+            setStepStatus('http', 'running', undefined, httpStartTime);
             const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number }>('http_request', {
                 args: {
                     method: String(method.value || 'GET'),
@@ -793,8 +793,8 @@ export function ExecutionEditor() {
             });
 
             // 4. Post-scripts
-            setStepStatus('post-scripts', 'running');
             const postStartTime = Date.now();
+            setStepStatus('post-scripts', 'running', undefined, postStartTime);
             const enabledPostScripts = postScripts.peek().filter(s => s.enabled);
             if (enabledPostScripts.length > 0) {
                 // Post-script Context
