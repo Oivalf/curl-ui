@@ -1,7 +1,7 @@
 import { MainLayout } from "./components/MainLayout";
 import { RequestEditor } from "./components/RequestEditor";
 import { FolderEditor } from "./components/FolderEditor";
-import { ExecutionEditor } from "./components/ExecutionEditor";
+import { ExecutionEditor } from "./components/execution/ExecutionEditor";
 import { TabBar } from "./components/TabBar";
 import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing } from "./store";
 import { WelcomeScreen } from "./components/WelcomeScreen";

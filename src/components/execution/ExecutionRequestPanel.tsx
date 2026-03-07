@@ -1,10 +1,10 @@
 import { Signal, useSignal } from "@preact/signals";
-import { ExecutionParamsEditor } from "./request/ExecutionParamsEditor";
-import { RequestBodyEditor } from "./request/RequestBodyEditor";
-import { ExecutionHeadersEditor } from "./request/ExecutionHeadersEditor";
-import { ScriptListEditor } from "./request/ScriptListEditor";
-import { AuthEditor } from "./AuthEditor";
-import { AuthConfig, ScriptItem } from "../store";
+import { ExecutionParamsEditor } from "../request/ExecutionParamsEditor";
+import { RequestBodyEditor } from "../request/RequestBodyEditor";
+import { ExecutionHeadersEditor } from "../request/ExecutionHeadersEditor";
+import { ScriptListEditor } from "../request/ScriptListEditor";
+import { AuthEditor } from "../AuthEditor";
+import { AuthConfig, ScriptItem } from "../../store";
 
 interface ExecutionRequestPanelProps {
     headers: Signal<{ key: string, values: string[], enabled: boolean }[]>;
