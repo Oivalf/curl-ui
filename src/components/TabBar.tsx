@@ -1,5 +1,5 @@
 import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds } from "../store";
-import { X, FileJson, Folder, ChevronDown, Play, Settings, ServerCog } from 'lucide-preact';
+import { X, FileJson, Folder, ChevronDown, Play, ServerCog } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 
@@ -81,7 +81,14 @@ export function TabBar() {
     const getTabName = (tab: Tab) => {
         if (tab.type === 'request') return requests.value.find(r => r.id === tab.id)?.name || tab.name;
         if (tab.type === 'folder') return folders.value.find(f => f.id === tab.id)?.name || tab.name;
-        if (tab.type === 'execution') return executions.value.find(e => e.id === tab.id)?.name || tab.name;
+        if (tab.type === 'execution') {
+            const exec = executions.value.find(e => e.id === tab.id);
+            if (exec) {
+                const parentReq = requests.value.find(r => r.id === exec.requestId);
+                return parentReq ? `${parentReq.name} (${exec.name})` : exec.name;
+            }
+            return tab.name;
+        }
         if (tab.type === 'collection') return tab.name;
         return tab.name;
     };
@@ -93,10 +100,11 @@ export function TabBar() {
         const folds = sorted.filter(t => t.type === 'folder');
         const execs = sorted.filter(t => t.type === 'execution');
         const colls = sorted.filter(t => t.type === 'collection');
-        return { reqs, folds, execs, colls };
+        const extMocks = sorted.filter(t => t.type === 'external-mock');
+        return { reqs, folds, execs, colls, extMocks };
     };
 
-    const { reqs, folds, execs, colls } = getGroupedTabs();
+    const { reqs, folds, execs, colls, extMocks } = getGroupedTabs();
 
     if (openTabs.value.length === 0) return null;
 
@@ -127,7 +135,7 @@ export function TabBar() {
                                 height: '100%'
                             }}
                         >
-                            {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : tab.type === 'collection' ? <ServerCog size={14} /> : <Folder size={14} />}
+                            {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : (tab.type === 'collection' || tab.type === 'external-mock') ? <ServerCog size={14} /> : <Folder size={14} />}
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, fontSize: '0.9rem' }}>
                                 {freshName}
                                 {unsavedItemIds.value.has(tab.id) && (
@@ -285,7 +293,36 @@ export function TabBar() {
                                             color: activeTabId.value === tab.id ? 'var(--accent-primary)' : 'var(--text-primary)'
                                         }}
                                     >
-                                        <Settings size={14} />
+                                        <ServerCog size={14} />
+                                        <span style={{ fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTabName(tab)}</span>
+                                        {activeTabId.value === tab.id && <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {(colls.length > 0 || execs.length > 0 || reqs.length > 0 || folds.length > 0) && extMocks.length > 0 && <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />}
+
+                        {extMocks.length > 0 && (
+                            <div>
+                                <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    External Mocks
+                                </div>
+                                {extMocks.map((tab: Tab) => (
+                                    <div
+                                        key={tab.id}
+                                        onClick={() => activateTab(tab)}
+                                        style={{
+                                            padding: '8px 12px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer',
+                                            backgroundColor: activeTabId.value === tab.id ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                            color: activeTabId.value === tab.id ? 'var(--accent-primary)' : 'var(--text-primary)'
+                                        }}
+                                    >
+                                        <ServerCog size={14} />
                                         <span style={{ fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTabName(tab)}</span>
                                         {activeTabId.value === tab.id && <div style={{ marginLeft: 'auto', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />}
                                     </div>

@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Play, Trash2 } from 'lucide-preact';
-import { activeExecutionId, activeRequestId, activeFolderId, executions, ExecutionItem, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
+import { activeExecutionId, activeRequestId, activeFolderId, executions, requests, ExecutionItem, contextMenu, openTabs, activeTabId, unsavedItemIds } from '../store';
 
 interface ExecutionSidebarItemProps {
     execution: ExecutionItem;
@@ -9,6 +9,8 @@ interface ExecutionSidebarItemProps {
 
 export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemProps) {
     const [isHovered, setIsHovered] = useState(false);
+    const parentRequest = requests.value.find(r => r.id === execution.requestId);
+    const displayName = parentRequest ? `${parentRequest.name} (${execution.name})` : execution.name;
 
 
 
@@ -20,7 +22,7 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
             openTabs.value = [...openTabs.value, {
                 id: tabId,
                 type: 'execution',
-                name: execution.name
+                name: displayName
             }];
         }
 
@@ -136,7 +138,7 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
                     fontSize: '0.9rem',
                     fontStyle: 'italic'
                 }}>
-                    {execution.name}
+                    {displayName}
                 </span>
                 {unsavedItemIds.value.has(execution.id) && (
                     <div style={{
