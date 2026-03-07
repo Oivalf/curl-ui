@@ -153,12 +153,32 @@ export interface ExecutionItem {
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];
     lastResponse?: ResponseData;
+    resultsVisible?: boolean; // Persist if results should be shown in RequestEditor
 }
 
 export interface Environment {
     name: string;
     variables: { key: string, value: string }[];
 }
+
+export interface ExecutionStep {
+    id: string;
+    name: string;
+    status: 'pending' | 'running' | 'completed' | 'error' | 'canceled';
+    message?: string;
+    duration?: number;
+}
+
+export interface ExecutionProgressState {
+    isLoading: boolean;
+    steps: ExecutionStep[];
+    totalTime: number | null;
+    lastResponseTime: number | null;
+    responseSize: number | null;
+    responseStatus: number | null;
+}
+
+export const executionProgressMap = signal<Record<string, ExecutionProgressState>>({});
 
 export interface ExtractionRule {
     source: string; // e.g. "body", "header:Set-Cookie"

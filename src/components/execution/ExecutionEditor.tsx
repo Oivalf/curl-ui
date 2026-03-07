@@ -1,8 +1,8 @@
 import { useSignal, useSignalEffect, useComputed, batch } from "@preact/signals";
 import { useRef, useEffect, useCallback } from "preact/hooks";
 import { ArrowLeft, Play, XCircle } from "lucide-preact";
-import { invoke } from '@tauri-apps/api/core';
-import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, activeProjectName, ResponseData, triggerExecutionRun } from "../../store";
+import { activeExecutionId, activeRequestId, executions, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, addLog, openTabs, activeTabId, activeFolderId, triggerExecutionRun, executionProgressMap } from "../../store";
+import { runExecution, cancelExecution } from "../../utils/execution";
 import { ExecutionRequestPanel } from "./ExecutionRequestPanel";
 import { ExecutionProgress } from "./ExecutionProgress";
 import { ResponsePanel } from "../response/ResponsePanel";
@@ -10,12 +10,12 @@ import { MethodSelect } from "../MethodSelect";
 import { VariableInput } from "../VariableInput";
 
 export function ExecutionEditor() {
-    const currentExecution = executions.value.find(e => e.id === activeExecutionId.value);
+    const currentExecution = executions.value.find((e: any) => e.id === activeExecutionId.value);
 
     if (!currentExecution) return null;
 
     // Get parent request for inheriting values
-    const parentRequest = requests.value.find(r => r.id === currentExecution.requestId);
+    const parentRequest = requests.value.find((r: any) => r.id === currentExecution.requestId);
 
     if (!parentRequest) {
         return (
@@ -54,15 +54,15 @@ export function ExecutionEditor() {
         const execOverrides = currentExecution.headers || [];
 
         // Start with parent headers (defaults)
-        const merged: { key: string, values: string[], enabled: boolean }[] = parentHeaders.map(h => ({
+        const merged: { key: string, values: string[], enabled: boolean }[] = parentHeaders.map((h: any) => ({
             key: h.key,
             values: [...h.values],
             enabled: true // Inherited default
         }));
 
         // Apply overrides
-        execOverrides.forEach(override => {
-            const index = merged.findIndex(m => m.key === override.key);
+        execOverrides.forEach((override: any) => {
+            const index = merged.findIndex((m: any) => m.key === override.key);
             if (index !== -1) {
                 // Update existing
                 merged[index] = { ...override, values: [...override.values] };
@@ -99,8 +99,8 @@ export function ExecutionEditor() {
         }));
 
         // Apply overrides
-        overrides.forEach(override => {
-            const index = merged.findIndex(m => m.key === override.key);
+        overrides.forEach((override: any) => {
+            const index = merged.findIndex((m: any) => m.key === override.key);
             if (index !== -1) {
                 merged[index] = { ...override, values: [...override.values] };
             } else {
@@ -162,7 +162,7 @@ export function ExecutionEditor() {
         const cExec = executions.peek().find(e => e.id === execId);
         if (!cExec) return;
 
-        const parent = allRequests.find(r => r.id === cExec.requestId);
+        const parent = allRequests.find((r: any) => r.id === cExec.requestId);
         if (!parent) return;
 
         // Always re-merge: parent params + execution overrides (like headers)
@@ -177,11 +177,11 @@ export function ExecutionEditor() {
 
         // Re-derive headers (merge parent + overrides)
         const parentHeaders = parent.headers || [];
-        const mergedHeaders: { key: string, values: string[], enabled: boolean }[] = parentHeaders.map(h => ({
+        const mergedHeaders: { key: string, values: string[], enabled: boolean }[] = parentHeaders.map((h: any) => ({
             key: h.key, values: [...h.values], enabled: true
         }));
-        (cExec.headers || []).forEach(override => {
-            const index = mergedHeaders.findIndex(m => m.key === override.key);
+        (cExec.headers || []).forEach((override: any) => {
+            const index = mergedHeaders.findIndex((m: any) => m.key === override.key);
             if (index !== -1) {
                 mergedHeaders[index] = { ...override, values: [...override.values] };
             } else {
@@ -207,28 +207,36 @@ export function ExecutionEditor() {
         return resolveHeaders(parentRequest.parentId);
     });
 
-    // Loading State
-    const isLoading = useSignal(false);
-
     // Params State
     const queryParams = useSignal<{ key: string, values: string[], enabled: boolean }[]>(getMergedQueryParams(parentRequest.url, currentExecution.queryParams));
     const pathParams = useSignal<Record<string, string>>({});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentExecution.formData ?? parentRequest.formData ?? []);
 
-    // Execution Progress State
-    const currentRequestId = useSignal<string | null>(null);
-    const executionSteps = useSignal<{
-        id: string;
-        name: string;
-        status: 'pending' | 'running' | 'completed' | 'error' | 'canceled';
-        message?: string;
-        duration?: number;
-    }[]>([]);
+    // Global Execution Progress State (Synced from store)
+    const progress = useComputed(() => executionProgressMap.value[activeExecutionId.value || ''] || {
+        isLoading: false,
+        steps: [],
+        totalTime: null,
+        lastResponseTime: null,
+        responseSize: null,
+        responseStatus: null
+    });
 
-    const totalExecutionTime = useSignal<number | null>(null);
-    const lastResponseTime = useSignal<number | null>(null);
-    const responseSize = useSignal<number | null>(null);
-    const responseStatus = useSignal<number | null>(null);
+    const isLoadingSignal = useSignal(progress.value.isLoading);
+    const stepsSignal = useSignal(progress.value.steps);
+    const totalTimeSignal = useSignal(progress.value.totalTime);
+    const lastResponseTimeSignal = useSignal(progress.value.lastResponseTime);
+    const responseSizeSignal = useSignal(progress.value.responseSize);
+    const responseStatusSignal = useSignal(progress.value.responseStatus);
+
+    useSignalEffect(() => {
+        isLoadingSignal.value = progress.value.isLoading;
+        stepsSignal.value = progress.value.steps as any;
+        totalTimeSignal.value = progress.value.totalTime;
+        lastResponseTimeSignal.value = progress.value.lastResponseTime;
+        responseSizeSignal.value = progress.value.responseSize;
+        responseStatusSignal.value = progress.value.responseStatus;
+    });
 
 
     // URL sync effect removed - handled by sync logic and internal params management
@@ -255,7 +263,7 @@ export function ExecutionEditor() {
         let currentParentId = parentRequest?.parentId;
 
         while (currentParentId) {
-            const f = folders.value.find(x => x.id === currentParentId);
+            const f = folders.value.find((x: any) => x.id === currentParentId);
             if (f) {
                 folderScopes.push(f);
                 currentParentId = f.parentId;
@@ -278,14 +286,14 @@ export function ExecutionEditor() {
             }
 
             if (value === null && env) {
-                const envVar = env.variables.find(v => v.key === key);
+                const envVar = env.variables.find((v: any) => v.key === key);
                 if (envVar) value = envVar.value;
             }
 
             if (value === null) {
                 const globalEnv = environments.value.find(e => e.name === 'Global');
                 if (globalEnv) {
-                    const globalVar = globalEnv.variables.find(v => v.key === key);
+                    const globalVar = globalEnv.variables.find((v: any) => v.key === key);
                     if (globalVar) value = globalVar.value;
                 }
             }
@@ -477,387 +485,22 @@ export function ExecutionEditor() {
         }
     });
 
-    const executeScript = async (scriptContent: string, context: any) => {
-        try {
-            const keys = Object.keys(context);
-            const values = Object.values(context);
-            const func = new Function(...keys, scriptContent);
-            await func(...values);
-        } catch (err) {
-            console.error("Script Execution Error:", err);
-            throw err;
-        }
-    };
+    const handleCancel = () => cancelExecution(activeExecutionId.peek()!);
 
-    const updateExecutionResponse = (data: ResponseData) => {
-        const id = activeExecutionId.peek();
-        if (!id) return;
-        executions.value = executions.peek().map(e =>
-            e.id === id ? { ...e, lastResponse: data } : e
-        );
-    };
-
-    const handleCancel = async () => {
-        if (!currentRequestId.value) return;
-        try {
-            await invoke('cancel_http_request', { requestId: currentRequestId.value });
-            addLog('info', 'Request cancellation requested', 'System');
-        } catch (err) {
-            console.error('Failed to cancel request', err);
-        }
-    };
-
-    const handleSend = async () => {
-        if (isLoading.value) return;
-
-        const requestId = Math.random().toString(36).substring(7);
-        currentRequestId.value = requestId;
-        isLoading.value = true;
-        updateExecutionResponse({
-            status: 0,
-            headers: {},
-            body: 'Initializing...',
-            time: 0,
-            size: 0
+    const handleSend = () => {
+        runExecution(activeExecutionId.peek()!, {
+            url: url.peek(),
+            method: method.peek(),
+            headers: headers.peek(),
+            queryParams: queryParams.peek(),
+            body: body.peek(),
+            bodyType: bodyType.peek(),
+            auth: auth.peek(),
+            preScripts: preScripts.peek(),
+            postScripts: postScripts.peek(),
+            formData: formData.peek(),
+            pathParams: pathParams.peek()
         });
-        totalExecutionTime.value = null;
-        lastResponseTime.value = null;
-        responseSize.value = null;
-        responseStatus.value = null;
-
-        // Initialize Steps
-        const steps = [
-            { id: 'pre-scripts', name: 'Pre-request Scripts', status: 'pending' as const },
-            { id: 'prep', name: 'Preparing Request', status: 'pending' as const },
-            { id: 'http', name: 'HTTP Request', status: 'pending' as const },
-            { id: 'post-scripts', name: 'Post-request Scripts', status: 'pending' as const },
-        ];
-        executionSteps.value = steps;
-
-        const setStepStatus = (id: string, status: 'pending' | 'running' | 'completed' | 'error' | 'canceled', message?: string, duration?: number) => {
-            executionSteps.value = executionSteps.peek().map(s =>
-                s.id === id ? { ...s, status, message, duration } : s
-            );
-        };
-
-        const startTime = Date.now();
-
-        try {
-            const activeEnv = environments.peek().find(e => e.name === activeEnvironmentName.peek());
-
-            const scriptContext = {
-                // ... same script context ...
-                console: {
-                    ...console,
-                    log: (...args: any[]) => {
-                        console.log(...args);
-                        addLog('info', args.map(a => String(a)).join(' '), 'Script');
-                    },
-                    error: (...args: any[]) => {
-                        console.error(...args);
-                        addLog('error', args.map(a => String(a)).join(' '), 'Script');
-                    },
-                    warn: (...args: any[]) => {
-                        console.warn(...args);
-                        addLog('warn', args.map(a => String(a)).join(' '), 'Script');
-                    },
-                    info: (...args: any[]) => {
-                        console.info(...args);
-                        addLog('info', args.map(a => String(a)).join(' '), 'Script');
-                    }
-                },
-                env: {
-                    get: (key: string) => {
-                        const fromActive = activeEnv?.variables.find(v => v.key === key)?.value;
-                        if (fromActive !== undefined) return fromActive;
-                        const globalEnv = environments.peek().find(e => e.name === 'Global');
-                        return globalEnv?.variables.find(v => v.key === key)?.value;
-                    },
-                    set: (key: string, value: string) => {
-                        const targetEnv = activeEnv || environments.peek().find(e => e.name === 'Global');
-                        if (!targetEnv) return;
-
-                        const existing = targetEnv.variables.find(v => v.key === key);
-                        if (existing) {
-                            existing.value = value;
-                        } else {
-                            targetEnv.variables.push({ key, value });
-                        }
-                        environments.value = [...environments.peek()];
-                    }
-                },
-                request: {
-                    get method() { return method.peek(); },
-                    set method(v) { method.value = v; },
-                    get url() { return url.peek(); },
-                    set url(v) { url.value = v; },
-                    get body() { return body.peek(); },
-                    set body(v) { body.value = v; },
-                    headers: {
-                        get: (key: string) => headers.peek().find(h => h.key === key)?.values[0],
-                        set: (key: string, value: string) => {
-                            const current = headers.peek();
-                            const idx = current.findIndex(h => h.key === key);
-                            if (idx !== -1) {
-                                const next = [...current];
-                                next[idx] = { ...next[idx], values: [value], enabled: true };
-                                headers.value = next;
-                            } else {
-                                headers.value = [...current, { key, values: [value], enabled: true }];
-                            }
-                        },
-                        remove: (key: string) => {
-                            headers.value = headers.peek().filter(h => h.key !== key);
-                        },
-                        all: () => {
-                            return headers.peek().reduce((acc, h) => {
-                                if (h.key) acc[h.key] = h.values[0];
-                                return acc;
-                            }, {} as Record<string, string>);
-                        }
-                    },
-                    queryParams: {
-                        get: (key: string) => queryParams.peek().find(p => p.key === key)?.values[0],
-                        set: (key: string, value: string) => {
-                            const current = queryParams.peek();
-                            const idx = current.findIndex(p => p.key === key);
-                            if (idx !== -1) {
-                                const next = [...current];
-                                next[idx] = { ...next[idx], values: [value], enabled: true };
-                                queryParams.value = next;
-                            } else {
-                                queryParams.value = [...current, { key, values: [value], enabled: true }];
-                            }
-                        },
-                        add: (key: string, value: string) => {
-                            queryParams.value = [...queryParams.peek(), { key, values: [value], enabled: true }];
-                        },
-                        remove: (key: string) => {
-                            queryParams.value = queryParams.peek().filter(p => p.key !== key);
-                        },
-                        all: () => {
-                            return queryParams.peek().reduce((acc, p) => {
-                                if (p.key) acc[p.key] = p.values[0];
-                                return acc;
-                            }, {} as Record<string, string>);
-                        }
-                    }
-                }
-            };
-
-            // 1. Pre-scripts
-            const preStartTime = Date.now();
-            setStepStatus('pre-scripts', 'running', undefined, preStartTime);
-            const enabledPreScripts = preScripts.peek().filter(s => s.enabled);
-            if (enabledPreScripts.length > 0) {
-                for (const script of enabledPreScripts) {
-                    try {
-                        console.log(`Executing Pre-Script: ${script.name}`);
-                        await executeScript(script.content, scriptContext);
-                    } catch (e) {
-                        setStepStatus('pre-scripts', 'error', String(e), Date.now() - preStartTime);
-                        throw new Error(`Pre-Script "${script.name}" failed: ${e}`);
-                    }
-                }
-            }
-            setStepStatus('pre-scripts', 'completed', undefined, Date.now() - preStartTime);
-
-            // 2. Prep
-            const prepStartTime = Date.now();
-            setStepStatus('prep', 'running', undefined, prepStartTime);
-            // Snapshot Request Data
-            const requestRaw = generateRawRequest();
-            const requestCurl = generateCurl();
-            const finalRequestUrl = getFinalUrl(true);
-            const finalRequestMethod = method.value;
-
-            updateExecutionResponse({
-                status: 0, // Loading
-                headers: {},
-                body: 'Requesting...',
-                requestRaw,
-                requestCurl,
-                requestUrl: finalRequestUrl,
-                requestMethod: finalRequestMethod
-            });
-
-            const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
-            const finalHeaders: string[][] = [];
-
-            startHeaders.forEach(h => {
-                if (h.key && h.values) {
-                    h.values.forEach(v => {
-                        finalHeaders.push([h.key, substituteVariables(v)]);
-                    });
-                }
-            });
-
-            headers.value.forEach(h => {
-                if (h.key && h.values.length > 0 && h.enabled) {
-                    // Remove any existing header with this key (override)
-                    const existingIdxs = finalHeaders.reduce((acc, fh, idx) => {
-                        if (fh[0] === h.key) acc.push(idx);
-                        return acc;
-                    }, [] as number[]);
-
-                    // Remove from backwards to keep indexes valid
-                    existingIdxs.reverse().forEach(idx => finalHeaders.splice(idx, 1));
-
-                    h.values.forEach(v => {
-                        finalHeaders.push([h.key, substituteVariables(v)]);
-                    });
-                }
-            });
-
-            let authConfig = auth.value;
-            if (authConfig.type === 'inherit' && inheritedAuth.value) {
-                authConfig = inheritedAuth.value.config;
-            }
-
-            if (authConfig.type === 'basic' && authConfig.basic) {
-                const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-                finalHeaders.push(['Authorization', `Basic ${token}`]);
-            } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-                finalHeaders.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token)}`]);
-            }
-
-            const finalUrl = getFinalUrl();
-            let finalBody = bodyType.value === 'none' ? null : substituteVariables(body.value);
-            let formDataArgs: any = null;
-
-            if (bodyType.value === 'form_urlencoded') {
-                const params = new URLSearchParams();
-                formData.value.forEach(group => {
-                    group.values.forEach(v => {
-                        params.append(group.key, substituteVariables(v));
-                    });
-                });
-                finalBody = params.toString();
-                if (!finalHeaders.find(fh => fh[0] === 'Content-Type')) {
-                    finalHeaders.push(['Content-Type', 'application/x-www-form-urlencoded']);
-                }
-            } else if (bodyType.value === 'multipart') {
-                formDataArgs = [];
-                formData.value.forEach(group => {
-                    group.values.forEach(v => {
-                        formDataArgs.push({
-                            key: group.key,
-                            value: substituteVariables(v),
-                            entry_type: group.type
-                        });
-                    });
-                });
-                finalBody = null;
-            } else {
-                if (!finalHeaders.find(fh => fh[0] === 'Content-Type') && bodyType.value !== 'none') {
-                    switch (bodyType.value) {
-                        case 'json': finalHeaders.push(['Content-Type', 'application/json']); break;
-                        case 'xml': finalHeaders.push(['Content-Type', 'application/xml']); break;
-                        case 'yaml': finalHeaders.push(['Content-Type', 'application/x-yaml']); break;
-                    }
-                }
-            }
-            setStepStatus('prep', 'completed', undefined, Date.now() - prepStartTime);
-
-            // 3. HTTP Request
-            const httpStartTime = Date.now();
-            setStepStatus('http', 'running', undefined, httpStartTime);
-            const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number }>('http_request', {
-                args: {
-                    method: String(method.value || 'GET'),
-                    url: String(finalUrl || ''),
-                    headers: finalHeaders,
-                    body: finalBody,
-                    form_data: formDataArgs,
-                    request_id: requestId,
-                    project_name: activeProjectName.peek()
-                }
-            });
-            const httpDuration = Date.now() - httpStartTime;
-            setStepStatus('http', 'completed', undefined, res.time_taken || httpDuration);
-
-            // Handle Response...
-            const endTime = Date.now();
-            const respTime = res.time_taken || (endTime - startTime);
-            lastResponseTime.value = respTime;
-            responseSize.value = res.body.length;
-            responseStatus.value = res.status;
-
-            updateExecutionResponse({
-                ...currentExecution.lastResponse!,
-                status: res.status,
-                headers: res.headers,
-                body: res.body,
-                time: respTime,
-                size: res.body.length
-            });
-
-            // 4. Post-scripts
-            const postStartTime = Date.now();
-            setStepStatus('post-scripts', 'running', undefined, postStartTime);
-            const enabledPostScripts = postScripts.peek().filter(s => s.enabled);
-            if (enabledPostScripts.length > 0) {
-                // Post-script Context
-                const postScriptContext = {
-                    ...scriptContext,
-                    response: {
-                        status: res.status,
-                        headers: res.headers,
-                        body: res.body,
-                        json: () => {
-                            try { return JSON.parse(res.body); }
-                            catch (e) { return null; }
-                        }
-                    }
-                };
-
-                for (const script of enabledPostScripts) {
-                    const statusFilter = script.executeOnStatusCodes || 'all';
-                    const matchesStatus = statusFilter === 'all' ||
-                        statusFilter.split(',').map(s => s.trim()).includes(res.status.toString()) ||
-                        (statusFilter === '2xx' && res.status >= 200 && res.status < 300);
-
-                    if (matchesStatus) {
-                        try {
-                            console.log(`Executing Post-Script: ${script.name}`);
-                            await executeScript(script.content, postScriptContext);
-                        } catch (e) {
-                            addLog('error', `Post-Script "${script.name}" failed: ${e}`, 'Request');
-                        }
-                    }
-                }
-            }
-            setStepStatus('post-scripts', 'completed', undefined, Date.now() - postStartTime);
-            totalExecutionTime.value = Date.now() - startTime;
-
-        } catch (err) {
-            console.error(err);
-            const errStr = String(err);
-            const isCanceled = errStr.includes('Canceled');
-
-            if (isCanceled) {
-                setStepStatus('http', 'canceled');
-                executionSteps.value = executionSteps.peek().map(s =>
-                    s.status === 'pending' || s.status === 'running' ? { ...s, status: s.id === 'http' ? 'canceled' : s.status } : s
-                );
-            } else {
-                // Find current running step and mark as error
-                executionSteps.value = executionSteps.peek().map(s =>
-                    s.status === 'running' ? { ...s, status: 'error', message: errStr } : s
-                );
-            }
-
-            updateExecutionResponse({
-                status: 0,
-                headers: {},
-                body: isCanceled ? 'Request Canceled' : `Error: ${err}`,
-                size: 0,
-                time: 0
-            });
-        } finally {
-            isLoading.value = false;
-            currentRequestId.value = null;
-        }
     };
 
     useSignalEffect(() => {
@@ -867,163 +510,6 @@ export function ExecutionEditor() {
         }
     });
 
-    const generateRawRequest = () => {
-        const urlWithQuery = getFinalUrl(true);
-        const methodStr = method.value;
-
-        const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
-        const finalHeadersFlat: [string, string][] = [];
-
-        startHeaders.forEach(h => {
-            if (h.key && h.values) {
-                h.values.forEach(v => {
-                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
-                });
-            }
-        });
-
-        headers.value.forEach(h => {
-            if (h.key && h.values.length > 0 && h.enabled) {
-                // For raw display, we usually show overrides by removing parent and adding ours
-                const existingIdxs = finalHeadersFlat.reduce((acc, fh, idx) => {
-                    if (fh[0] === h.key) acc.push(idx);
-                    return acc;
-                }, [] as number[]);
-                existingIdxs.reverse().forEach(idx => finalHeadersFlat.splice(idx, 1));
-
-                h.values.forEach(v => {
-                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
-                });
-            }
-        });
-
-        let authConfig = auth.value;
-        if (authConfig.type === 'inherit' && inheritedAuth.value) {
-            authConfig = inheritedAuth.value.config;
-        }
-
-        if (authConfig.type === 'basic' && authConfig.basic) {
-            const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-            finalHeadersFlat.push(['Authorization', `Basic ${token}`]);
-        } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-            finalHeadersFlat.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token)}`]);
-        }
-
-        let raw = `${methodStr} ${urlWithQuery} HTTP/1.1\n`;
-
-        // Add content-type if missing
-        if (!finalHeadersFlat.find(fh => fh[0] === 'Content-Type') && bodyType.value !== 'none') {
-            let contentType: string | null = null;
-            switch (bodyType.value) {
-                case 'json': contentType = 'application/json'; break;
-                case 'xml': contentType = 'application/xml'; break;
-                case 'html': contentType = 'text/html'; break;
-                case 'form_urlencoded': contentType = 'application/x-www-form-urlencoded'; break;
-                case 'text': contentType = 'text/plain'; break;
-                case 'javascript': contentType = 'application/javascript'; break;
-                case 'yaml': contentType = 'application/x-yaml'; break;
-            }
-            if (contentType) finalHeadersFlat.push(['Content-Type', contentType]);
-        }
-
-        finalHeadersFlat.forEach(([key, val]) => {
-            raw += `${key}: ${val}\n`;
-        });
-
-        raw += '\n';
-        if (bodyType.value !== 'none') {
-            raw += substituteVariables(body.value);
-        }
-
-        return raw;
-    };
-
-    const generateCurl = () => {
-        let cmd = `curl -X ${method.value} '${getFinalUrl()}'`;
-
-        const startHeaders = parentRequest ? resolveHeaders(parentRequest.id) : [];
-        const finalHeadersFlat: [string, string][] = [];
-
-        startHeaders.forEach(h => {
-            if (h.key && h.values) {
-                h.values.forEach(v => {
-                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
-                });
-            }
-        });
-
-        headers.value.forEach(h => {
-            if (h.key && h.values.length > 0 && h.enabled) {
-                // Remove parent ones
-                const existingIdxs = finalHeadersFlat.reduce((acc, fh, idx) => {
-                    if (fh[0] === h.key) acc.push(idx);
-                    return acc;
-                }, [] as number[]);
-                existingIdxs.reverse().forEach(idx => finalHeadersFlat.splice(idx, 1));
-
-                h.values.forEach(v => {
-                    finalHeadersFlat.push([h.key, substituteVariables(v)]);
-                });
-            }
-        });
-
-        let authConfig = auth.value;
-        if (authConfig.type === 'inherit' && inheritedAuth.value) {
-            authConfig = inheritedAuth.value.config;
-        }
-
-        if (authConfig.type === 'basic' && authConfig.basic) {
-            const token = btoa(`${substituteVariables(authConfig.basic.username)}:${substituteVariables(authConfig.basic.password)}`);
-            finalHeadersFlat.push(['Authorization', `Basic ${token}`]);
-        } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-            finalHeadersFlat.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token)}`]);
-        }
-
-        finalHeadersFlat.forEach(([key, val]) => {
-            cmd += ` \\\n  -H "${key}: ${val}"`;
-        });
-
-        if (!finalHeadersFlat.find(fh => fh[0] === 'Content-Type')) {
-            let contentType: string | null = null;
-            switch (bodyType.value) {
-                case 'json': contentType = 'application/json'; break;
-                case 'xml': contentType = 'application/xml'; break;
-                case 'html': contentType = 'text/html'; break;
-                case 'form_urlencoded': contentType = 'application/x-www-form-urlencoded'; break;
-                case 'text': contentType = 'text/plain'; break;
-                case 'javascript': contentType = 'application/javascript'; break;
-                case 'yaml': contentType = 'application/x-yaml'; break;
-            }
-            if (contentType) {
-                cmd += ` \\\n  -H "Content-Type: ${contentType}"`;
-            }
-        }
-
-        if (bodyType.value === 'multipart') {
-            formData.value.forEach(group => {
-                group.values.forEach(v => {
-                    const subV = substituteVariables(v);
-                    if (group.type === 'file') {
-                        cmd += ` \\\n  -F "${group.key}=@${subV}"`;
-                    } else {
-                        cmd += ` \\\n  -F "${group.key}=${subV}"`;
-                    }
-                });
-            });
-        } else if (bodyType.value === 'form_urlencoded') {
-            formData.value.forEach(group => {
-                group.values.forEach(v => {
-                    const subV = substituteVariables(v);
-                    cmd += ` \\\n  -d "${group.key}=${subV}"`;
-                });
-            });
-        } else if (bodyType.value !== 'none' && body.value) {
-            const escapedBody = substituteVariables(body.value).replace(/'/g, "'\\''");
-            cmd += ` \\\n  -d '${escapedBody}'`;
-        }
-
-        return cmd;
-    };
 
     const navigateToParent = () => {
         if (!parentRequest) return;
@@ -1138,7 +624,7 @@ export function ExecutionEditor() {
                         Preview: {finalUrlPreview.value}
                     </div>
                 </div>
-                {isLoading.value ? (
+                {isLoadingSignal.value ? (
                     <button
                         onClick={handleCancel}
                         style={{
@@ -1183,12 +669,12 @@ export function ExecutionEditor() {
 
             {/* Progress Summary */}
             <ExecutionProgress
-                isLoading={isLoading}
-                executionSteps={executionSteps}
-                totalExecutionTime={totalExecutionTime}
-                lastResponseTime={lastResponseTime}
-                responseSize={responseSize}
-                responseStatus={responseStatus}
+                isLoading={isLoadingSignal}
+                executionSteps={stepsSignal}
+                totalExecutionTime={totalTimeSignal}
+                lastResponseTime={lastResponseTimeSignal}
+                responseSize={responseSizeSignal}
+                responseStatus={responseStatusSignal}
             />
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>

@@ -1,12 +1,13 @@
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
-import { useRef } from "preact/hooks";
-import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, openTabs, activeTabId, activeExecutionId, activeFolderId, triggerExecutionRun } from "../store";
+import { useRef, useCallback, useEffect } from "preact/hooks";
+import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, executionProgressMap } from "../store";
 import { RequestPanel } from "./RequestPanel";
 import { MethodSelect } from "./MethodSelect";
 import { VariableInput } from "./VariableInput";
-import { Play } from "lucide-preact";
-
-const PlayIcon = Play as any;
+import { Play, XCircle, X } from "lucide-preact";
+import { runExecution, cancelExecution } from "../utils/execution";
+import { ExecutionProgress } from "./execution/ExecutionProgress";
+import { ResponsePanel } from "./response/ResponsePanel";
 
 export function RequestEditor() {
     const currentRequest = requests.value.find(r => r.id === activeRequestId.value);
@@ -233,6 +234,83 @@ export function RequestEditor() {
     };
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const resultsPanelWidth = useSignal(40); // Initial results width %
+    const isResizing = useSignal(false);
+    const defaultExecution = useComputed(() => 
+        executions.value.find(e => e.requestId === currentRequest.id && e.name === 'default')
+    );
+
+    const progress = useComputed(() => 
+        (defaultExecution.value && executionProgressMap.value[defaultExecution.value.id]) || {
+            isLoading: false,
+            steps: [],
+            totalTime: null,
+            lastResponseTime: null,
+            responseSize: null,
+            responseStatus: null
+        }
+    );
+
+    const showResults = useSignal(defaultExecution.peek()?.resultsVisible || false);
+
+    const startResizing = useCallback(() => {
+        isResizing.value = true;
+    }, []);
+
+    const stopResizing = useCallback(() => {
+        isResizing.value = false;
+    }, []);
+
+    const resize = useCallback((e: MouseEvent) => {
+        if (isResizing.value && containerRef.current) {
+            const containerRect = containerRef.current.getBoundingClientRect();
+            // Width from right side
+            const newWidth = ((containerRect.right - e.clientX) / containerRect.width) * 100;
+            if (newWidth >= 20 && newWidth <= 80) {
+                resultsPanelWidth.value = newWidth;
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener('mousemove', resize);
+        window.addEventListener('mouseup', stopResizing);
+        return () => {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        };
+    }, [resize, stopResizing]);
+
+    const handleRunDefault = () => {
+        const dExec = defaultExecution.peek();
+        if (!dExec) return;
+
+        showResults.value = true;
+        
+        // Persist visible state in store
+        executions.value = executions.peek().map(e => 
+            e.id === dExec.id ? { ...e, resultsVisible: true } : e
+        );
+
+        runExecution(dExec.id, {
+            url: url.peek(),
+            method: method.peek(),
+            headers: headers.peek().map(h => ({ ...h, enabled: true })), // RequestEditor headers are implied enabled
+            queryParams: queryParams.peek().map(p => ({ ...p, enabled: true })),
+            body: body.peek(),
+            bodyType: bodyType.peek(),
+            auth: auth.peek(),
+            preScripts: preScripts.peek(),
+            postScripts: postScripts.peek(),
+            formData: formData.peek(),
+            pathParams: pathParams.peek()
+        });
+    };
+
+    const handleCancelDefault = () => {
+        const dExec = defaultExecution.peek();
+        if (dExec) cancelExecution(dExec.id);
+    };
 
     return (
         <div style={{ padding: 'var(--spacing-md)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)', height: '100%' }}>
@@ -301,40 +379,49 @@ export function RequestEditor() {
                         Preview: {finalUrlPreview.value}
                     </div>
                 </div>
-                <button
-                    onClick={() => {
-                        const defaultExec = executions.peek().find(e => e.requestId === currentRequest.id && e.name === 'default');
-                        if (defaultExec) {
-                            if (!openTabs.peek().find(t => t.id === defaultExec.id)) {
-                                openTabs.value = [...openTabs.peek(), { id: defaultExec.id, type: 'execution', name: defaultExec.name }];
-                            }
-                            activeTabId.value = defaultExec.id;
-                            activeExecutionId.value = defaultExec.id;
-                            activeRequestId.value = null;
-                            activeFolderId.value = null;
-                            triggerExecutionRun.value = defaultExec.id;
-                        }
-                    }}
-                    style={{
-                        padding: '8px 16px',
-                        backgroundColor: 'var(--accent-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 'var(--radius-sm)',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    <PlayIcon size={16} /> Run Default
-                </button>
+                {progress.value.isLoading ? (
+                    <button
+                        onClick={handleCancelDefault}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: 'var(--error)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        <XCircle size={16} /> Cancel
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleRunDefault}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: 'var(--accent-primary)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        <Play size={16} fill="currentColor" /> Run Default
+                    </button>
+                )}
             </div>
 
-            <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
                     <RequestPanel
                         headers={headers}
                         bodyType={bodyType}
@@ -352,6 +439,86 @@ export function RequestEditor() {
                         parentId={currentRequest.parentId}
                     />
                 </div>
+
+                {showResults.value && (
+                    <>
+                        {/* Resizer Handle */}
+                        <div
+                            onMouseDown={startResizing}
+                            style={{
+                                width: '5px',
+                                cursor: 'col-resize',
+                                backgroundColor: isResizing.value ? 'var(--accent-secondary)' : 'var(--border-color)',
+                                opacity: isResizing.value ? 1 : 0.5,
+                                transition: 'background-color 0.2s',
+                                margin: '0 4px',
+                                borderRadius: '2px',
+                                zIndex: 10
+                            }}
+                        />
+
+                        {/* Results Panel */}
+                        <div style={{ 
+                            width: `${resultsPanelWidth.value}%`, 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            minWidth: '300px',
+                            height: '100%', 
+                            minHeight: 0,
+                            borderLeft: '1px solid var(--border-color)',
+                            backgroundColor: 'var(--bg-secondary)',
+                            position: 'relative',
+                            borderRadius: 'var(--radius-md)',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                position: 'absolute',
+                                top: '8px',
+                                right: '8px',
+                                zIndex: 20
+                            }}>
+                                <button
+                                    onClick={() => {
+                                        showResults.value = false;
+                                        // Update store to persist hidden state
+                                        const dExec = defaultExecution.peek();
+                                        if (dExec) {
+                                            executions.value = executions.peek().map(e => 
+                                                e.id === dExec.id ? { ...e, resultsVisible: false } : e
+                                            );
+                                        }
+                                    }}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: 'var(--text-muted)',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        display: 'flex'
+                                    }}
+                                    title="Close Results"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>
+                                <ExecutionProgress
+                                    isLoading={useComputed(() => progress.value.isLoading)}
+                                    executionSteps={useComputed(() => progress.value.steps as any)}
+                                    totalExecutionTime={useComputed(() => progress.value.totalTime)}
+                                    lastResponseTime={useComputed(() => progress.value.lastResponseTime)}
+                                    responseSize={useComputed(() => progress.value.responseSize)}
+                                    responseStatus={useComputed(() => progress.value.responseStatus)}
+                                />
+                            </div>
+
+                            <div style={{ flex: 1, minHeight: 0 }}>
+                                <ResponsePanel response={defaultExecution.value?.lastResponse || null} />
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
