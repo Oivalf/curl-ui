@@ -124,13 +124,45 @@ export function TabBar() {
         <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-sidebar)', borderBottom: '1px solid var(--border-color)', height: '40px' }}>
             {/* Scrollable Tabs */}
             <div style={{ display: 'flex', flex: 1, overflowX: 'auto', height: '100%', scrollbarWidth: 'none' }}>
-                {openTabs.value.map(tab => {
+                {openTabs.value.map((tab, index) => {
                     const isActive = activeTabId.value === tab.id;
                     const freshName = getTabName(tab);
+
+                    const handleDragStart = (e: DragEvent) => {
+                        if (e.dataTransfer) {
+                            e.dataTransfer.setData('text/plain', index.toString());
+                            e.dataTransfer.effectAllowed = 'move';
+                            // Add a preview class or style if needed
+                        }
+                    };
+
+                    const handleDragOver = (e: DragEvent) => {
+                        e.preventDefault();
+                        if (e.dataTransfer) {
+                            e.dataTransfer.dropEffect = 'move';
+                        }
+                    };
+
+                    const handleDrop = (e: DragEvent) => {
+                        e.preventDefault();
+                        const fromIndexStr = e.dataTransfer?.getData('text/plain');
+                        if (fromIndexStr !== undefined) {
+                            const fromIndex = parseInt(fromIndexStr, 10);
+                            if (fromIndex !== index) {
+                                import('../store').then(({ moveTab }) => {
+                                    moveTab(fromIndex, index);
+                                });
+                            }
+                        }
+                    };
 
                     return (
                         <div
                             key={tab.id}
+                            draggable={true}
+                            onDragStart={handleDragStart}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
                             onClick={() => activateTab(tab)}
                             onContextMenu={(e) => handleContextMenu(e, tab.id)}
                             style={{
@@ -145,7 +177,9 @@ export function TabBar() {
                                 minWidth: '120px',
                                 maxWidth: '200px',
                                 color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                height: '100%'
+                                height: '100%',
+                                transition: 'all 0.1s ease',
+                                userSelect: 'none'
                             }}
                         >
                             {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : (tab.type === 'collection' || tab.type === 'external-mock') ? <ServerCog size={14} /> : <Folder size={14} />}

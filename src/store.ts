@@ -1167,3 +1167,13 @@ export const createNewRequest = (name: string, collectionId: string, parentId: s
         headers: []
     };
 };
+
+export const moveTab = (fromIndex: number, toIndex: number) => {
+    const tabs = [...openTabs.value];
+    const [movedTab] = tabs.splice(fromIndex, 1);
+    tabs.splice(toIndex, 0, movedTab);
+    openTabs.value = tabs;
+
+    // Persist order
+    syncProjectManifest(activeProjectName.peek());
+};
