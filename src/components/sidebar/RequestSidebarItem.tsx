@@ -93,7 +93,12 @@ export function RequestSidebarItem({ request, depth = 0 }: RequestSidebarItemPro
 
     // Drag
     const handleDragStart = (e: DragEvent) => {
-        e.dataTransfer?.setData('application/json', JSON.stringify({ id: request.id, type: 'request' }));
+        const data = JSON.stringify({ id: request.id, type: 'request' });
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('application/json', data);
+            e.dataTransfer.setData('text/plain', `curl-ui:${data}`);
+        }
         e.stopPropagation();
     };
 

@@ -100,19 +100,33 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
 
     // Drag and Drop
     const handleDragStart = (e: DragEvent) => {
-        e.dataTransfer?.setData('application/json', JSON.stringify({ id: folder.id, type: 'folder' }));
+        const data = JSON.stringify({ id: folder.id, type: 'folder' });
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('application/json', data);
+            e.dataTransfer.setData('text/plain', `curl-ui:${data}`);
+        }
         e.stopPropagation();
     };
 
     const handleDragOver = (e: DragEvent) => {
         e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
         e.stopPropagation();
     };
 
     const handleDrop = (e: DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        const data = e.dataTransfer?.getData('application/json');
+        let data = e.dataTransfer?.getData('application/json');
+        if (!data) {
+            const plain = e.dataTransfer?.getData('text/plain');
+            if (plain?.startsWith('curl-ui:')) {
+                data = plain.slice(8);
+            }
+        }
         if (!data) return;
         const { id, type } = JSON.parse(data);
         if (id === folder.id) return;

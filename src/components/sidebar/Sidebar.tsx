@@ -243,7 +243,37 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                             >
                                 {isCollectionExpanded(collection.id) ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                             </div>
-                            <div onClick={() => toggleCollection(collection.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <div
+                                onClick={() => toggleCollection(collection.id)}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    if (e.dataTransfer) {
+                                        e.dataTransfer.dropEffect = 'move';
+                                    }
+                                    e.stopPropagation();
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    let data = e.dataTransfer?.getData('application/json');
+                                    if (!data) {
+                                        const plain = e.dataTransfer?.getData('text/plain');
+                                        if (plain?.startsWith('curl-ui:')) {
+                                            data = plain.slice(8);
+                                        }
+                                    }
+                                    if (!data) return;
+                                    const { id, type } = JSON.parse(data);
+                                    if (id === collection.id) return;
+
+                                    if (type === 'request') {
+                                        requests.value = requests.value.map(r => r.id === id ? { ...r, parentId: null, collectionId: collection.id } : r);
+                                    } else if (type === 'folder') {
+                                        folders.value = folders.value.map(f => f.id === id ? { ...f, parentId: null, collectionId: collection.id } : f);
+                                    }
+                                }}
+                                style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}
+                            >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{collection.name}</span>
                                     {collectionGitStatus[collection.id] && (

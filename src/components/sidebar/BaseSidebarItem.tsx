@@ -67,7 +67,7 @@ export function BaseSidebarItem({
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
-            style={{ select: 'none' }}
+            style={{ userSelect: 'none' }}
         >
             <div
                 onClick={onSelect}
