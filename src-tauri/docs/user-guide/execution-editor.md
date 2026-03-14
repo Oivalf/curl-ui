@@ -18,6 +18,7 @@ The Execution Editor is where you run requests and view responses. Each request 
 - **Inheritance Protection**: Items (headers or parameters) inherited from a parent request are protected. You can toggle them off, but the delete (`×`) icon is hidden until you add a new override.
 - **Response Panel**: View the detailed headers and body of the returned response. Responses are **isolated and persisted per execution**.
 - **Cross-Tab Persistence**: The state of the execution result panel is persisted when switching between tabs. If you leave a request results panel open, it will still be there when you return.
+- **Execution Reordering**: Drag and drop executions in the sidebar to organize them according to your testing flow.
 - **Console**: Inspect logs from scripts and application information in the integrated Console Panel.
 
 ## Progress Summary

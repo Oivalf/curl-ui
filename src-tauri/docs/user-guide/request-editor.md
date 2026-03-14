@@ -10,6 +10,7 @@ The Request Editor is used to define the base configuration (template) for an HT
 - **Headers**: Define key-value pairs for HTTP headers. Multiple values for the same key are supported by grouping them under a single key input with `+` and `-` buttons.
 - **Auth**: Configure authentication (Inherit, Basic, or Bearer).
 - **Body**: Define the default payload structure (JSON, Form-data, Text, etc.). The selected body type and its content (including form-data fields) are automatically persisted.
+    - **Multipart Content-Type**: When using `multipart/form-data`, you can specify a custom `Content-Type` for each file part. If not specified, the application will attempt to automatically detect the mime-type based on the file extension.
 - **Integrated Results Panel**: When running a request via **Run Default**, the results (status, response body, headers) are displayed directly in a side-by-side panel within the Request Editor. This allows for rapid iteration between editing the request and viewing results.
 - **Persistence**: The visibility of the results panel is preserved on a per-request basis. If you close the panel or switch tabs, its state will be restored when you return.
 
