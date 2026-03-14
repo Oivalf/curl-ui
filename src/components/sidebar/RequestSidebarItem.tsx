@@ -102,6 +102,23 @@ export function RequestSidebarItem({ request, depth = 0 }: RequestSidebarItemPro
         e.stopPropagation();
     };
 
+    const handleDropIntelligent = (e: DragEvent, pos: 'before' | 'after' | 'inside') => {
+        let data = e.dataTransfer?.getData('application/json');
+        if (!data) {
+            const plain = e.dataTransfer?.getData('text/plain');
+            if (plain?.startsWith('curl-ui:')) {
+                data = plain.slice(8);
+            }
+        }
+        if (!data) return;
+        const { id, type } = JSON.parse(data);
+        if (id === request.id) return;
+
+        import('../../store').then(({ moveSidebarItem }) => {
+            moveSidebarItem(id, type, request.id, 'request', pos);
+        });
+    };
+
     // Children (executions)
     const renderChildren = () => {
         if (request.collapsed || !hasExecutions) return null;
@@ -146,6 +163,7 @@ export function RequestSidebarItem({ request, depth = 0 }: RequestSidebarItemPro
             onDelete={handleDelete}
             draggable
             onDragStart={handleDragStart}
+            onDropIntelligent={handleDropIntelligent}
         >
             {renderChildren()}
         </BaseSidebarItem>

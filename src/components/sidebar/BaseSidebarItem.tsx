@@ -34,8 +34,8 @@ export interface BaseSidebarItemProps {
     onDragStart?: (e: DragEvent) => void;
     /** Drag over handler (for drop targets) */
     onDragOver?: (e: DragEvent) => void;
-    /** Drop handler */
-    onDrop?: (e: DragEvent) => void;
+    /** Drop handler with calculated position */
+    onDropIntelligent?: (e: DragEvent, position: 'before' | 'after' | 'inside') => void;
     /** Child items rendered below this row (e.g. sub-folders, executions) */
     children?: ComponentChildren;
 }
@@ -56,19 +56,64 @@ export function BaseSidebarItem({
     draggable: isDraggable = false,
     onDragStart,
     onDragOver,
-    onDrop,
+    onDropIntelligent,
     children
 }: BaseSidebarItemProps) {
     const [isHovered, setIsHovered] = useState(false);
+    const [dropPos, setDropPos] = useState<'before' | 'after' | 'inside' | null>(null);
+
+    const handleDragOverBase = (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const height = rect.height;
+
+        let newPos: 'before' | 'after' | 'inside' = 'inside';
+
+        if (contextMenuType === 'folder') {
+            if (y < height * 0.25) newPos = 'before';
+            else if (y > height * 0.75) newPos = 'after';
+            else newPos = 'inside';
+        } else {
+            if (y < height * 0.5) newPos = 'before';
+            else newPos = 'after';
+        }
+
+        if (dropPos !== newPos) setDropPos(newPos);
+        if (onDragOver) onDragOver(e);
+    };
+
+    const handleDragLeave = () => {
+        setDropPos(null);
+    };
+
+    const handleDropBase = (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const finalPos = dropPos;
+        setDropPos(null);
+        if (onDropIntelligent && finalPos) {
+            onDropIntelligent(e, finalPos);
+        }
+    };
 
     return (
         <div
             draggable={isDraggable}
             onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            style={{ userSelect: 'none' }}
+            onDragOver={handleDragOverBase}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDropBase}
+            style={{ userSelect: 'none', position: 'relative' }}
         >
+            {dropPos === 'before' && (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', backgroundColor: 'var(--accent-primary)', zIndex: 10, pointerEvents: 'none' }} />
+            )}
+            {dropPos === 'after' && (
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', backgroundColor: 'var(--accent-primary)', zIndex: 10, pointerEvents: 'none' }} />
+            )}
             <div
                 onClick={onSelect}
                 onContextMenu={(e) => {
@@ -92,11 +137,14 @@ export function BaseSidebarItem({
                     paddingLeft: `${depth * 12 + 8}px`,
                     borderRadius: 'var(--radius-sm)',
                     cursor: 'pointer',
-                    backgroundColor: isActive
-                        ? 'var(--bg-surface)'
-                        : isHovered ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    backgroundColor: dropPos === 'inside'
+                        ? 'rgba(var(--accent-primary-rgb), 0.2)'
+                        : isActive
+                            ? 'var(--bg-surface)'
+                            : isHovered ? 'rgba(255,255,255,0.05)' : 'transparent',
                     color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    transition: 'background-color 0.1s'
+                    transition: 'background-color 0.1s',
+                    border: dropPos === 'inside' ? '1px solid var(--accent-primary)' : '1px solid transparent'
                 }}
             >
                 {/* Arrow / Spacer */}

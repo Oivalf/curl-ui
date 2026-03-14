@@ -116,6 +116,7 @@ export interface RequestItem {
     collapsed?: boolean;
     mockResponse?: MockResponse;
     lastResponse?: ResponseData;
+    sortIndex?: number;
 }
 
 export interface Folder {
@@ -127,6 +128,7 @@ export interface Folder {
     headers?: { key: string, values: string[] }[];
     variables?: Record<string, string>;
     auth?: AuthConfig;
+    sortIndex?: number;
 }
 
 export interface KeyValueItem {
@@ -1157,6 +1159,11 @@ export const resolveHeaders = (itemId: string): { key: string, values: string[],
 };
 
 export const createNewRequest = (name: string, collectionId: string, parentId: string | null = null): RequestItem => {
+    const siblingsCount = [
+        ...requests.peek().filter(r => r.collectionId === collectionId && (r.parentId || null) === parentId),
+        ...folders.peek().filter(f => f.collectionId === collectionId && (f.parentId || null) === parentId)
+    ].length;
+
     return {
         id: crypto.randomUUID(),
         collectionId,
@@ -1164,7 +1171,24 @@ export const createNewRequest = (name: string, collectionId: string, parentId: s
         name: name,
         method: "GET",
         url: "https://example.com",
-        headers: []
+        headers: [],
+        sortIndex: siblingsCount
+    };
+};
+
+export const createNewFolder = (name: string, collectionId: string, parentId: string | null = null): Folder => {
+    const siblingsCount = [
+        ...requests.peek().filter(r => r.collectionId === collectionId && (r.parentId || null) === parentId),
+        ...folders.peek().filter(f => f.collectionId === collectionId && (f.parentId || null) === parentId)
+    ].length;
+
+    return {
+        id: crypto.randomUUID(),
+        collectionId,
+        name,
+        parentId,
+        collapsed: false,
+        sortIndex: siblingsCount
     };
 };
 
@@ -1176,4 +1200,114 @@ export const moveTab = (fromIndex: number, toIndex: number) => {
 
     // Persist order
     syncProjectManifest(activeProjectName.peek());
+};
+
+export const moveSidebarItem = (
+    id: string,
+    type: 'request' | 'folder',
+    targetId: string | null,
+    targetType: 'request' | 'folder' | 'collection',
+    position: 'before' | 'after' | 'inside'
+) => {
+    let itemCollectionId = "";
+    let itemParentId: string | null = null;
+    
+    if (type === 'request') {
+        const r = requests.peek().find(x => x.id === id);
+        if (r) {
+            itemCollectionId = r.collectionId;
+            itemParentId = r.parentId || null;
+        }
+    } else {
+        const f = folders.peek().find(x => x.id === id);
+        if (f) {
+            itemCollectionId = f.collectionId;
+            itemParentId = f.parentId || null;
+        }
+    }
+
+    if (!itemCollectionId) return;
+
+    let newCollectionId = itemCollectionId;
+    let newParentId = itemParentId;
+
+    if (targetType === 'collection') {
+        newCollectionId = targetId!;
+        newParentId = null;
+    } else if (targetType === 'folder' && position === 'inside') {
+        const f = folders.peek().find(x => x.id === targetId);
+        if (f) {
+            newCollectionId = f.collectionId;
+            newParentId = f.id;
+        }
+    } else {
+        if (targetType === 'request') {
+            const r = requests.peek().find(x => x.id === targetId);
+            if (r) {
+                newCollectionId = r.collectionId;
+                newParentId = r.parentId || null;
+            }
+        } else {
+            const f = folders.peek().find(x => x.id === targetId);
+            if (f) {
+                newCollectionId = f.collectionId;
+                newParentId = f.parentId || null;
+            }
+        }
+    }
+
+    // 1. Update the moved item's parent/collection
+    if (type === 'request') {
+        requests.value = requests.peek().map(r => r.id === id ? { ...r, collectionId: newCollectionId, parentId: newParentId } : r);
+    } else {
+        folders.value = folders.peek().map(f => f.id === id ? { ...f, collectionId: newCollectionId, parentId: newParentId } : f);
+    }
+
+    // 2. Reorder all siblings in the new parent
+    const siblings = [
+        ...folders.peek().filter(f => f.collectionId === newCollectionId && (f.parentId || null) === newParentId).map(f => ({ id: f.id, type: 'folder' as const, sortIndex: f.sortIndex })),
+        ...requests.peek().filter(r => r.collectionId === newCollectionId && (r.parentId || null) === newParentId).map(r => ({ id: r.id, type: 'request' as const, sortIndex: r.sortIndex }))
+    ];
+
+    // Sort by current index
+    siblings.sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+
+    // Find and move strictly according to target
+    const currentIndex = siblings.findIndex(s => s.id === id);
+    if (currentIndex !== -1) {
+        const [movedItem] = siblings.splice(currentIndex, 1);
+        let targetIndex = siblings.findIndex(s => s.id === targetId);
+        
+        if (position === 'inside' || targetIndex === -1) {
+            siblings.push(movedItem);
+        } else {
+            if (position === 'after') targetIndex++;
+            siblings.splice(targetIndex, 0, movedItem);
+        }
+    }
+
+    // 3. Apply the final indices to EVERY sibling
+    siblings.forEach((s, idx) => {
+        if (s.type === 'request') {
+            requests.value = requests.peek().map(r => r.id === s.id ? { ...r, sortIndex: idx } : r);
+        } else {
+            folders.value = folders.peek().map(f => f.id === s.id ? { ...f, sortIndex: idx } : f);
+        }
+    });
+
+    // 4. Save
+    const saveIfHasPath = async (colId: string) => {
+        const col = collections.peek().find(c => c.id === colId);
+        if (col?.path) {
+            await saveCollectionToDisk(colId, false, true);
+        } else {
+            // Just sync manifest if not yet saved to a collection file
+            await syncProjectManifest(activeProjectName.peek());
+        }
+    };
+
+    saveIfHasPath(newCollectionId);
+    if (itemCollectionId !== newCollectionId) {
+        saveIfHasPath(itemCollectionId);
+    }
 };

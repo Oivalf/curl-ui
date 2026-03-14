@@ -109,17 +109,7 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
         e.stopPropagation();
     };
 
-    const handleDragOver = (e: DragEvent) => {
-        e.preventDefault();
-        if (e.dataTransfer) {
-            e.dataTransfer.dropEffect = 'move';
-        }
-        e.stopPropagation();
-    };
-
-    const handleDrop = (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleDropIntelligent = (e: DragEvent, pos: 'before' | 'after' | 'inside') => {
         let data = e.dataTransfer?.getData('application/json');
         if (!data) {
             const plain = e.dataTransfer?.getData('text/plain');
@@ -131,27 +121,28 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
         const { id, type } = JSON.parse(data);
         if (id === folder.id) return;
 
-        if (type === 'request') {
-            requests.value = requests.value.map(r => r.id === id ? { ...r, parentId: folder.id } : r);
-        } else if (type === 'folder') {
-            folders.value = folders.value.map(f => f.id === id ? { ...f, parentId: folder.id } : f);
-        }
+        import('../../store').then(({ moveSidebarItem }) => {
+            moveSidebarItem(id, type, folder.id, 'folder', pos);
+        });
     };
 
     // Children
     const renderChildren = () => {
         if (!expandedFolderIds.value.includes(folder.id)) return null;
-        const childFolders = folders.value.filter(f => f.parentId === folder.id);
-        const childRequests = requests.value.filter(r => r.parentId === folder.id);
-        if (childFolders.length === 0 && childRequests.length === 0) return null;
+        
+        const allChildren = [
+            ...folders.value.filter(f => f.parentId === folder.id).map(f => ({ ...f, itemType: 'folder' as const })),
+            ...requests.value.filter(r => r.parentId === folder.id).map(r => ({ ...r, itemType: 'request' as const }))
+        ].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+
+        if (allChildren.length === 0) return null;
 
         return (
             <div>
-                {childFolders.map(f => (
-                    <FolderSidebarItem key={f.id} folder={f} depth={depth + 1} />
-                ))}
-                {childRequests.map(r => (
-                    <RequestSidebarItem key={r.id} request={r} depth={depth + 1} />
+                {allChildren.map(item => (
+                    item.itemType === 'folder' 
+                        ? <FolderSidebarItem key={item.id} folder={item as Folder} depth={depth + 1} />
+                        : <RequestSidebarItem key={item.id} request={item as any} depth={depth + 1} />
                 ))}
             </div>
         );
@@ -182,8 +173,7 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
             onDelete={handleDelete}
             draggable
             onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
+            onDropIntelligent={handleDropIntelligent}
         >
             {renderChildren()}
         </BaseSidebarItem>

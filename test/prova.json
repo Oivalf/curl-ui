@@ -22,7 +22,7 @@
           ]
         }
       ],
-      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "parentId": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
       "body": "{}",
       "auth": {
         "type": "inherit"
@@ -61,7 +61,8 @@
         "headers": {},
         "body": "{\n\"ciao\": \"dal mock\"\n}",
         "enabled": true
-      }
+      },
+      "sortIndex": 2
     },
     {
       "id": "c8af9e83-8989-4829-b72c-d7e0dd074f40",
@@ -87,7 +88,7 @@
       "method": "GET",
       "url": "https://google.com",
       "headers": [],
-      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "parentId": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
       "body": "",
       "auth": {
         "type": "inherit"
@@ -108,7 +109,10 @@
           "enabled": true,
           "executeOnStatusCodes": ""
         }
-      ]
+      ],
+      "sortIndex": 0,
+      "bodyType": "none",
+      "formData": []
     },
     {
       "id": "48a976d2-8831-481b-ac0a-b69128fb876d",
@@ -116,14 +120,15 @@
       "method": "GET",
       "url": "https://example.com",
       "headers": [],
-      "parentId": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
+      "parentId": "c21c8f33-8b91-4839-99e1-f9d25a1c7c73",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "body": "",
       "auth": {
         "type": "inherit"
       },
       "preScripts": [],
-      "postScripts": []
+      "postScripts": [],
+      "sortIndex": 0
     },
     {
       "id": "8a177af0-0f5c-470e-b0be-b041f6f19c8b",
@@ -183,7 +188,8 @@
         "type": "inherit"
       },
       "preScripts": [],
-      "postScripts": []
+      "postScripts": [],
+      "sortIndex": 3
     },
     {
       "id": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
@@ -447,7 +453,8 @@
           "username": "gino",
           "password": "pino"
         }
-      }
+      },
+      "sortIndex": 1
     },
     {
       "id": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
@@ -465,7 +472,8 @@
           "username": "pippo",
           "password": "pluto"
         }
-      }
+      },
+      "sortIndex": 3
     },
     {
       "id": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
@@ -495,7 +503,8 @@
       "variables": {},
       "auth": {
         "type": "inherit"
-      }
+      },
+      "sortIndex": 4
     },
     {
       "id": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
@@ -517,7 +526,8 @@
       },
       "auth": {
         "type": "inherit"
-      }
+      },
+      "sortIndex": 5
     }
   ],
   "executions": [

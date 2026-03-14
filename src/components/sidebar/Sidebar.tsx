@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog, FileJson, ListTree } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases, createNewRequest, isExternalMocksExpanded, expandedCollectionIds } from '../../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases, createNewRequest, isExternalMocksExpanded, expandedCollectionIds, Folder, moveSidebarItem, createNewFolder } from '../../store';
 import { FolderSidebarItem } from './FolderSidebarItem';
 import { RequestSidebarItem } from './RequestSidebarItem';
 
@@ -266,11 +266,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     const { id, type } = JSON.parse(data);
                                     if (id === collection.id) return;
 
-                                    if (type === 'request') {
-                                        requests.value = requests.value.map(r => r.id === id ? { ...r, parentId: null, collectionId: collection.id } : r);
-                                    } else if (type === 'folder') {
-                                        folders.value = folders.value.map(f => f.id === id ? { ...f, parentId: null, collectionId: collection.id } : f);
-                                    }
+                                    moveSidebarItem(id, type, collection.id, 'collection', 'inside');
                                 }}
                                 style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}
                             >
@@ -375,14 +371,8 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                     setOpenMenuCollectionId(null);
                                                     const name = await showPrompt("Folder Name:", "New Folder");
                                                     if (name) {
-                                                        const newId = crypto.randomUUID();
-                                                        folders.value = [...folders.value, {
-                                                            id: newId,
-                                                            collectionId: collection.id, // Assign to this collection
-                                                            name: name,
-                                                            parentId: null,
-                                                            collapsed: false
-                                                        }];
+                                                        const newFolder = createNewFolder(name, collection.id, null);
+                                                        folders.value = [...folders.value, newFolder];
                                                     }
                                                 }}
                                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
@@ -430,20 +420,22 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         {/* Collection Items */}
                         {isCollectionExpanded(collection.id) && (
                             <div style={{ marginLeft: '12px', borderLeft: '1px solid var(--border-color)', paddingLeft: '4px' }}>
-                                {folders.value.filter(f => f.collectionId === collection.id && !f.parentId).length === 0 &&
-                                    requests.value.filter(r => r.collectionId === collection.id && !r.parentId).length === 0 && (
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>Empty</div>
-                                    )}
-                                {folders.value
-                                    .filter(f => f.collectionId === collection.id && !f.parentId)
-                                    .map(f => (
-                                        <FolderSidebarItem key={f.id} folder={f} />
-                                    ))}
-                                {requests.value
-                                    .filter(r => r.collectionId === collection.id && !r.parentId)
-                                    .map(r => (
-                                        <RequestSidebarItem key={r.id} request={r} />
-                                    ))}
+                                {(() => {
+                                    const rootItems = [
+                                        ...folders.value.filter(f => f.collectionId === collection.id && !f.parentId).map(f => ({ ...f, itemType: 'folder' as const })),
+                                        ...requests.value.filter(r => r.collectionId === collection.id && !r.parentId).map(r => ({ ...r, itemType: 'request' as const }))
+                                    ].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+
+                                    if (rootItems.length === 0) {
+                                        return <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>Empty</div>;
+                                    }
+
+                                    return rootItems.map(item => (
+                                        item.itemType === 'folder'
+                                            ? <FolderSidebarItem key={item.id} folder={item as Folder} />
+                                            : <RequestSidebarItem key={item.id} request={item as any} />
+                                    ));
+                                })()}
                                 {/* Mock Manager node at the top */}
                                 <div
                                     onClick={(e) => {
