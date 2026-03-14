@@ -260,7 +260,7 @@ export function CodeEditor({ value, onChange, language = 'text', readOnly = fals
                 extensions={extensions}
                 onChange={onChange}
                 editable={!readOnly}
-                style={{ flex: 1, minHeight: 0 }}
+                style={{ flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' }}
                 basicSetup={{
                     lineNumbers: true,
                     foldGutter: true,

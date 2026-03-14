@@ -103,7 +103,7 @@ export function ResponsePanel({ response }: ResponsePanelProps) {
                 flexDirection: 'column',
                 minHeight: 0
             }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, fontFamily: 'var(--font-mono)', fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
                     {renderTabContent()}
                 </div>
             </div>

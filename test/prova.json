@@ -76,7 +76,9 @@
         "type": "inherit"
       },
       "preScripts": [],
-      "postScripts": []
+      "postScripts": [],
+      "bodyType": "none",
+      "formData": []
     },
     {
       "id": "3e12cbb6-26ee-4129-b2f5-7a881fcfad29",
@@ -371,6 +373,54 @@
       },
       "preScripts": [],
       "postScripts": []
+    },
+    {
+      "id": "6a326601-339b-4d4e-b81c-131c7fa0cfa8",
+      "name": "sample post",
+      "method": "POST",
+      "url": "{{sampleURL}}/multi",
+      "headers": [],
+      "parentId": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "body": "{ \n\"ftr\":{ \"bho\": \"ll\"},\n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+      "auth": {
+        "type": "inherit"
+      },
+      "preScripts": [],
+      "postScripts": [],
+      "bodyType": "multipart",
+      "formData": [
+        {
+          "key": "file1",
+          "type": "file",
+          "values": [
+            "/mnt/d/progetti/tauri/curl-ui/src-tauri/Petstore.mock.json"
+          ],
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "key": "file2",
+          "type": "file",
+          "values": [
+            "/mnt/d/progetti/tauri/curl-ui/test/openapi.yaml"
+          ],
+          "contentTypes": [
+            "application/x-yaml"
+          ]
+        },
+        {
+          "key": "file3",
+          "type": "file",
+          "values": [
+            "/home/ubidev/Downloads/response_body.json"
+          ],
+          "contentTypes": [
+            "text/xml"
+          ]
+        }
+      ]
     }
   ],
   "folders": [
@@ -403,7 +453,7 @@
       "id": "91dcdac2-1a63-4706-af5a-1ae923e0526d",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "f_lvl2",
-      "parentId": "c21c8f33-8b91-4839-99e1-f9d25a1c7c73",
+      "parentId": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
       "collapsed": false,
       "headers": [],
       "variables": {
@@ -450,7 +500,7 @@
     {
       "id": "07b3d8ef-0d4a-4f3a-b77a-590a4eaba9e4",
       "name": "sample",
-      "parentId": null,
+      "parentId": "9b3d708d-6baf-4512-9a90-b65afb6bd0bc",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "collapsed": false,
       "headers": [
@@ -666,7 +716,68 @@
           ],
           "enabled": true
         }
-      ]
+      ],
+      "lastResponse": {
+        "status": 200,
+        "headers": [
+          [
+            "ciao",
+            "secco"
+          ],
+          [
+            "ciao",
+            "bello"
+          ],
+          [
+            "set-cookie",
+            "co1=123"
+          ],
+          [
+            "set-cookie",
+            "co2=456"
+          ],
+          [
+            "oh2",
+            "ohv2"
+          ],
+          [
+            "oh3",
+            "ohv3"
+          ],
+          [
+            "oh4",
+            "ohv4"
+          ],
+          [
+            "oh5",
+            "ohv5"
+          ],
+          [
+            "oh6",
+            "ohv6"
+          ],
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "transfer-encoding",
+            "chunked"
+          ],
+          [
+            "date",
+            "Sat, 14 Mar 2026 05:43:25 GMT"
+          ]
+        ],
+        "body": "{\"id\":-5106534569952410475,\"name\":\"eOMtThyhVNLWUZNRcBaQKxI\",\"surname\":\"yedUsFwdkelQbxeTeQOvaScfqIOOmaa\",\"contacts\":[\"JxkyvRnL\",\"RYtGKbgicZaHCBRQDSx\",\"VLhpfQGTMDYpsBZxvfBoeygjb\",\"UMaAIKKIkknjWEXJUfPxxQHeWKEJ\",\"dpHYZGhtgdntugzvvKAXLhM\",\"LlN\",\"gNfZBdyFGRajVfJNonEnOinZj\",\"UfzQhdgLLfDTDGspDb\",\"QvBQYuxiXXVytGCxzVllpgTJKhRQq\"]}",
+        "time": 5191,
+        "size": 322,
+        "requestUrl": "http://localhost:8080/sample",
+        "requestMethod": "POST",
+        "requestRaw": "POST http://localhost:8080/sample HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciccio: pasticcio\r\nciccio: ne\r\nContent-Type: application/json\r\nCookie: co1=123; co2=456\r\nContent-Length: 165\r\n\r\n{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n",
+        "requestCurl": "curl -X POST \"http://localhost:8080/sample\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciccio: pasticcio\" -H \"ciccio: ne\" -H \"Content-Type: application/json\" -H \"Cookie: co1=123; co2=456\" -d '{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n'"
+      },
+      "resultsVisible": true
     },
     {
       "id": "7ea2f0ee-4c1f-43eb-bf2e-d9b4c1ca8298",
@@ -846,7 +957,68 @@
       "id": "bfc4d843-7329-4cfb-94a1-ef80b9af7e58",
       "requestId": "9ff2c3c4-fd7d-411d-a15f-c84dccda6338",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "default"
+      "name": "default",
+      "resultsVisible": true,
+      "lastResponse": {
+        "status": 200,
+        "headers": [
+          [
+            "ciao",
+            "secco"
+          ],
+          [
+            "ciao",
+            "bello"
+          ],
+          [
+            "set-cookie",
+            "co1=123"
+          ],
+          [
+            "set-cookie",
+            "co2=456"
+          ],
+          [
+            "oh2",
+            "ohv2"
+          ],
+          [
+            "oh3",
+            "ohv3"
+          ],
+          [
+            "oh4",
+            "ohv4"
+          ],
+          [
+            "oh5",
+            "ohv5"
+          ],
+          [
+            "oh6",
+            "ohv6"
+          ],
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "transfer-encoding",
+            "chunked"
+          ],
+          [
+            "date",
+            "Sat, 14 Mar 2026 05:44:56 GMT"
+          ]
+        ],
+        "body": "{\"id\":-7216359497931550918,\"name\":\"dwprLNbgNvZUMpqAXLJbjE\",\"surname\":\"TiQaUNWftniOAotnzWvkQt\",\"contacts\":[\"Wru\",\"zGVyIdgFUYNdkFYkkjNIeENlreqFLC\",\"MFOPluIOMfSnzX\",\"HuubOREhRXJoDCVcLCRmll\",\"oBeMdQkAoYZDjfWhbzkmA\",\"NBaxYoMSiMNxLXFLxIok\",\"teOlrImKiDpJbLDnvK\",\"DiACnbEKIFidn\"]}",
+        "time": 3332,
+        "size": 272,
+        "requestUrl": "http://localhost:8080/sample",
+        "requestMethod": "POST",
+        "requestRaw": "POST http://localhost:8080/sample HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nContent-Type: application/json\r\nCookie: co1=123; co2=456\r\nContent-Length: 85\r\n\r\n{ \n\"ftr\":{ \"bho\": \"ll\"},\n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}",
+        "requestCurl": "curl -X POST \"http://localhost:8080/sample\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"Content-Type: application/json\" -H \"Cookie: co1=123; co2=456\" -d '{ \n\"ftr\":{ \"bho\": \"ll\"},\n\"name\": \"ffds\",\n\"surname\": \"dhui\",\n\"contacts\": [\"c1\",\"c2\"]\n}'"
+      }
     },
     {
       "id": "f7863059-4b2a-436c-ad5c-326298b2c0ec",
@@ -877,6 +1049,33 @@
       "requestId": "6b92263b-d6ac-47b2-9e4f-e56ffa29a5ad",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
       "name": "default"
+    },
+    {
+      "id": "b44b090c-09ab-4ef5-adf1-1ee58231b478",
+      "requestId": "6a326601-339b-4d4e-b81c-131c7fa0cfa8",
+      "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
+      "name": "default",
+      "resultsVisible": true,
+      "lastResponse": {
+        "status": 200,
+        "headers": [
+          [
+            "content-length",
+            "0"
+          ],
+          [
+            "date",
+            "Sat, 14 Mar 2026 05:42:34 GMT"
+          ]
+        ],
+        "body": "",
+        "time": 433,
+        "size": 0,
+        "requestUrl": "http://localhost:8080/sample/multi",
+        "requestMethod": "POST",
+        "requestRaw": "POST http://localhost:8080/sample/multi HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nContent-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]",
+        "requestCurl": "curl -X POST \"http://localhost:8080/sample/multi\" -H \"fh: fh1\" -H \"fh: fh2\" -F \"file1=/mnt/d/progetti/tauri/curl-ui/src-tauri/Petstore.mock.json;type=application/json\" -F \"file2=/mnt/d/progetti/tauri/curl-ui/test/openapi.yaml;type=application/x-yaml\" -F \"file3=/home/ubidev/Downloads/response_body.json;type=text/xml\""
+      }
     }
   ],
   "environments": [
