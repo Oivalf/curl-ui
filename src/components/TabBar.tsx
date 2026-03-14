@@ -118,6 +118,9 @@ export function TabBar() {
 
     const { reqs, folds, execs, colls, extMocks } = getGroupedTabs();
 
+    const dragOverTabId = useSignal<string | null>(null);
+    const dropPosition = useSignal<'before' | 'after' | null>(null);
+
     if (openTabs.value.length === 0) return null;
 
     return (
@@ -127,12 +130,12 @@ export function TabBar() {
                 {openTabs.value.map((tab, index) => {
                     const isActive = activeTabId.value === tab.id;
                     const freshName = getTabName(tab);
+                    const isDragOver = dragOverTabId.value === tab.id;
 
                     const handleDragStart = (e: DragEvent) => {
                         if (e.dataTransfer) {
                             e.dataTransfer.setData('text/plain', index.toString());
                             e.dataTransfer.effectAllowed = 'move';
-                            // Add a preview class or style if needed
                         }
                     };
 
@@ -141,16 +144,47 @@ export function TabBar() {
                         if (e.dataTransfer) {
                             e.dataTransfer.dropEffect = 'move';
                         }
+                        
+                        // Calculate if before or after
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const pos = x < rect.width / 2 ? 'before' : 'after';
+                        
+                        dragOverTabId.value = tab.id;
+                        dropPosition.value = pos;
+                    };
+
+                    const handleDragLeave = () => {
+                        dragOverTabId.value = null;
+                        dropPosition.value = null;
                     };
 
                     const handleDrop = (e: DragEvent) => {
                         e.preventDefault();
                         const fromIndexStr = e.dataTransfer?.getData('text/plain');
+                        
+                        const targetPos = dropPosition.value;
+                        dragOverTabId.value = null;
+                        dropPosition.value = null;
+
                         if (fromIndexStr !== undefined) {
                             const fromIndex = parseInt(fromIndexStr, 10);
-                            if (fromIndex !== index) {
+                            let toIndex = index;
+                            
+                            // Adjust toIndex based on before/after
+                            if (targetPos === 'after' && fromIndex < index) {
+                                // moving forward, dropping after
+                            } else if (targetPos === 'before' && fromIndex > index) {
+                                // moving backward, dropping before
+                            } else if (targetPos === 'after' && fromIndex > index) {
+                                toIndex++;
+                            } else if (targetPos === 'before' && fromIndex < index) {
+                                toIndex--;
+                            }
+                            
+                            if (fromIndex !== toIndex && toIndex >= 0 && toIndex < openTabs.value.length) {
                                 import('../store').then(({ moveTab }) => {
-                                    moveTab(fromIndex, index);
+                                    moveTab(fromIndex, toIndex);
                                 });
                             }
                         }
@@ -162,6 +196,8 @@ export function TabBar() {
                             draggable={true}
                             onDragStart={handleDragStart}
                             onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDragEnd={handleDragLeave}
                             onDrop={handleDrop}
                             onClick={() => activateTab(tab)}
                             onContextMenu={(e) => handleContextMenu(e, tab.id)}
@@ -172,14 +208,16 @@ export function TabBar() {
                                 padding: '0 16px',
                                 cursor: 'pointer',
                                 backgroundColor: isActive ? 'var(--bg-base)' : 'transparent',
-                                borderRight: '1px solid var(--border-color)',
                                 borderTop: isActive ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                                borderLeft: isDragOver && dropPosition.value === 'before' ? '2px solid var(--accent-primary)' : 'none',
+                                borderRight: isDragOver && dropPosition.value === 'after' ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
                                 minWidth: '120px',
                                 maxWidth: '200px',
                                 color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                                 height: '100%',
                                 transition: 'all 0.1s ease',
-                                userSelect: 'none'
+                                userSelect: 'none',
+                                boxSizing: 'border-box'
                             }}
                         >
                             {tab.type === 'request' ? <FileJson size={14} /> : tab.type === 'execution' ? <Play size={14} /> : (tab.type === 'collection' || tab.type === 'external-mock') ? <ServerCog size={14} /> : <Folder size={14} />}
