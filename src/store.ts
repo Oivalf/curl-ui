@@ -156,6 +156,7 @@ export interface ExecutionItem {
     postScripts?: ScriptItem[];
     lastResponse?: ResponseData;
     resultsVisible?: boolean; // Persist if results should be shown in RequestEditor
+    sortIndex?: number;
 }
 
 export interface Environment {
@@ -961,11 +962,13 @@ export const ensureDefaultExecutions = (requestIds: string[]) => {
         if (!hasDefaultExec) {
             const req = currentRequests.find(r => r.id === reqId);
             if (req) {
+                const siblingsCount = currentExecs.filter(e => e.requestId === reqId).length;
                 newExecs.push({
                     id: crypto.randomUUID(),
                     requestId: reqId,
                     collectionId: req.collectionId,
-                    name: "default"
+                    name: "default",
+                    sortIndex: siblingsCount
                 });
             }
         }
@@ -1309,5 +1312,50 @@ export const moveSidebarItem = (
     saveIfHasPath(newCollectionId);
     if (itemCollectionId !== newCollectionId) {
         saveIfHasPath(itemCollectionId);
+    }
+};
+
+export const moveExecution = (
+    id: string,
+    targetId: string,
+    position: 'before' | 'after' | 'inside'
+) => {
+    const execs = executions.peek();
+    const item = execs.find(e => e.id === id);
+    if (!item) return;
+
+    // Filter siblings (same requestId)
+    const siblings = execs
+        .filter(e => e.requestId === item.requestId)
+        .sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+
+    const currentIndex = siblings.findIndex(s => s.id === id);
+    if (currentIndex === -1) return;
+
+    const [movedItem] = siblings.splice(currentIndex, 1);
+    let targetIndex = siblings.findIndex(s => s.id === targetId);
+
+    if (position === 'inside' || targetIndex === -1) {
+        siblings.push(movedItem);
+    } else {
+        if (position === 'after') targetIndex++;
+        siblings.splice(targetIndex, 0, movedItem);
+    }
+
+    // Apply new indices
+    const updatedExecutions = execs.map(e => {
+        if (e.requestId !== item.requestId) return e;
+        const newIdx = siblings.findIndex(s => s.id === e.id);
+        return { ...e, sortIndex: newIdx !== -1 ? newIdx : e.sortIndex };
+    });
+
+    executions.value = updatedExecutions;
+
+    // Save
+    const col = collections.peek().find(c => c.id === item.collectionId);
+    if (col?.path) {
+        saveCollectionToDisk(item.collectionId, false, true);
+    } else {
+        syncProjectManifest(activeProjectName.peek());
     }
 };

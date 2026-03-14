@@ -124,7 +124,7 @@ export function RequestSidebarItem({ request, depth = 0 }: RequestSidebarItemPro
         if (request.collapsed || !hasExecutions) return null;
         return (
             <div>
-                {childExecutions.map(ex => (
+                {[...childExecutions].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0)).map(ex => (
                     <ExecutionSidebarItem key={ex.id} execution={ex} depth={depth + 1} />
                 ))}
             </div>

@@ -582,7 +582,8 @@
           ],
           "enabled": true
         }
-      ]
+      ],
+      "sortIndex": 2
     },
     {
       "id": "7436372c-394c-4a4a-a103-279582ce934e",
@@ -619,7 +620,8 @@
           ],
           "enabled": true
         }
-      ]
+      ],
+      "sortIndex": 0
     },
     {
       "id": "09aa0146-b235-4396-8d74-b7b447362af5",
@@ -925,7 +927,8 @@
       "id": "7169664b-dcff-490a-8d40-13c4baccf3a0",
       "requestId": "1",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "default"
+      "name": "default",
+      "sortIndex": 1
     },
     {
       "id": "4755c014-09d8-445d-99e2-8ce7f4d4c1d7",

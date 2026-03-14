@@ -74,6 +74,37 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
         });
     };
 
+    // Drag
+    const handleDragStart = (e: DragEvent) => {
+        const data = JSON.stringify({ id: execution.id, type: 'execution' });
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('application/json', data);
+            e.dataTransfer.setData('text/plain', `curl-ui:${data}`);
+        }
+        e.stopPropagation();
+    };
+
+    const handleDropIntelligent = (e: DragEvent, pos: 'before' | 'after' | 'inside') => {
+        let data = e.dataTransfer?.getData('application/json');
+        if (!data) {
+            const plain = e.dataTransfer?.getData('text/plain');
+            if (plain?.startsWith('curl-ui:')) {
+                data = plain.slice(8);
+            }
+        }
+        if (!data) return;
+        const { id, type } = JSON.parse(data);
+        if (id === execution.id) return;
+
+        // Restriction: only reorder executions within the same request
+        if (type === 'execution') {
+            import('../../store').then(({ moveExecution }) => {
+                moveExecution(id, execution.id, pos);
+            });
+        }
+    };
+
     return (
         <BaseSidebarItem
             id={execution.id}
@@ -86,6 +117,9 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
             labelStyle={{ fontStyle: 'italic' }}
             onSelect={handleSelect}
             onDelete={execution.name === 'default' ? undefined : handleDelete}
+            draggable
+            onDragStart={handleDragStart}
+            onDropIntelligent={handleDropIntelligent}
         />
     );
 }

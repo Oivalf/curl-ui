@@ -208,12 +208,14 @@ export function SidebarContextMenu() {
         const parentRequest = requests.value.find(r => r.id === menu.itemId);
         if (!parentRequest) return;
 
+        const siblingsCount = executions.value.filter(e => e.requestId === parentRequest.id).length;
         const newId = crypto.randomUUID();
         executions.value = [...executions.value, {
             id: newId,
             requestId: parentRequest.id,
             collectionId: parentRequest.collectionId,
-            name: name || "New Execution"
+            name: name || "New Execution",
+            sortIndex: siblingsCount
             // All other fields undefined = inherit from parent request
         }];
 
