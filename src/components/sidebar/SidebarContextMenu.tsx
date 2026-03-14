@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt, createNewRequest } from '../../store';
-import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog } from 'lucide-preact';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt, createNewRequest, environments } from '../../store';
+import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog, ExternalLink } from 'lucide-preact';
+import { exportToPostman } from '../../utils/postmanUtils';
+import { invoke } from '@tauri-apps/api/core';
+import { save } from '@tauri-apps/plugin-dialog';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
@@ -379,6 +382,44 @@ export function SidebarContextMenu() {
                         style={itemStyle}
                     >
                         <ServerCog size={14} /> Mock Manager
+                    </div>
+                    <div
+                        className="context-menu-item"
+                        onClick={async () => {
+                            const collection = collections.value.find(c => c.id === menu.collectionId);
+                            if (!collection) return;
+
+                            const path = await save({
+                                defaultPath: `${collection.name}.postman_collection.json`,
+                                filters: [{
+                                    name: 'Postman Collection',
+                                    extensions: ['json']
+                                }]
+                            });
+
+                            if (path) {
+                                const collectionRequests = requests.value.filter(r => r.collectionId === menu.collectionId);
+                                const collectionFolders = folders.value.filter(f => f.collectionId === menu.collectionId);
+                                const collectionExecutions = executions.value.filter(e => e.collectionId === menu.collectionId);
+
+                                const data = {
+                                    id: collection.id,
+                                    name: collection.name,
+                                    requests: collectionRequests,
+                                    folders: collectionFolders,
+                                    executions: collectionExecutions,
+                                    environments: environments.value
+                                };
+
+                                const postmanCollection = exportToPostman(data as any);
+                                await invoke('save_workspace', { path, data: JSON.stringify(postmanCollection, null, 2) });
+                                alert(`Collection exported to ${path}`);
+                            }
+                            contextMenu.value = null;
+                        }}
+                        style={itemStyle}
+                    >
+                        <ExternalLink size={14} /> Export to Postman
                     </div>
                     <div
                         className="context-menu-item"

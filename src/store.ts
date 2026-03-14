@@ -108,7 +108,7 @@ export interface RequestItem {
     headers: { key: string, values: string[] }[];
     bodyType?: 'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml';
     body?: string;
-    formData?: { key: string, type: 'text' | 'file', values: string[] }[];
+    formData?: { key: string, type: 'text' | 'file', values: string[], contentTypes?: string[] }[];
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];
     parentId?: string | null;
@@ -148,7 +148,7 @@ export interface ExecutionItem {
     pathParams?: Record<string, string>; // NEW: Path variables overrides
     bodyType?: 'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml';
     body?: string;
-    formData?: { key: string, type: 'text' | 'file', values: string[] }[];
+    formData?: { key: string, type: 'text' | 'file', values: string[], contentTypes?: string[] }[];
     auth?: AuthConfig;
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];

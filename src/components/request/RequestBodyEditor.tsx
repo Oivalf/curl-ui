@@ -8,12 +8,32 @@ import { CodeEditor } from "../CodeEditor";
 interface RequestBodyEditorProps {
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
     body: Signal<string>;
-    formData: Signal<{ key: string, type: 'text' | 'file', values: string[] }[]>;
+    formData: Signal<{ key: string, type: 'text' | 'file', values: string[], contentTypes?: string[] }[]>;
     isReadOnly?: boolean;
     isOverridden?: boolean;
     isTypeReadOnly?: boolean;
     parentId?: string | null;
 }
+
+const getMimeType = (path: string) => {
+    const ext = path.split('.').pop()?.toLowerCase();
+    switch (ext) {
+        case 'json': return 'application/json';
+        case 'xml': return 'application/xml';
+        case 'html': return 'text/html';
+        case 'txt': return 'text/plain';
+        case 'png': return 'image/png';
+        case 'jpg':
+        case 'jpeg': return 'image/jpeg';
+        case 'gif': return 'image/gif';
+        case 'pdf': return 'application/pdf';
+        case 'js': return 'application/javascript';
+        case 'yaml':
+        case 'yml': return 'application/x-yaml';
+        case 'zip': return 'application/zip';
+        default: return 'application/octet-stream';
+    }
+};
 
 export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden, isTypeReadOnly, parentId }: RequestBodyEditorProps) {
     return (
@@ -77,7 +97,11 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                     disabled={isReadOnly}
                                     onChange={(e) => {
                                         const newData = [...formData.value];
-                                        newData[i].type = e.currentTarget.value as any;
+                                        const newType = e.currentTarget.value as any;
+                                        newData[i].type = newType;
+                                        if (newType === 'file' && !newData[i].contentTypes) {
+                                            newData[i].contentTypes = newData[i].values.map(v => getMimeType(v));
+                                        }
                                         formData.value = newData;
                                     }}
                                     style={{
@@ -98,49 +122,79 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                 {row.values.map((val, valIdx) => (
                                     <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                         {isOverridden && <OverrideIndicator />}
-                                        {/* Value Input */}
-                                        <div style={{ flex: 1, display: 'flex', gap: '4px' }}>
-                                            <VariableInput
-                                                value={val}
-                                                onInput={(newVal) => {
-                                                    const newData = [...formData.value];
-                                                    newData[i].values[valIdx] = newVal;
-                                                    formData.value = newData;
-                                                }}
-                                                placeholder={row.type === 'file' ? "File path..." : "Value"}
-                                                style={{ flex: 1 }}
-                                                readOnly={isReadOnly}
-                                                parentId={parentId}
-                                            />
-                                            {row.type === 'file' && (
-                                                <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            const selected = await open({
-                                                                multiple: false,
-                                                                directory: false
-                                                            });
-                                                            if (selected && typeof selected === 'string') {
-                                                                const newData = [...formData.value];
-                                                                newData[i].values[valIdx] = selected;
-                                                                formData.value = newData;
-                                                            }
-                                                        } catch (err) {
-                                                            console.error('Failed to open dialog', err);
+                                        {/* Value Input and Content-Type */}
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                <VariableInput
+                                                    value={val}
+                                                    onInput={(newVal) => {
+                                                        const newData = [...formData.value];
+                                                        newData[i].values[valIdx] = newVal;
+                                                        if (row.type === 'file') {
+                                                            if (!newData[i].contentTypes) newData[i].contentTypes = [];
+                                                            newData[i].contentTypes[valIdx] = getMimeType(newVal);
                                                         }
+                                                        formData.value = newData;
+                                                    }}
+                                                    placeholder={row.type === 'file' ? "File path..." : "Value"}
+                                                    style={{ flex: 1 }}
+                                                    readOnly={isReadOnly}
+                                                    parentId={parentId}
+                                                />
+                                                {row.type === 'file' && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                const selected = await open({
+                                                                    multiple: false,
+                                                                    directory: false
+                                                                });
+                                                                if (selected && typeof selected === 'string') {
+                                                                    const newData = [...formData.value];
+                                                                    newData[i].values[valIdx] = selected;
+                                                                    if (!newData[i].contentTypes) newData[i].contentTypes = [];
+                                                                    newData[i].contentTypes[valIdx] = getMimeType(selected);
+                                                                    formData.value = newData;
+                                                                }
+                                                            } catch (err) {
+                                                                console.error('Failed to open dialog', err);
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            padding: '0 8px',
+                                                            backgroundColor: 'var(--bg-input)',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            cursor: 'pointer',
+                                                            color: 'var(--text-secondary)'
+                                                        }}
+                                                        title="Choose File"
+                                                    >
+                                                        <FolderOpen size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {row.type === 'file' && (
+                                                <input
+                                                    placeholder="Content-Type"
+                                                    value={row.contentTypes?.[valIdx] || ''}
+                                                    readOnly={isReadOnly}
+                                                    onInput={(e) => {
+                                                        const newData = [...formData.value];
+                                                        if (!newData[i].contentTypes) newData[i].contentTypes = [];
+                                                        newData[i].contentTypes[valIdx] = e.currentTarget.value;
+                                                        formData.value = newData;
                                                     }}
                                                     style={{
-                                                        padding: '0 8px',
-                                                        backgroundColor: 'var(--bg-input)',
-                                                        border: '1px solid var(--border-color)',
+                                                        width: '100%',
+                                                        fontSize: '0.75rem',
+                                                        padding: '4px 8px',
+                                                        backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
+                                                        border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
                                                         borderRadius: 'var(--radius-sm)',
-                                                        cursor: 'pointer',
-                                                        color: 'var(--text-secondary)'
+                                                        color: 'var(--text-muted)'
                                                     }}
-                                                    title="Choose File"
-                                                >
-                                                    <FolderOpen size={14} />
-                                                </button>
+                                                />
                                             )}
                                         </div>
                                         {!isReadOnly && (
@@ -148,6 +202,9 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                                 onClick={() => {
                                                     const newData = [...formData.value];
                                                     newData[i].values = newData[i].values.filter((_, vIdx) => vIdx !== valIdx);
+                                                    if (newData[i].contentTypes) {
+                                                        newData[i].contentTypes = newData[i].contentTypes.filter((_, vIdx) => vIdx !== valIdx);
+                                                    }
                                                     formData.value = newData;
                                                 }}
                                                 style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -182,7 +239,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                     ))}
                     {!isReadOnly && (
                         <button
-                            onClick={() => formData.value = [...formData.value, { key: '', type: 'text', values: [''] }]}
+                            onClick={() => formData.value = [...formData.value, { key: '', type: 'text', values: [''], contentTypes: [''] }]}
                             style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
                         >
                             + Add Field

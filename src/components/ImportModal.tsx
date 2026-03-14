@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { Modal } from './Modal';
-import { importModalState, requests, folders, activeRequestId } from '../store';
+import { importModalState, requests, folders, activeRequestId, environments } from '../store';
 import { parseCurl } from '../utils/curlParser';
 import { parseSwagger } from '../utils/swaggerParser';
+import { parsePostmanCollection, parsePostmanEnvironment, ParsedFolder, ParsedRequest } from '../utils/postmanUtils';
 import { FileUp } from 'lucide-preact';
 
 export function ImportModal() {
     const state = importModalState.value;
-    const [importType, setImportType] = useState<'curl' | 'swagger'>(state.type);
+    const [importType, setImportType] = useState<'curl' | 'swagger' | 'postman-collection' | 'postman-environment'>(state.type as any);
     const [content, setContent] = useState('');
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -169,6 +170,79 @@ export function ImportModal() {
                     const { ensureDefaultExecutions } = await import('../store');
                     ensureDefaultExecutions(newRequestIds);
                 }
+            } else if (importType === 'postman-collection') {
+                const parsed = parsePostmanCollection(content);
+                const collectionId = state.collectionId;
+                const newRequestIds: string[] = [];
+
+                const allRequests = [...requests.value];
+                const newFolders = [...folders.value];
+
+                const processItems = (items: (ParsedFolder | ParsedRequest)[], parentId: string | null) => {
+                    for (const item of items) {
+                        if ('items' in item) {
+                            // Folder
+                            const folderId = crypto.randomUUID();
+                            newFolders.push({
+                                id: folderId,
+                                name: item.name,
+                                collectionId,
+                                parentId,
+                                collapsed: false
+                            });
+                            processItems(item.items, folderId);
+                        } else {
+                            // Request
+                            const reqId = crypto.randomUUID();
+                            newRequestIds.push(reqId);
+                            allRequests.push({
+                                id: reqId,
+                                collectionId,
+                                name: item.name,
+                                method: item.method,
+                                url: item.url,
+                                headers: item.headers,
+                                bodyType: item.bodyType,
+                                body: item.body,
+                                formData: item.formData,
+                                auth: item.auth,
+                                parentId
+                            });
+                        }
+                    }
+                };
+
+                processItems(parsed.items, state.folderId || null);
+
+                folders.value = newFolders;
+                requests.value = allRequests;
+
+                const { ensureDefaultExecutions } = await import('../store');
+                ensureDefaultExecutions(newRequestIds);
+
+            } else if (importType === 'postman-environment') {
+                const parsed = parsePostmanEnvironment(content);
+                const envs = [...environments.value];
+                const existingIdx = envs.findIndex(e => e.name === parsed.name);
+
+                if (existingIdx !== -1) {
+                    // Update existing
+                    const mergedVars = [...envs[existingIdx].variables];
+                    parsed.variables.forEach(v => {
+                        const vIdx = mergedVars.findIndex(mv => mv.key === v.key);
+                        if (vIdx !== -1) {
+                            mergedVars[vIdx].value = v.value;
+                        } else {
+                            mergedVars.push(v);
+                        }
+                    });
+                    envs[existingIdx] = { ...envs[existingIdx], variables: mergedVars };
+                } else {
+                    // Add new
+                    envs.push(parsed);
+                }
+                environments.value = envs;
+                alert(`Environment "${parsed.name}" imported successfully.`);
             }
 
             handleClose();
@@ -186,43 +260,37 @@ export function ImportModal() {
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                 {/* Type Selector */}
-                <div style={{ display: 'flex', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '2px', alignSelf: 'center' }}>
-                    <button
-                        onClick={() => setImportType('curl')}
-                        style={{
-                            padding: '4px 16px',
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            backgroundColor: importType === 'curl' ? 'var(--accent-primary)' : 'transparent',
-                            color: importType === 'curl' ? 'white' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: importType === 'curl' ? 'bold' : 'normal'
-                        }}
-                    >
-                        cURL
-                    </button>
-                    <button
-                        onClick={() => setImportType('swagger')}
-                        style={{
-                            padding: '4px 16px',
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            backgroundColor: importType === 'swagger' ? 'var(--accent-primary)' : 'transparent',
-                            color: importType === 'swagger' ? 'white' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: importType === 'swagger' ? 'bold' : 'normal'
-                        }}
-                    >
-                        Swagger / OpenAPI
-                    </button>
+                <div style={{ display: 'flex', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '2px', alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '2px' }}>
+                    {[
+                        { id: 'curl', label: 'cURL' },
+                        { id: 'swagger', label: 'Swagger / OpenAPI' },
+                        { id: 'postman-collection', label: 'Postman Collection' },
+                        { id: 'postman-environment', label: 'Postman Environment' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setImportType(tab.id as any)}
+                            style={{
+                                padding: '4px 12px',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                backgroundColor: importType === tab.id ? 'var(--accent-primary)' : 'transparent',
+                                color: importType === tab.id ? 'white' : 'var(--text-muted)',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: importType === tab.id ? 'bold' : 'normal'
+                            }}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
 
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {importType === 'curl'
-                        ? 'Paste a bash-formatted cURL command below or load from a file.'
-                        : 'Paste your Swagger 2.0 or OpenAPI 3.x specification (JSON or YAML) below or load from a file.'}
+                    {importType === 'curl' && 'Paste a bash-formatted cURL command below or load from a file.'}
+                    {importType === 'swagger' && 'Paste your Swagger 2.0 or OpenAPI 3.x specification (JSON or YAML) below or load from a file.'}
+                    {importType === 'postman-collection' && 'Paste your Postman Collection v2.1 JSON below or load from a file.'}
+                    {importType === 'postman-environment' && 'Paste your Postman Environment JSON below or load from a file.'}
                 </p>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

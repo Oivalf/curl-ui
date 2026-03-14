@@ -30,6 +30,8 @@ pub struct FormDataItem {
     key: String,
     value: String,
     entry_type: String, // "text" or "file"
+    #[serde(default)]
+    pub content_type: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -85,9 +87,14 @@ fn generate_request_data(args: &HttpRequestArgs, jar: &reqwest::cookie::Jar) -> 
 
     if let Some(form_data) = &args.form_data {
         for item in form_data {
-            request_curl.push_str(&format!(" -F \"{}={}\"", item.key, item.value));
+            let mut f_arg = format!("{}={}", item.key, item.value);
+            if let Some(ct) = &item.content_type {
+                f_arg.push_str(&format!(";type={}", ct));
+            }
+            request_curl.push_str(&format!(" -F \"{}\"", f_arg));
         }
-        request_raw.push_str("Content-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]");
+        request_raw
+            .push_str("Content-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]");
     } else if let Some(body_content) = &args.body {
         request_raw.push_str(&format!("Content-Length: {}\r\n\r\n", body_content.len()));
         request_raw.push_str(body_content);
@@ -107,7 +114,9 @@ pub async fn reconstruct_request(
     let jar = {
         let jars = state.jars.lock().await;
         let p_name = args.project_name.as_deref().unwrap_or("default");
-        jars.get(p_name).cloned().unwrap_or_else(|| Arc::new(reqwest::cookie::Jar::default()))
+        jars.get(p_name)
+            .cloned()
+            .unwrap_or_else(|| Arc::new(reqwest::cookie::Jar::default()))
     };
 
     Ok(generate_request_data(&args, &jar))
@@ -174,7 +183,7 @@ pub async fn http_request(
             let mut form = multipart::Form::new();
             for item in form_data {
                 if item.entry_type == "file" {
-                    let part = multipart::Part::bytes(
+                    let mut part = multipart::Part::bytes(
                         tokio::fs::read(&item.value)
                             .await
                             .map_err(|e| format!("Failed to read file {}: {}", item.value, e))?,
@@ -186,6 +195,11 @@ pub async fn http_request(
                             .to_string_lossy()
                             .to_string(),
                     );
+                    if let Some(ct) = item.content_type {
+                        if ct.parse::<reqwest::header::HeaderValue>().is_ok() {
+                            part = part.mime_str(ct.as_str()).unwrap();
+                        }
+                    }
                     form = form.part(item.key, part);
                 } else {
                     form = form.text(item.key, item.value);

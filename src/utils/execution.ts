@@ -294,10 +294,11 @@ export const runExecution = async (
             finalBody = params.toString();
             if (!finalHeaders.find(fh => fh[0] === 'Content-Type')) finalHeaders.push(['Content-Type', 'application/x-www-form-urlencoded']);
         } else if (effectiveBodyType === 'multipart') {
-            formDataArgs = effectiveFormData.flatMap((group: any) => group.values.map((v: string) => ({
+            formDataArgs = effectiveFormData.flatMap((group: any) => group.values.map((v: string, idx: number) => ({
                 key: group.key,
                 value: substituteVariables(v, parentRequest.id),
-                entry_type: group.type
+                entry_type: group.type,
+                content_type: group.contentTypes ? group.contentTypes[idx] : undefined
             })));
             finalBody = null;
         } else {

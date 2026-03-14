@@ -1,6 +1,9 @@
-import { Plus, Trash2 } from 'lucide-preact';
+import { Plus, Trash2, Download } from 'lucide-preact';
 import { environments, activeEnvironmentName, Environment, selectedEnvironmentInManager, confirmationState } from '../store';
 import { Modal } from './Modal';
+import { exportEnvironmentToPostman } from '../utils/postmanUtils';
+import { save } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
 
 
 interface EnvironmentManagerProps {
@@ -283,6 +286,41 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                     <h4 style={{ margin: 0 }}>Variables</h4>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={async () => {
+                                                if (!currentEnv) return;
+                                                const path = await save({
+                                                    defaultPath: `${currentEnv.name}.postman_environment.json`,
+                                                    filters: [{
+                                                        name: 'Postman Environment',
+                                                        extensions: ['json']
+                                                    }]
+                                                });
+
+                                                if (path) {
+                                                    const postmanEnv = exportEnvironmentToPostman(currentEnv);
+                                                    await invoke('save_workspace', { path, data: JSON.stringify(postmanEnv, null, 2) });
+                                                    alert(`Environment exported to ${path}`);
+                                                }
+                                            }}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                background: 'transparent',
+                                                border: '1px solid var(--border-color)',
+                                                color: 'var(--text-muted)',
+                                                padding: '4px 8px',
+                                                cursor: 'pointer',
+                                                borderRadius: 'var(--radius-sm)',
+                                                fontSize: '0.75rem'
+                                            }}
+                                            title="Export to Postman"
+                                        >
+                                            <Download size={12} /> Export
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
