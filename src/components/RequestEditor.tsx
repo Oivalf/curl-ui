@@ -455,6 +455,7 @@ export function RequestEditor() {
                         />
                     )}
                     <RequestPanel
+                        id={currentRequest.id}
                         headers={headers}
                         bodyType={bodyType}
                         body={body}
@@ -548,7 +549,10 @@ export function RequestEditor() {
                             </div>
 
                             <div style={{ flex: 1, minHeight: 0 }}>
-                                <ResponsePanel response={defaultExecution.value?.lastResponse || null} />
+                                <ResponsePanel 
+                                    id={defaultExecution.value?.id || "default"} 
+                                    response={defaultExecution.value?.lastResponse || null} 
+                                />
                             </div>
                         </div>
                     </>

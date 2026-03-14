@@ -578,6 +578,12 @@ pub struct ProjectManifest {
     pub expanded_collection_ids: Vec<String>,
     #[serde(default)]
     pub expanded_folder_ids: Vec<String>,
+    #[serde(default)]
+    pub item_request_tab_states: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    pub item_script_tab_states: std::collections::HashMap<String, String>,
+    #[serde(default)]
+    pub item_response_tab_states: std::collections::HashMap<String, String>,
 }
 
 #[command]
@@ -592,6 +598,9 @@ pub async fn sync_project_manifest(
     is_external_mocks_expanded: bool,
     expanded_collection_ids: Vec<String>,
     expanded_folder_ids: Vec<String>,
+    item_request_tab_states: std::collections::HashMap<String, String>,
+    item_script_tab_states: std::collections::HashMap<String, String>,
+    item_response_tab_states: std::collections::HashMap<String, String>,
 ) -> Result<(), String> {
     use tauri::Manager;
 
@@ -614,6 +623,9 @@ pub async fn sync_project_manifest(
         is_external_mocks_expanded,
         expanded_collection_ids,
         expanded_folder_ids,
+        item_request_tab_states,
+        item_script_tab_states,
+        item_response_tab_states,
     };
 
     let data = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;

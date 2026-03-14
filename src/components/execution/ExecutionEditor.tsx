@@ -685,6 +685,7 @@ export function ExecutionEditor() {
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
                     <ExecutionRequestPanel
+                        id={currentExecution.id}
                         headers={headers}
                         bodyType={bodyType}
                         body={body}
@@ -704,7 +705,6 @@ export function ExecutionEditor() {
                         parentQueryParamKeys={parentQueryParamKeys.value}
                         isBodyOverridden={isBodyOverridden.value}
                         isAuthOverridden={isAuthOverridden.value}
-                        parentId={parentRequest.parentId}
                     />
                 </div>
                 {/* Resizer Handle */}
@@ -723,7 +723,7 @@ export function ExecutionEditor() {
                 />
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', minHeight: 0 }}>
-                    <ResponsePanel response={currentExecution.lastResponse || null} />
+                    <ResponsePanel id={currentExecution.id} response={currentExecution.lastResponse || null} />
                 </div>
             </div>
         </div>

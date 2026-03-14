@@ -282,6 +282,9 @@ export const activeExternalMockId = signal<string | null>(null);
 export const activeUseCaseId = signal<string | null>(null);
 export const activeEnvironmentName = signal<string | null>(null);
 export const activeTabId = signal<string | null>(null);
+export const itemRequestTabStates = signal<Record<string, string>>({});
+export const itemScriptTabStates = signal<Record<string, string>>({});
+export const itemResponseTabStates = signal<Record<string, string>>({});
 export const activeProjectName = signal<string>("Default Project");
 export const knownProjects = signal<string[]>([]);
 export const isInitializing = signal<boolean>(true);
@@ -571,6 +574,9 @@ export const syncProjectManifest = async (projectName: string) => {
                 useCases: useCases.value,
                 openTabs: openTabs.peek(),
                 activeTabId: activeTabId.peek(),
+                itemRequestTabStates: itemRequestTabStates.peek(),
+                itemScriptTabStates: itemScriptTabStates.peek(),
+                itemResponseTabStates: itemResponseTabStates.peek(),
                 isExternalMocksExpanded: isExternalMocksExpanded.peek(),
                 expandedCollectionIds: expandedCollectionIds.peek(),
                 expandedFolderIds: expandedFolderIds.peek()
@@ -594,6 +600,9 @@ export const openProject = async (name: string) => {
         folders.value = [];
         openTabs.value = manifest.open_tabs || [];
         activeTabId.value = manifest.active_tab_id || null;
+        itemRequestTabStates.value = manifest.item_request_tab_states || {};
+        itemScriptTabStates.value = manifest.item_script_tab_states || {};
+        itemResponseTabStates.value = manifest.item_response_tab_states || {};
         isExternalMocksExpanded.value = manifest.is_external_mocks_expanded || false;
         expandedCollectionIds.value = manifest.expanded_collection_ids || [];
         expandedFolderIds.value = manifest.expanded_folder_ids || [];
@@ -631,6 +640,9 @@ effect(() => {
         expandedCollectionIds.value;
         expandedFolderIds.value;
         useCases.value;
+        itemRequestTabStates.value;
+        itemScriptTabStates.value;
+        itemResponseTabStates.value;
         
         // Debounce slightly or just call
         syncProjectManifest(name);
