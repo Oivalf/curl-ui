@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Book, ChevronRight } from 'lucide-preact';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { TitleBar } from './TitleBar';
 
 // Cast to any to avoid Preact/React type conflicts
 const Markdown = ReactMarkdown as any;
@@ -94,63 +95,66 @@ export function UserGuideView() {
     ];
 
     return (
-        <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
-            {/* Sidebar */}
-            <div style={{
-                width: '240px',
-                borderRight: '1px solid var(--border-color)',
-                backgroundColor: 'var(--bg-sidebar)',
-                padding: '24px 12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-            }}>
-                <div style={{ padding: '0 12px 16px', fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <BookIcon size={24} /> Guide
-                </div>
-                {navItems.map(item => (
-                    <div
-                        key={item.id}
-                        onClick={() => currentPage.value = item.id}
-                        style={{
-                            padding: '10px 16px',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            fontSize: '0.95rem',
-                            backgroundColor: currentPage.value === item.id ? 'rgba(0, 255, 255, 0.15)' : 'transparent',
-                            color: currentPage.value === item.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                            transition: 'all 0.2s',
-                            fontWeight: currentPage.value === item.id ? '600' : '400'
-                        }}
-                    >
-                        {currentPage.value === item.id && <ChevronIcon size={14} />}
-                        {item.label}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
+            <TitleBar />
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+                {/* Sidebar */}
+                <div style={{
+                    width: '240px',
+                    borderRight: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-sidebar)',
+                    padding: '24px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                }}>
+                    <div style={{ padding: '0 12px 16px', fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <BookIcon size={24} /> Guide
                     </div>
-                ))}
-            </div>
+                    {navItems.map(item => (
+                        <div
+                            key={item.id}
+                            onClick={() => currentPage.value = item.id}
+                            style={{
+                                padding: '10px 16px',
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                fontSize: '0.95rem',
+                                backgroundColor: currentPage.value === item.id ? 'rgba(0, 255, 255, 0.15)' : 'transparent',
+                                color: currentPage.value === item.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                transition: 'all 0.2s',
+                                fontWeight: currentPage.value === item.id ? '600' : '400'
+                            }}
+                        >
+                            {currentPage.value === item.id && <ChevronIcon size={14} />}
+                            {item.label}
+                        </div>
+                    ))}
+                </div>
 
-            {/* Content Area */}
-            <div style={{
-                flex: 1,
-                padding: '40px 60px',
-                overflowY: 'auto',
-                backgroundColor: 'rgba(255, 255, 255, 0.01)'
-            }}>
-                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                    {isLoading.value ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: 'var(--text-muted)' }}>
-                            Loading guide...
-                        </div>
-                    ) : (
-                        <div style={{ textAlign: 'left' }}>
-                            <Markdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-                                {content.value}
-                            </Markdown>
-                        </div>
-                    )}
+                {/* Content Area */}
+                <div style={{
+                    flex: 1,
+                    padding: '40px 60px',
+                    overflowY: 'auto',
+                    backgroundColor: 'rgba(255, 255, 255, 0.01)'
+                }}>
+                    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        {isLoading.value ? (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: 'var(--text-muted)' }}>
+                                Loading guide...
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'left' }}>
+                                <Markdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                                    {content.value}
+                                </Markdown>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

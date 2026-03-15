@@ -1,6 +1,6 @@
 import { Plus, Layout, BookOpen, FolderOpen } from 'lucide-preact';
 import { activeProjectName, knownProjects, openProject, showPrompt } from '../store';
-import { invoke } from '@tauri-apps/api/core';
+
 import { useEffect, useState } from 'preact/hooks';
 import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
 import { openUserGuideWindow } from '../utils/window';
@@ -26,13 +26,6 @@ export function WelcomeScreen() {
 
         // Transitions current window to the new project
         activeProjectName.value = projectName;
-
-        // Enable the native menu bar for this window
-        try {
-            await invoke('enable_window_menu');
-        } catch (err) {
-            console.error('Failed to enable menu:', err);
-        }
     };
 
     return (

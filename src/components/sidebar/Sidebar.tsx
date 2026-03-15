@@ -84,7 +84,8 @@ export function Sidebar({ width = 250 }: SidebarProps) {
         const label = `project-${crypto.randomUUID()}`;
         const webview = new WebviewWindow(label, {
             url: `/?projectName=${encodeURIComponent(projectName)}`,
-            title: `cURL-UI - ${projectName}`
+            title: `cURL-UI - ${projectName}`,
+            decorations: false
         });
         webview.once('tauri://created', function () {
             // webview window successfully created

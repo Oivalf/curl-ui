@@ -16,8 +16,7 @@ export async function openUserGuideWindow() {
         width: 1000,
         height: 800,
         resizable: true,
-        decorations: true,
-        // Menu might be useful for standard shortcuts even in guide
+        decorations: false,
     });
 
     webview.once('tauri://error', (e) => {

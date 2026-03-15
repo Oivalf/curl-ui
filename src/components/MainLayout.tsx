@@ -16,6 +16,7 @@ interface LayoutProps {
 }
 
 import { openUserGuideWindow } from '../utils/window';
+import { TitleBar } from './TitleBar';
 
 
 
@@ -114,7 +115,9 @@ export function MainLayout({ children }: LayoutProps) {
     });
 
     return (
-        <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: 'var(--bg-base)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
+            <TitleBar />
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden', backgroundColor: 'var(--bg-base)' }}>
             <Sidebar width={sidebarWidth.value} />
 
             {/* Resize Handle */}
@@ -264,6 +267,7 @@ export function MainLayout({ children }: LayoutProps) {
                     </button>
                 </div>
             </main>
+            </div>
 
             <EnvironmentManager
                 isOpen={isEnvManagerOpen.value}

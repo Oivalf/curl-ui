@@ -419,13 +419,8 @@ export const loadKnownProjects = async () => {
             if (projects.includes(pName)) {
                 await openProject(pName);
             } else {
-                // New project - just set the name and enable menu
+                // New project - just set the name
                 activeProjectName.value = pName;
-                try {
-                    await invoke('enable_window_menu');
-                } catch (err) {
-                    console.error('Failed to enable menu for new project:', err);
-                }
             }
         } else if (projects.length > 0) {
             // Auto-load last modified project
@@ -548,13 +543,7 @@ activeEnvironmentName.value = null;
 requests.value = [];
 folders.value = [];
 
-export const refreshMenu = async () => {
-    try {
-        await invoke('refresh_projects_menu');
-    } catch (err) {
-        console.error('Failed to refresh menu:', err);
-    }
-};
+
 
 // --- Persistence Functions ---
 
@@ -581,7 +570,7 @@ export const syncProjectManifest = async (projectName: string) => {
                 expandedCollectionIds: expandedCollectionIds.peek(),
                 expandedFolderIds: expandedFolderIds.peek()
             });
-            await refreshMenu();
+
         }
     } catch (err) {
         console.error('Failed to sync project manifest:', err);
@@ -618,12 +607,7 @@ export const openProject = async (name: string) => {
             }
         }
 
-        // Enable the native menu for this window
-        try {
-            await invoke('enable_window_menu');
-        } catch (err) {
-            console.error('Failed to enable menu for project:', name, err);
-        }
+
     } catch (err) {
         console.error('Failed to open project:', err);
     }
