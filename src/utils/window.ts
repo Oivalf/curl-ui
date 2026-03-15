@@ -17,6 +17,7 @@ export async function openUserGuideWindow() {
         height: 800,
         resizable: true,
         decorations: false,
+        transparent: true
     });
 
     webview.once('tauri://error', (e) => {

@@ -76,7 +76,8 @@ export function TitleBar() {
         const webview = new WebviewWindow(label, {
             url: `/?projectName=${encodeURIComponent(projectName)}`,
             title: `cURL-UI - ${projectName}`,
-            decorations: false
+            decorations: false,
+            transparent: true
         });
         webview.once('tauri://error', function (e) {
             console.error(e);
