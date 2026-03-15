@@ -222,7 +222,7 @@ export function CodeEditor({ value, onChange, language = 'text', readOnly = fals
     }
 
     return (
-        <div style={{ ...style, height, borderRadius: 'var(--radius-md)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ minWidth: 0, ...style, height, borderRadius: 'var(--radius-md)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {!readOnly && language !== 'text' && (
                 <button
                     onClick={handleFormat}

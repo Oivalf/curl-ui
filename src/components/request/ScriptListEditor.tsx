@@ -119,7 +119,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
 
                         {/* Editor */}
                         {expandedScriptId.value === script.id && (
-                            <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)', height: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)', height: '220px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
                                 {showStatusFilter && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
                                         <label style={{ color: 'var(--text-muted)' }}>Run on Status:</label>

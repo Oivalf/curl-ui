@@ -671,19 +671,21 @@ export function ExecutionEditor() {
             </div>
 
             {/* Progress Summary */}
-            <ExecutionProgress
-                isLoading={isLoadingSignal}
-                executionSteps={stepsSignal}
-                startTime={startTimeSignal}
-                totalExecutionTime={totalTimeSignal}
-                lastResponseTime={lastResponseTimeSignal}
-                responseSize={responseSizeSignal}
-                responseStatus={responseStatusSignal}
-                compact={false}
-            />
+            {(isLoadingSignal.value || stepsSignal.value.length > 0) && (
+                <ExecutionProgress
+                    isLoading={isLoadingSignal}
+                    executionSteps={stepsSignal}
+                    startTime={startTimeSignal}
+                    totalExecutionTime={totalTimeSignal}
+                    lastResponseTime={lastResponseTimeSignal}
+                    responseSize={responseSizeSignal}
+                    responseStatus={responseStatusSignal}
+                    compact={false}
+                />
+            )}
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                <div style={{ width: `${leftPanelWidth.value}%`, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0 }}>
                     <ExecutionRequestPanel
                         id={currentExecution.id}
                         headers={headers}

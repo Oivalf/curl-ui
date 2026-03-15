@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "preact/hooks";
+import { useState, useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { Signal } from "@preact/signals";
 import { Circle, Loader2, CheckCircle, XCircle } from "lucide-preact";
 import { formatBytes } from "../../utils/format";
@@ -31,7 +31,7 @@ export function ExecutionProgress({
     compact = false
 }: ExecutionProgressProps) {
     const [now, setNow] = useState(Date.now());
-    const [selfCompact, setSelfCompact] = useState(false);
+    const [selfCompact, setSelfCompact] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -44,8 +44,11 @@ export function ExecutionProgress({
         return () => clearInterval(interval);
     }, [isLoading.value]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!containerRef.current) return;
+
+        // Perform an initial synchronous measurement before paint
+        setSelfCompact(containerRef.current.clientWidth < 600);
 
         const observer = new ResizeObserver((entries) => {
             for (let entry of entries) {
@@ -59,9 +62,6 @@ export function ExecutionProgress({
     }, []);
 
     const isActualCompact = compact || selfCompact;
-    if (!isLoading.value && executionSteps.value.length === 0) {
-        return null;
-    }
 
     return (
         <div ref={containerRef} style={{
@@ -71,7 +71,9 @@ export function ExecutionProgress({
             borderRadius: 'var(--radius-md)',
             display: 'flex',
             flexDirection: 'column',
-            gap: isActualCompact ? '4px' : '12px'
+            gap: isActualCompact ? '4px' : '12px',
+            width: '100%',
+            boxSizing: 'border-box'
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: isActualCompact ? '8px' : '12px' }}>

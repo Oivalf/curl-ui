@@ -440,7 +440,7 @@ export function RequestEditor() {
             </div>
 
             <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0, gap: 'var(--spacing-md)' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0, width: 0, gap: 'var(--spacing-md)' }}>
                     {/* Compact progress shown ONLY when loading and results panel is closed */}
                     {isLoadingSignal.value && !showResults.value && (
                         <ExecutionProgress
@@ -535,20 +535,22 @@ export function RequestEditor() {
                                 </button>
                             </div>
 
-                            <div style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>
-                                <ExecutionProgress
-                                    isLoading={isLoadingSignal}
-                                    executionSteps={stepsSignal}
-                                    startTime={startTimeSignal}
-                                    totalExecutionTime={totalTimeSignal}
-                                    lastResponseTime={lastResponseTimeSignal}
-                                    responseSize={responseSizeSignal}
-                                    responseStatus={responseStatusSignal}
-                                    compact={false}
-                                />
-                            </div>
+                            {(isLoadingSignal.value || stepsSignal.value.length > 0) && (
+                                <div style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>
+                                    <ExecutionProgress
+                                        isLoading={isLoadingSignal}
+                                        executionSteps={stepsSignal}
+                                        startTime={startTimeSignal}
+                                        totalExecutionTime={totalTimeSignal}
+                                        lastResponseTime={lastResponseTimeSignal}
+                                        responseSize={responseSizeSignal}
+                                        responseStatus={responseStatusSignal}
+                                        compact={false}
+                                    />
+                                </div>
+                            )}
 
-                            <div style={{ flex: 1, minHeight: 0 }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
                                 <ResponsePanel 
                                     id={defaultExecution.value?.id || "default"} 
                                     response={defaultExecution.value?.lastResponse || null} 

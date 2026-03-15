@@ -6,6 +6,7 @@ export function RequestCurlView({ curlCommand }: RequestCurlViewProps) {
     return (
         <div style={{
             flex: 1,
+            minWidth: 0,
             backgroundColor: 'var(--bg-input)',
             borderRadius: 'var(--radius-sm)',
             padding: 'var(--spacing-sm)',

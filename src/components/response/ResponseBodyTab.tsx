@@ -66,8 +66,8 @@ export function ResponseBodyTab({ response }: ResponseBodyTabProps) {
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
                 <CodeEditor
                     value={content}
                     language={lang}

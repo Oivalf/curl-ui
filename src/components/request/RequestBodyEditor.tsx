@@ -37,7 +37,7 @@ const getMimeType = (path: string) => {
 
 export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOverridden, isTypeReadOnly, parentId }: RequestBodyEditorProps) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minHeight: 0, height: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
             <select
                 value={bodyType.value}
                 onChange={(e) => bodyType.value = e.currentTarget.value as any}
@@ -248,7 +248,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                 </div>
             ) : (
                 bodyType.value !== 'none' && (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minHeight: 0 }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', minHeight: 0, minWidth: 0 }}>
                         {isOverridden && (
                             <div style={{ display: 'flex', gap: '4px', alignItems: 'center', padding: '4px 0' }}>
                                 <OverrideIndicator />

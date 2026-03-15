@@ -4,7 +4,7 @@ interface ResponseHeadersTabProps {
 
 export function ResponseHeadersTab({ headers }: ResponseHeadersTabProps) {
     return (
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                 <thead>
                     <tr>
