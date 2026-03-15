@@ -566,40 +566,43 @@ export function ExecutionEditor() {
 
     return (
         <div style={{ padding: 'var(--spacing-md)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)', height: '100%' }}>
-            {/* Parent Request Link */}
-            <div
-                onClick={navigateToParent}
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    color: 'var(--text-muted)',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    marginBottom: '-8px'
-                }}
-            >
-                <ArrowLeft size={14} />
-                <span>Based on: <strong style={{ color: 'var(--text-secondary)' }}>{parentRequest.name}</strong></span>
+            {/* Top Bar with Name and Parent Link */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <input
+                    value={name.value}
+                    onInput={(e) => name.value = e.currentTarget.value}
+                    placeholder="Execution Name"
+                    readOnly={currentExecution.name === 'default'}
+                    style={{
+                        flex: '1',
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        background: 'transparent',
+                        outline: 'none',
+                        color: currentExecution.name === 'default' ? 'var(--text-muted)' : 'var(--text-primary)',
+                    }}
+                />
+                <div
+                    onClick={navigateToParent}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        padding: '4px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        transition: 'background-color 0.2s',
+                        whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                    <span>( <ArrowLeft size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} /> based on: <strong style={{ color: 'var(--text-secondary)' }}>{parentRequest.name}</strong>)</span>
+                </div>
             </div>
-
-            {/* Top Bar */}
-            <input
-                value={name.value}
-                onInput={(e) => name.value = e.currentTarget.value}
-                placeholder="Execution Name"
-                readOnly={currentExecution.name === 'default'}
-                style={{
-                    width: '100%',
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold',
-                    border: 'none',
-                    background: 'transparent',
-                    outline: 'none',
-                    color: currentExecution.name === 'default' ? 'var(--text-muted)' : 'var(--text-primary)',
-                    marginBottom: '8px'
-                }}
-            />
             <div style={{ padding: '8px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <MethodSelect value={method.value} onChange={() => { }} disabled={true} />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>

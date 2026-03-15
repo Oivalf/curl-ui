@@ -633,7 +633,8 @@
       "id": "3f39c468-3ed3-4339-9491-d25dd13ca522",
       "requestId": "3e12cbb6-26ee-4129-b2f5-7a881fcfad29",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "sample"
+      "name": "sample",
+      "sortIndex": 1
     },
     {
       "id": "cbd4a285-f8f3-4f59-b158-d28b906274c2",
@@ -940,7 +941,8 @@
       "id": "8c32c86e-6834-4410-a7ef-e232efdf2f8a",
       "requestId": "3e12cbb6-26ee-4129-b2f5-7a881fcfad29",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "default"
+      "name": "default",
+      "sortIndex": 0
     },
     {
       "id": "7e8177ad-3949-4d34-9010-5980a6471e29",
