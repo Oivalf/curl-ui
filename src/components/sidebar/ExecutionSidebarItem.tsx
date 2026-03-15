@@ -99,6 +99,11 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
 
         // Restriction: only reorder executions within the same request
         if (type === 'execution') {
+            // Prevent dropping BEFORE the default execution
+            if (execution.name === 'default' && pos === 'before') {
+                pos = 'after';
+            }
+
             import('../../store').then(({ moveExecution }) => {
                 moveExecution(id, execution.id, pos);
             });
@@ -117,7 +122,7 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
             labelStyle={{ fontStyle: 'italic' }}
             onSelect={handleSelect}
             onDelete={execution.name === 'default' ? undefined : handleDelete}
-            draggable
+            draggable={execution.name !== 'default'}
             onDragStart={handleDragStart}
             onDropIntelligent={handleDropIntelligent}
         />

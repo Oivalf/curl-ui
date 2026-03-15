@@ -1329,11 +1329,25 @@ export const moveExecution = (
     if (currentIndex === -1) return;
 
     const [movedItem] = siblings.splice(currentIndex, 1);
+    
+    // If the moved item is "default", don't allow moving it (it should stay at 0)
+    if (movedItem.name === "default") {
+        return;
+    }
+
     let targetIndex = siblings.findIndex(s => s.id === targetId);
 
     if (position === 'inside' || targetIndex === -1) {
         siblings.push(movedItem);
     } else {
+        // Find target execution
+        const targetExec = siblings[targetIndex];
+        
+        // Prevent moving BEFORE the default execution
+        if (targetExec?.name === "default" && position === 'before') {
+            position = 'after'; // Force 'after' if target is 'default' and position is 'before'
+        }
+
         if (position === 'after') targetIndex++;
         siblings.splice(targetIndex, 0, movedItem);
     }
