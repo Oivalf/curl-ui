@@ -19,6 +19,7 @@ The Execution Editor is where you run requests and view responses. Each request 
 - **Response Panel**: View the detailed headers and body of the returned response. Responses are **isolated and persisted per execution**.
 - **Cross-Tab Persistence**: The state of the execution result panel is persisted when switching between tabs. If you leave a request results panel open, it will still be there when you return.
 - **Execution Reordering**: Drag and drop custom executions in the sidebar to organize them according to your testing flow. The "Default" execution is **sticky** and always remains at the top of the list.
+- **Execution Duplication**: Right-click any execution (including "Default") to duplicate it. Duplicating the "Default" execution creates a new, editable custom execution based on the same request template.
 - **Console**: Inspect logs from scripts and application information in the integrated Console Panel.
 
 ## Progress Summary

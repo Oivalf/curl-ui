@@ -69,7 +69,7 @@ export function SidebarContextMenu() {
             import('../../store').then(({ ensureDefaultExecutions }) => {
                 ensureDefaultExecutions(duplicatedRequestIds);
             });
-        } else {
+        } else if (menu.type === 'request') {
             const reqToDup = requests.value.find(r => r.id === menu.itemId);
             if (!reqToDup) return;
 
@@ -85,14 +85,47 @@ export function SidebarContextMenu() {
             import('../../store').then(({ ensureDefaultExecutions }) => {
                 ensureDefaultExecutions([newId]);
             });
+        } else if (menu.type === 'execution') {
+            const execToDup = executions.value.find(e => e.id === menu.itemId);
+            if (!execToDup) return;
+
+            const newId = crypto.randomUUID();
+            const newName = execToDup.name === 'default' ? 'Default copy' : `${execToDup.name} copy`;
+            const siblingsCount = executions.value.filter(e => e.requestId === execToDup.requestId).length;
+
+            const newExec = {
+                ...execToDup,
+                id: newId,
+                name: newName,
+                sortIndex: siblingsCount
+            };
+
+            executions.value = [...executions.value, newExec];
+
+            // Open in tab
+            openTabs.value = [...openTabs.value, {
+                id: newId,
+                type: 'execution',
+                name: newName
+            }];
+            activeTabId.value = newId;
+            activeExecutionId.value = newId;
+            activeRequestId.value = null;
+            activeFolderId.value = null;
         }
         contextMenu.value = null;
     };
 
     const handleRename = async () => {
-        const item = menu.type === 'folder'
-            ? folders.value.find(f => f.id === menu.itemId)
-            : requests.value.find(r => r.id === menu.itemId);
+        let item;
+        if (menu.type === 'folder') {
+            item = folders.value.find(f => f.id === menu.itemId);
+        } else if (menu.type === 'request') {
+            item = requests.value.find(r => r.id === menu.itemId);
+        } else if (menu.type === 'execution') {
+            item = executions.value.find(e => e.id === menu.itemId);
+            if (item?.name === 'default') return; // Cannot rename default
+        }
 
         if (!item) return;
 
@@ -100,23 +133,24 @@ export function SidebarContextMenu() {
         if (newName && newName !== item.name) {
             if (menu.type === 'folder') {
                 folders.value = folders.value.map(f => f.id === menu.itemId ? { ...f, name: newName } : f);
-            } else {
+            } else if (menu.type === 'request') {
                 requests.value = requests.value.map(r => r.id === menu.itemId ? { ...r, name: newName } : r);
+            } else if (menu.type === 'execution') {
+                executions.value = executions.value.map(e => e.id === menu.itemId ? { ...e, name: newName } : e);
+                // Update tab name if open
+                openTabs.value = openTabs.value.map(t => t.id === menu.itemId ? { ...t, name: newName } : t);
             }
         }
         contextMenu.value = null;
     };
 
     const handleDelete = () => {
-        const item = menu.type === 'folder'
-            ? folders.value.find(f => f.id === menu.itemId)
-            : requests.value.find(r => r.id === menu.itemId);
+        if (menu.type === 'folder') {
+            const item = folders.value.find(f => f.id === menu.itemId);
+            if (!item) return;
 
-        if (!item) return;
-
-        if (confirm(`Delete ${menu.type} "${item.name}"? ${menu.type === 'folder' ? 'This will delete all contents.' : ''}`)) {
-            if (menu.type === 'folder') {
-                // Recursive delete logic (duplicated from SidebarItem for now, could be shared)
+            if (confirm(`Delete folder "${item.name}"? This will delete all contents.`)) {
+                // Recursive delete logic
                 const idsToDelete = new Set<string>([menu.itemId]);
                 let added = true;
                 while (added) {
@@ -134,12 +168,51 @@ export function SidebarContextMenu() {
                 if (activeRequestId.value && requests.value.find(r => r.id === activeRequestId.value) === undefined) {
                     activeRequestId.value = null;
                 }
-            } else {
+            }
+        } else if (menu.type === 'request') {
+            const item = requests.value.find(r => r.id === menu.itemId);
+            if (!item) return;
+            if (confirm(`Delete request "${item.name}"?`)) {
                 requests.value = requests.value.filter(r => r.id !== menu.itemId);
                 if (activeRequestId.value === menu.itemId) {
                     activeRequestId.value = null;
                 }
             }
+        } else if (menu.type === 'execution') {
+            const execution = executions.value.find(e => e.id === menu.itemId);
+            if (!execution || execution.name === 'default') return;
+
+            import('../../store').then(({ confirmationState }) => {
+                confirmationState.value = {
+                    isOpen: true,
+                    title: 'Delete execution?',
+                    message: `Are you sure you want to delete "${execution.name}"?`,
+                    onConfirm: () => {
+                        executions.value = executions.value.filter(e => e.id !== menu.itemId);
+
+                        // Close tab if open
+                        if (openTabs.value.find(t => t.id === menu.itemId)) {
+                            const newTabs = openTabs.value.filter(t => t.id !== menu.itemId);
+                            openTabs.value = newTabs;
+
+                            if (activeTabId.value === menu.itemId) {
+                                if (newTabs.length > 0) {
+                                    const lastTab = newTabs[newTabs.length - 1];
+                                    activeTabId.value = lastTab.id;
+                                    activeExecutionId.value = lastTab.type === 'execution' ? lastTab.id : null;
+                                    activeRequestId.value = lastTab.type === 'request' ? lastTab.id : null;
+                                    activeFolderId.value = lastTab.type === 'folder' ? lastTab.id : null;
+                                } else {
+                                    activeTabId.value = null;
+                                    activeExecutionId.value = null;
+                                    activeRequestId.value = null;
+                                    activeFolderId.value = null;
+                                }
+                            }
+                        }
+                    }
+                };
+            });
         }
         contextMenu.value = null;
     };
@@ -233,60 +306,7 @@ export function SidebarContextMenu() {
         contextMenu.value = null;
     };
 
-    const handleRenameExecution = async () => {
-        const execution = executions.value.find(e => e.id === menu.itemId);
-        if (!execution) return;
 
-        const newName = await showPrompt("Rename to:", execution.name);
-        if (newName && newName !== execution.name) {
-            executions.value = executions.value.map(e =>
-                e.id === menu.itemId ? { ...e, name: newName } : e
-            );
-            // Update tab name if open
-            openTabs.value = openTabs.value.map(t =>
-                t.id === menu.itemId ? { ...t, name: newName } : t
-            );
-        }
-        contextMenu.value = null;
-    };
-
-    const handleDeleteExecution = () => {
-        const execution = executions.value.find(e => e.id === menu.itemId);
-        if (!execution) return;
-
-        import('../../store').then(({ confirmationState }) => {
-            confirmationState.value = {
-                isOpen: true,
-                title: 'Delete execution?',
-                message: `Are you sure you want to delete "${execution.name}"?`,
-                onConfirm: () => {
-                    executions.value = executions.value.filter(e => e.id !== menu.itemId);
-
-                    // Close tab if open
-                    if (openTabs.value.find(t => t.id === menu.itemId)) {
-                        const newTabs = openTabs.value.filter(t => t.id !== menu.itemId);
-                        openTabs.value = newTabs;
-
-                        if (activeTabId.value === menu.itemId) {
-                            if (newTabs.length > 0) {
-                                const lastTab = newTabs[newTabs.length - 1];
-                                activeTabId.value = lastTab.id;
-                                activeExecutionId.value = lastTab.type === 'execution' ? lastTab.id : null;
-                                activeRequestId.value = lastTab.type === 'request' ? lastTab.id : null;
-                                activeFolderId.value = lastTab.type === 'folder' ? lastTab.id : null;
-                            } else {
-                                activeTabId.value = null;
-                                activeExecutionId.value = null;
-                                activeRequestId.value = null;
-                                activeFolderId.value = null;
-                            }
-                        }
-                    }
-                }
-            };
-        });
-        contextMenu.value = null;
-    };
 
     const handleCloseAllTabs = () => {
         openTabs.value = [];
@@ -472,29 +492,43 @@ export function SidebarContextMenu() {
                 </>
             ) : (
                 <>
-                    <div
-                        className="context-menu-item"
-                        onClick={handleRename}
-                        style={itemStyle}
-                    >
-                        <Edit2 size={14} /> Rename
-                    </div>
+                    {(() => {
+                        const isExecution = menu.type === 'execution';
+                        const execution = isExecution ? executions.value.find(e => e.id === menu.itemId) : null;
+                        const isDefault = execution?.name === 'default';
 
-                    <div
-                        className="context-menu-item"
-                        onClick={handleDuplicate}
-                        style={itemStyle}
-                    >
-                        <Copy size={14} /> Duplicate
-                    </div>
+                        return (
+                            <>
+                                {(!isExecution || !isDefault) && (
+                                    <div
+                                        className="context-menu-item"
+                                        onClick={handleRename}
+                                        style={itemStyle}
+                                    >
+                                        <Edit2 size={14} /> Rename
+                                    </div>
+                                )}
 
-                    <div
-                        className="context-menu-item"
-                        onClick={handleDelete}
-                        style={{ ...itemStyle, color: 'var(--error)' }}
-                    >
-                        <Trash2 size={14} /> Delete
-                    </div>
+                                <div
+                                    className="context-menu-item"
+                                    onClick={handleDuplicate}
+                                    style={itemStyle}
+                                >
+                                    <Copy size={14} /> Duplicate
+                                </div>
+
+                                {(!isExecution || !isDefault) && (
+                                    <div
+                                        className="context-menu-item"
+                                        onClick={handleDelete}
+                                        style={{ ...itemStyle, color: 'var(--error)' }}
+                                    >
+                                        <Trash2 size={14} /> Delete
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
 
                     {menu.type === 'folder' && (
                         <>
@@ -535,33 +569,6 @@ export function SidebarContextMenu() {
                             </div>
                         </>
                     )}
-
-                    {menu.type === 'execution' && (() => {
-                        const execution = executions.value.find(e => e.id === menu.itemId);
-                        const isDefault = execution?.name === 'default';
-                        return (
-                            <>
-                                {!isDefault && (
-                                    <>
-                                        <div
-                                            className="context-menu-item"
-                                            onClick={handleRenameExecution}
-                                            style={itemStyle}
-                                        >
-                                            <Edit2 size={14} /> Rename
-                                        </div>
-                                        <div
-                                            className="context-menu-item"
-                                            onClick={handleDeleteExecution}
-                                            style={{ ...itemStyle, color: 'var(--error)' }}
-                                        >
-                                            <Trash2 size={14} /> Delete
-                                        </div>
-                                    </>
-                                )}
-                            </>
-                        );
-                    })()}
 
                     {menu.type === 'tab' && (
                         <>
