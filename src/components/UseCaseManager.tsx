@@ -303,7 +303,7 @@ export function UseCaseManager() {
 
                                         {openResponses[idx] && runLogs.find(l => l.stepIdx === idx)?.response && (
                                             <div style={{ marginBottom: '16px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '300px' }}>
-                                                <ResponsePanel response={runLogs.find(l => l.stepIdx === idx)!.response!} />
+                                                <ResponsePanel id={step.id} response={runLogs.find(l => l.stepIdx === idx)!.response!} />
                                             </div>
                                         )}
 
