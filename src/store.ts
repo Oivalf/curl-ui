@@ -589,6 +589,27 @@ export const openProject = async (name: string) => {
         folders.value = [];
         openTabs.value = manifest.open_tabs || [];
         activeTabId.value = manifest.active_tab_id || null;
+        
+        // Sync specialized active IDs based on restored active tab
+        if (activeTabId.value) {
+            const activeTab = openTabs.value.find(t => t.id === activeTabId.value);
+            if (activeTab) {
+                if (activeTab.type === 'request') {
+                    activeRequestId.value = activeTab.id;
+                } else if (activeTab.type === 'execution') {
+                    activeExecutionId.value = activeTab.id;
+                } else if (activeTab.type === 'folder') {
+                    activeFolderId.value = activeTab.id;
+                } else if (activeTab.type === 'collection') {
+                    // Collection tab maps to collectionId if needed, but usually it's just activeTabId
+                } else if (activeTab.type === 'external-mock') {
+                    activeExternalMockId.value = activeTab.id;
+                } else if (activeTab.type === 'use-case') {
+                    activeUseCaseId.value = activeTab.id;
+                }
+            }
+        }
+
         itemRequestTabStates.value = manifest.item_request_tab_states || {};
         itemScriptTabStates.value = manifest.item_script_tab_states || {};
         itemResponseTabStates.value = manifest.item_response_tab_states || {};
