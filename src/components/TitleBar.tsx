@@ -14,6 +14,11 @@ export function TitleBar() {
     const recentProjects = useSignal<string[]>([]);
     const appWindow = getCurrentWindow();
 
+    const url = new URL(window.location.href);
+    const view = url.searchParams.get('view');
+    const isUserGuide = view === 'user-guide';
+    const displayTitle = isUserGuide ? "cURL-UI - User Guide" : `cURL-UI - ${activeProjectName.value}`;
+
     useEffect(() => {
         // Check initial maximized state
         appWindow.isMaximized().then(m => isMaximized.value = m);
@@ -103,8 +108,9 @@ export function TitleBar() {
 
                     <Menu size={16} />
                 </button>
-                <span class="titlebar-title" data-tauri-drag-region>cURL-UI</span>
             </div>
+
+            <div class="titlebar-title" data-tauri-drag-region>{displayTitle}</div>
 
             {/* Burger Dropdown */}
             {isMenuOpen.value && (

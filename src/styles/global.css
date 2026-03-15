@@ -108,6 +108,7 @@ select:focus {
     user-select: none;
     -webkit-user-select: none;
     flex-shrink: 0;
+    position: relative;
 }
 
 .titlebar-left {
@@ -125,6 +126,9 @@ select:focus {
 }
 
 .titlebar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-secondary);
