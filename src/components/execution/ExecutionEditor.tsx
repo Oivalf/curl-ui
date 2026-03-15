@@ -380,6 +380,8 @@ export function ExecutionEditor() {
     const isBodyOverridden = useComputed(() => body.value !== (parentRequest.body ?? ''));
     const isAuthOverridden = useComputed(() => JSON.stringify(auth.value) !== JSON.stringify(parentRequest.auth ?? { type: 'inherit' }));
 
+    const isReadOnly = useComputed(() => currentExecution.name === 'default');
+
 
     // Sync Local State to Global Store
     useSignalEffect(() => {
@@ -396,6 +398,9 @@ export function ExecutionEditor() {
 
         const execId = activeExecutionId.value;
         if (!execId || execId !== lastLoadedId.current) return;
+
+        // Skip saving overrides if this is a read-only execution (default)
+        if (isReadOnly.peek()) return;
 
         const allExecutions = executions.peek();
         const idx = allExecutions.findIndex(e => e.id === execId);
@@ -710,6 +715,7 @@ export function ExecutionEditor() {
                         parentQueryParamKeys={parentQueryParamKeys.value}
                         isBodyOverridden={isBodyOverridden.value}
                         isAuthOverridden={isAuthOverridden.value}
+                        isReadOnly={isReadOnly.value}
                     />
                 </div>
                 {/* Resizer Handle */}

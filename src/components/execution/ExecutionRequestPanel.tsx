@@ -124,10 +124,10 @@ export function ExecutionRequestPanel({
                                 <h4 style={{ margin: 0, fontSize: '0.8rem', cursor: 'pointer', opacity: activeScriptTab === 'post' ? 1 : 0.5, borderBottom: activeScriptTab === 'post' ? '2px solid var(--accent-primary)' : 'none' }} onClick={() => setActiveScriptTab('post')}>Post-request</h4>
                             </div>
                             {activeScriptTab === 'pre' && (
-                                <ScriptListEditor scripts={preScripts} title="Pre-request Scripts" parentId={id} />
+                                <ScriptListEditor scripts={preScripts} title="Pre-request Scripts" parentId={id} isReadOnly={isReadOnly} />
                             )}
                             {activeScriptTab === 'post' && (
-                                <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} parentId={id} />
+                                <ScriptListEditor scripts={postScripts} title="Post-request Scripts" showStatusFilter={true} parentId={id} isReadOnly={isReadOnly} />
                             )}
                         </div>
                     )}

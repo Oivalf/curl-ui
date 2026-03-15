@@ -8,9 +8,10 @@ interface ScriptListEditorProps {
     title: string;
     showStatusFilter?: boolean;
     parentId?: string | null;
+    isReadOnly?: boolean;
 }
 
-export function ScriptListEditor({ scripts, title, showStatusFilter = false, parentId }: ScriptListEditorProps) {
+export function ScriptListEditor({ scripts, title, showStatusFilter = false, parentId, isReadOnly }: ScriptListEditorProps) {
     const expandedScriptId = useSignal<string | null>(null);
 
     const addScript = () => {
@@ -58,16 +59,18 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{title}</span>
-                <button
-                    onClick={addScript}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        background: 'none', border: 'none', color: 'var(--accent-primary)',
-                        cursor: 'pointer', fontSize: '0.8rem'
-                    }}
-                >
-                    <Plus size={14} /> Add Script
-                </button>
+                {!isReadOnly && (
+                    <button
+                        onClick={addScript}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '4px',
+                            background: 'none', border: 'none', color: 'var(--accent-primary)',
+                            cursor: 'pointer', fontSize: '0.8rem'
+                        }}
+                    >
+                        <Plus size={14} /> Add Script
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -84,37 +87,50 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
                                 {expandedScriptId.value === script.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                             </div>
 
-                            <div onClick={() => toggleScript(script.id)} style={{ cursor: 'pointer', color: script.enabled ? 'var(--accent-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                            <div onClick={() => !isReadOnly && toggleScript(script.id)} style={{ cursor: isReadOnly ? 'default' : 'pointer', color: script.enabled ? 'var(--accent-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                                 {script.enabled ? <CheckSquare size={16} /> : <Square size={16} />}
                             </div>
 
                             <input
                                 value={script.name}
+                                readOnly={isReadOnly}
                                 onInput={(e) => updateScript(script.id, { name: e.currentTarget.value })}
-                                style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontWeight: 'bold', fontSize: '0.9rem' }}
+                                style={{ 
+                                    flex: 1, 
+                                    background: 'transparent', 
+                                    border: 'none', 
+                                    color: 'var(--text-primary)', 
+                                    fontWeight: 'bold', 
+                                    fontSize: '0.9rem',
+                                    outline: 'none',
+                                    cursor: isReadOnly ? 'default' : 'text'
+                                }}
                             />
 
-                            {/* Reorder Buttons */}
-                            <div style={{ display: 'flex', gap: '2px' }}>
-                                <button
-                                    disabled={index === 0}
-                                    onClick={() => moveScript(index, 'up')}
-                                    style={{ background: 'none', border: 'none', color: index === 0 ? 'var(--text-muted)' : 'var(--text-primary)', cursor: index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.3 : 1, padding: '2px' }}
-                                >
-                                    <ArrowUp size={14} />
-                                </button>
-                                <button
-                                    disabled={index === scripts.value.length - 1}
-                                    onClick={() => moveScript(index, 'down')}
-                                    style={{ background: 'none', border: 'none', color: index === scripts.value.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)', cursor: index === scripts.value.length - 1 ? 'default' : 'pointer', opacity: index === scripts.value.length - 1 ? 0.3 : 1, padding: '2px' }}
-                                >
-                                    <ArrowDown size={14} />
-                                </button>
-                            </div>
-
-                            <button onClick={() => deleteScript(script.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '4px' }}>
-                                <Trash2 size={14} />
-                            </button>
+                            {/* Reorder & Delete Buttons */}
+                            {!isReadOnly && (
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '2px' }}>
+                                        <button
+                                            disabled={index === 0}
+                                            onClick={() => moveScript(index, 'up')}
+                                            style={{ background: 'none', border: 'none', color: index === 0 ? 'var(--text-muted)' : 'var(--text-primary)', cursor: index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.3 : 1, padding: '2px' }}
+                                        >
+                                            <ArrowUp size={14} />
+                                        </button>
+                                        <button
+                                            disabled={index === scripts.value.length - 1}
+                                            onClick={() => moveScript(index, 'down')}
+                                            style={{ background: 'none', border: 'none', color: index === scripts.value.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)', cursor: index === scripts.value.length - 1 ? 'default' : 'pointer', opacity: index === scripts.value.length - 1 ? 0.3 : 1, padding: '2px' }}
+                                        >
+                                            <ArrowDown size={14} />
+                                        </button>
+                                    </div>
+                                    <button onClick={() => deleteScript(script.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '4px' }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Editor */}
@@ -146,6 +162,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
                                     height="100%"
                                     enableScriptAutocompletion={true}
                                     parentId={parentId}
+                                    readOnly={isReadOnly}
                                 />
                             </div>
                         )}

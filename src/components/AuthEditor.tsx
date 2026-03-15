@@ -67,15 +67,17 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, 
                                 type="text"
                                 placeholder="Username"
                                 value={currentAuth.basic?.username || ''}
+                                readOnly={isReadOnly}
                                 onInput={(e) => updateBasic('username', e.currentTarget.value)}
                                 style={{
                                     padding: '8px',
-                                    backgroundColor: 'var(--bg-input)',
+                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                     border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
                                     borderRadius: 'var(--radius-sm)',
                                     color: 'var(--text-primary)',
                                     outline: 'none',
-                                    flex: 1
+                                    flex: 1,
+                                    cursor: isReadOnly ? 'default' : 'text'
                                 }}
                             />
                         </div>
@@ -88,15 +90,17 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, 
                                 type="password"
                                 placeholder="Password"
                                 value={currentAuth.basic?.password || ''}
+                                readOnly={isReadOnly}
                                 onInput={(e) => updateBasic('password', e.currentTarget.value)}
                                 style={{
                                     padding: '8px',
-                                    backgroundColor: 'var(--bg-input)',
+                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                     border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
                                     borderRadius: 'var(--radius-sm)',
                                     color: 'var(--text-primary)',
                                     outline: 'none',
-                                    flex: 1
+                                    flex: 1,
+                                    cursor: isReadOnly ? 'default' : 'text'
                                 }}
                             />
                         </div>
@@ -112,16 +116,18 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, 
                         <input
                             type="text" // or password if preferred
                             value={currentAuth.bearer?.token || ''}
+                            readOnly={isReadOnly}
                             onInput={(e) => updateBearer(e.currentTarget.value)}
                             placeholder="e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                             style={{
                                 padding: '8px',
-                                backgroundColor: 'var(--bg-input)',
+                                backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
                                 border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
                                 borderRadius: 'var(--radius-sm)',
                                 color: 'var(--text-primary)',
                                 outline: 'none',
-                                flex: 1
+                                flex: 1,
+                                cursor: isReadOnly ? 'default' : 'text'
                             }}
                         />
                     </div>

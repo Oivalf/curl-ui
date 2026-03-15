@@ -20,7 +20,7 @@ This guide describes how to use **cURL-UI**, an HTTP client built with Tauri and
 1. **Create a Project**: Set a name for your local project.
 2. **Add a Collection**: Create or import a collection JSON file.
 3. **Create a Request**: Add a new request template to your collection.
-4. **Run an Execution**: Use the default "sample" execution to send the request.
+4. **Run an Execution**: Use the fixed "Default" execution to send the request immediately.
 
 ---
 © 2025 Oivalf
