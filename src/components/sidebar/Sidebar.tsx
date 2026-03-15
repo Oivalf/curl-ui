@@ -8,6 +8,7 @@ import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from '../Modal';
 import { GitPanel } from '../GitPanel';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import '../../styles/global.css';
 
 // Cast icons to any to avoid Preact/React type conflicts
@@ -108,7 +109,6 @@ export function Sidebar({ width = 250 }: SidebarProps) {
         const performDeleteProject = async () => {
             await invoke('delete_project', { name: projectName });
             // Close the current window
-            const { getCurrentWindow } = await import('@tauri-apps/api/window');
             const currentWindow = getCurrentWindow();
             await currentWindow.close();
         };

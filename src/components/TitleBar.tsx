@@ -1,6 +1,7 @@
 import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, Square, X, Copy, Menu, ChevronRight } from 'lucide-preact';
 import { saveActiveItemCollection, saveAllCollections, isAboutOpen, activeProjectName, showPrompt } from '../store';
@@ -54,7 +55,6 @@ export function TitleBar() {
         if (!projectName) return;
 
         // Open a new window for a new project/workspace
-        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
         const label = `project-${crypto.randomUUID()}`;
         const webview = new WebviewWindow(label, {
             url: `/?projectName=${encodeURIComponent(projectName)}`,
@@ -93,7 +93,6 @@ export function TitleBar() {
 
     const switchProject = async (projectName: string) => {
         closeMenu();
-        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
         const label = `project-${crypto.randomUUID()}`;
         const webview = new WebviewWindow(label, {
             url: `/?projectName=${encodeURIComponent(projectName)}`,

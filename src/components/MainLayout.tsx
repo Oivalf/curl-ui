@@ -10,6 +10,7 @@ import { Settings, Terminal } from 'lucide-preact';
 import { useEffect } from 'preact/hooks';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 interface LayoutProps {
     children: ComponentChildren;
@@ -162,7 +163,7 @@ export function MainLayout({ children }: LayoutProps) {
                             style={{ color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
                             onClick={(e) => {
                                 e.preventDefault();
-                                import('@tauri-apps/plugin-opener').then(m => m.openUrl(updateInfo.value!.release_url));
+                                openUrl(updateInfo.value!.release_url);
                             }}
                         >
                             Download from GitHub

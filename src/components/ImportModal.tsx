@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { Modal } from './Modal';
-import { importModalState, requests, folders, activeRequestId, environments } from '../store';
+import { importModalState, requests, folders, activeRequestId, environments, ensureDefaultExecutions, externalMocks, saveExternalMockToDisk } from '../store';
 import { parseCurl } from '../utils/curlParser';
 import { parseSwagger } from '../utils/swaggerParser';
 import { parsePostmanCollection, parsePostmanEnvironment, ParsedFolder, ParsedRequest } from '../utils/postmanUtils';
@@ -77,14 +77,12 @@ export function ImportModal() {
                 activeRequestId.value = newId;
 
                 // Auto-create sample execution
-                const { ensureDefaultExecutions } = await import('../store');
                 ensureDefaultExecutions([newId]);
 
             } else if (importType === 'swagger') {
                 const parsed = parseSwagger(content);
 
                 if (state.targetType === 'external-mock' || state.targetType === 'new-external-mock') {
-                    const { externalMocks, saveExternalMockToDisk } = await import('../store');
                     let mockId = state.targetId;
                     let mock: any;
 
@@ -167,7 +165,6 @@ export function ImportModal() {
                     folders.value = newFolders;
                     requests.value = allRequests;
 
-                    const { ensureDefaultExecutions } = await import('../store');
                     ensureDefaultExecutions(newRequestIds);
                 }
             } else if (importType === 'postman-collection') {
@@ -217,7 +214,6 @@ export function ImportModal() {
                 folders.value = newFolders;
                 requests.value = allRequests;
 
-                const { ensureDefaultExecutions } = await import('../store');
                 ensureDefaultExecutions(newRequestIds);
 
             } else if (importType === 'postman-environment') {
