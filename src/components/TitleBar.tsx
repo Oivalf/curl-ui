@@ -1,10 +1,9 @@
 import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { emit } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, Square, X, Copy, Menu, ChevronRight } from 'lucide-preact';
-import { saveActiveItemCollection, saveAllCollections, isAboutOpen, activeProjectName } from '../store';
+import { saveActiveItemCollection, saveAllCollections, isAboutOpen, activeProjectName, showPrompt } from '../store';
 import { openUserGuideWindow } from '../utils/window';
 
 export function TitleBar() {
@@ -50,11 +49,29 @@ export function TitleBar() {
         activeSubmenu.value = null;
     };
 
+    const openNewProjectWindow = async () => {
+        const projectName = await showPrompt("Enter Project Name:", "New Project");
+        if (!projectName) return;
+
+        // Open a new window for a new project/workspace
+        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+        const label = `project-${crypto.randomUUID()}`;
+        const webview = new WebviewWindow(label, {
+            url: `/?projectName=${encodeURIComponent(projectName)}`,
+            title: `cURL-UI - ${projectName}`,
+            decorations: false,
+            transparent: true
+        });
+        webview.once('tauri://error', function (e) {
+            console.error(e);
+        });
+    };
+
     const handleAction = async (action: string) => {
         closeMenu();
         switch (action) {
             case 'new_project':
-                await emit('open-new-project');
+                await openNewProjectWindow();
                 break;
             case 'save':
                 await saveActiveItemCollection();

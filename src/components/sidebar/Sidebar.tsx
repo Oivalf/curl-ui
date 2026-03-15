@@ -7,7 +7,6 @@ import { RequestSidebarItem } from './RequestSidebarItem';
 import { SidebarContextMenu } from './SidebarContextMenu';
 import { Modal } from '../Modal';
 import { GitPanel } from '../GitPanel';
-import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import '../../styles/global.css';
 
@@ -74,38 +73,6 @@ export function Sidebar({ width = 250 }: SidebarProps) {
     const toggleExternalMocks = () => {
         isExternalMocksExpanded.value = !isExternalMocksExpanded.value;
     };
-
-    const openNewProjectWindow = async () => {
-        const projectName = await showPrompt("Enter Project Name:", "New Project");
-        if (!projectName) return;
-
-        // Open a new window for a new project/workspace
-        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-        const label = `project-${crypto.randomUUID()}`;
-        const webview = new WebviewWindow(label, {
-            url: `/?projectName=${encodeURIComponent(projectName)}`,
-            title: `cURL-UI - ${projectName}`,
-            decorations: false,
-            transparent: true
-        });
-        webview.once('tauri://created', function () {
-            // webview window successfully created
-        });
-        webview.once('tauri://error', function (e) {
-            // an error happened creating the webview window
-            console.error(e);
-            alert('Error creating new window: ' + JSON.stringify(e));
-        });
-    };
-
-    useEffect(() => {
-        const unlisten = listen('open-new-project', () => {
-            openNewProjectWindow();
-        });
-        return () => {
-            unlisten.then(f => f());
-        };
-    }, []);
 
 
     const createNewCollection = async () => {
