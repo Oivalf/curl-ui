@@ -1,11 +1,81 @@
 import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds, contextMenu } from "../store";
-import { X, FileJson, Folder, ChevronDown, Play, ServerCog } from 'lucide-preact';
+import { X, FileJson, Folder, ChevronDown, ChevronLeft, ChevronRight, Play, ServerCog } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useCallback } from "preact/hooks";
 
 export function TabBar() {
     const isMenuOpen = useSignal(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const canScrollLeft = useSignal(false);
+    const canScrollRight = useSignal(false);
+
+    const updateScrollState = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const leftOk = el.scrollLeft > 0;
+        const rightOk = Math.ceil(el.scrollLeft + el.clientWidth) < el.scrollWidth - 1;
+        canScrollLeft.value = leftOk;
+        canScrollRight.value = rightOk;
+
+        // Force stop interval if bounds are hit and interval is running
+        if (scrollIntervalRef.current) {
+            if ((!leftOk && scrollIntervalRef.current[1] === 'left') || 
+                (!rightOk && scrollIntervalRef.current[1] === 'right')) {
+                clearInterval(scrollIntervalRef.current[0]);
+                scrollIntervalRef.current = null;
+            }
+        }
+    }, []);
+
+    // Update scroll state on tab changes and resize
+    useEffect(() => {
+        updateScrollState();
+        const el = scrollRef.current;
+        if (el) {
+            el.addEventListener('scroll', updateScrollState);
+            const ro = new ResizeObserver(updateScrollState);
+            ro.observe(el);
+            return () => {
+                el.removeEventListener('scroll', updateScrollState);
+                ro.disconnect();
+            };
+        }
+    }, [openTabs.value.length]);
+
+
+
+    // Auto-scroll active tab into view when selection changes (e.g. from sidebar)
+    useEffect(() => {
+        if (!activeTabId.value) return;
+        requestAnimationFrame(() => {
+            const el = scrollRef.current;
+            if (!el) return;
+            const tabEl = el.querySelector(`[data-tab-id="${activeTabId.value}"]`) as HTMLElement;
+            if (tabEl) {
+                tabEl.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+            }
+        });
+    }, [activeTabId.value]);
+
+    const scrollIntervalRef = useRef<[ReturnType<typeof setInterval>, 'left' | 'right'] | null>(null);
+
+    const startScrolling = (delta: number, direction: 'left' | 'right') => {
+        // Scroll once immediately
+        scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
+        // Then keep scrolling while held
+        const id = setInterval(() => {
+            scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
+        }, 200);
+        scrollIntervalRef.current = [id, direction];
+    };
+
+    const stopScrolling = () => {
+        if (scrollIntervalRef.current) {
+            clearInterval(scrollIntervalRef.current[0]);
+            scrollIntervalRef.current = null;
+        }
+    };
 
     const closeTab = (id: string, e: MouseEvent) => {
         e.stopPropagation();
@@ -123,10 +193,38 @@ export function TabBar() {
 
     if (openTabs.value.length === 0) return null;
 
+    const scrollBtnStyle = {
+        height: '100%',
+        padding: '0 6px',
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+        backgroundColor: 'var(--bg-base)',
+        border: 'none',
+        borderLeft: '1px solid var(--border-color)',
+        borderRight: '1px solid var(--border-color)',
+        color: 'var(--text-muted)',
+        flexShrink: 0,
+        transition: 'color 0.15s, background-color 0.15s'
+    };
+
     return (
         <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-sidebar)', borderBottom: '1px solid var(--border-color)', height: '40px' }}>
+            {/* Scroll Left */}
+            {canScrollLeft.value && (
+                <div
+                    onMouseDown={() => startScrolling(-150, 'left')}
+                    onMouseUp={stopScrolling}
+                    onMouseLeave={stopScrolling}
+                    style={scrollBtnStyle}
+                    title="Scroll Left"
+                >
+                    <ChevronLeft size={16} />
+                </div>
+            )}
+
             {/* Scrollable Tabs */}
-            <div style={{ display: 'flex', flex: 1, overflowX: 'auto', height: '100%', scrollbarWidth: 'none' }}>
+            <div ref={scrollRef} style={{ display: 'flex', flex: 1, overflowX: 'auto', height: '100%', scrollbarWidth: 'none' }}>
                 {openTabs.value.map((tab, index) => {
                     const isActive = activeTabId.value === tab.id;
                     const freshName = getTabName(tab);
@@ -193,6 +291,7 @@ export function TabBar() {
                     return (
                         <div
                             key={tab.id}
+                            data-tab-id={tab.id}
                             draggable={true}
                             onDragStart={handleDragStart}
                             onDragOver={handleDragOver}
@@ -238,6 +337,19 @@ export function TabBar() {
                     );
                 })}
             </div>
+
+            {/* Scroll Right */}
+            {canScrollRight.value && (
+                <div
+                    onMouseDown={() => startScrolling(150, 'right')}
+                    onMouseUp={stopScrolling}
+                    onMouseLeave={stopScrolling}
+                    style={scrollBtnStyle}
+                    title="Scroll Right"
+                >
+                    <ChevronRight size={16} />
+                </div>
+            )}
 
             {/* Overflow Menu Button */}
             <div style={{ position: 'relative', height: '100%' }} ref={menuRef}>

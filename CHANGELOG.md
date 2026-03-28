@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 0.1.8
 
+### Added
+- **TabBar**: Continuous scroll arrows (left/right) appear when tabs overflow the available space, and automatic scroll into view when selecting items from the sidebar (or activating tabs)
+
 ### Fixed
 - **Windows**: Drag & drop not working due to WebView2 intercepting HTML5 DragEvent (disabled native file drop handler)
 - **macOS**: Application freeze when using custom title bar with transparent window (enabled macOS Private API)
