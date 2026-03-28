@@ -116,6 +116,7 @@ export interface RequestItem {
     collapsed?: boolean;
     mockResponse?: MockResponse;
     lastResponse?: ResponseData;
+    pathParams?: Record<string, string>;
     sortIndex?: number;
 }
 
@@ -202,6 +203,7 @@ export interface UseCase {
     id: string;
     name: string;
     steps: UseCaseStep[];
+    blackboard?: Record<string, string>;
 }
 
 export interface Tab {
@@ -587,6 +589,7 @@ export const openProject = async (name: string) => {
         externalMocks.value = [];
         requests.value = [];
         folders.value = [];
+        executions.value = [];
         openTabs.value = manifest.open_tabs || [];
         activeTabId.value = manifest.active_tab_id || null;
         
@@ -628,6 +631,8 @@ export const openProject = async (name: string) => {
             }
         }
 
+        // Ensure all requests have at least one execution after loading collections
+        ensureDefaultExecutions(requests.peek().map(r => r.id));
 
     } catch (err) {
         console.error('Failed to open project:', err);

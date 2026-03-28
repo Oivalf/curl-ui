@@ -70,7 +70,7 @@ export function RequestEditor() {
 
     // Params State
     const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
-    const pathParams = useSignal<Record<string, string>>({});
+    const pathParams = useSignal<Record<string, string>>(currentRequest.pathParams || {});
     const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentRequest.formData || []);
 
     // URL sync effect removed - handled by onInput and initial state
@@ -151,6 +151,7 @@ export function RequestEditor() {
         const currentAuth = auth.value;
         const currentPreScripts = preScripts.value;
         const currentPostScripts = postScripts.value;
+        const currentPathParams = pathParams.value;
 
         const reqId = activeRequestId.value;
         if (!reqId) return;
@@ -166,8 +167,9 @@ export function RequestEditor() {
             const postScriptsChanged = JSON.stringify(req.postScripts) !== JSON.stringify(currentPostScripts);
             const bodyTypeChanged = req.bodyType !== currentBodyType;
             const formDataChanged = JSON.stringify(req.formData || []) !== JSON.stringify(currentFormData);
+            const pathParamsChanged = JSON.stringify(req.pathParams || {}) !== JSON.stringify(currentPathParams);
 
-            if (req.name !== currentName || req.method !== currentMethod || req.url !== currentUrl || headersChanged || req.body !== currentBody || bodyTypeChanged || formDataChanged || authChanged || preScriptsChanged || postScriptsChanged) {
+            if (req.name !== currentName || req.method !== currentMethod || req.url !== currentUrl || headersChanged || req.body !== currentBody || bodyTypeChanged || formDataChanged || authChanged || preScriptsChanged || postScriptsChanged || pathParamsChanged) {
                 const newRequests = [...allRequests];
                 newRequests[idx] = {
                     ...req,
@@ -180,7 +182,8 @@ export function RequestEditor() {
                     formData: currentFormData,
                     auth: currentAuth,
                     preScripts: currentPreScripts,
-                    postScripts: currentPostScripts
+                    postScripts: currentPostScripts,
+                    pathParams: currentPathParams
                 };
                 requests.value = newRequests;
 

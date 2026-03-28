@@ -1,32 +1,10 @@
 import { useState } from 'preact/hooks';
-import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, requests, folders, collections, ExecutionItem } from '../store';
+import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, requests } from '../store';
 import { runExecution } from '../utils/execution';
-import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-preact';
+import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle, X } from 'lucide-preact';
 import { ResponseData } from '../store';
 import { ResponsePanel } from './response/ResponsePanel';
 
-const getExecutionFullName = (ex: ExecutionItem) => {
-    let path = ex.name;
-    const req = requests.value.find(r => r.id === ex.requestId);
-    if (req) {
-        path = `${req.name} → ${path}`;
-        let currentFolderId = req.parentId;
-        while (currentFolderId) {
-            const folder = folders.value.find(f => f.id === currentFolderId);
-            if (folder) {
-                path = `${folder.name} / ${path}`;
-                currentFolderId = folder.parentId || null;
-            } else {
-                break;
-            }
-        }
-        const collection = collections.value.find(c => c.id === ex.collectionId);
-        if (collection) {
-            path = `${collection.name} / ${path}`;
-        }
-    }
-    return path;
-};
 
 export function UseCaseManager() {
     const activeUseCase = useCases.value.find(u => u.id === activeUseCaseId.value);
@@ -34,6 +12,19 @@ export function UseCaseManager() {
     const [currentStepIdx, setCurrentStepIdx] = useState<number>(-1);
     const [runLogs, setRunLogs] = useState<{ stepIdx: number, status: 'running' | 'success' | 'error', message?: string, response?: ResponseData }[]>([]);
     const [openResponses, setOpenResponses] = useState<Record<number, boolean>>({});
+    const [executionVars, setExecutionVars] = useState<Record<string, string>>({});
+
+    const groupedExecutions = requests.value.map(req => {
+        const reqExecs = executions.value.filter(e => e.requestId === req.id);
+        return {
+            request: req,
+            executions: reqExecs.sort((a, b) => {
+                if (a.name === 'default') return -1;
+                if (b.name === 'default') return 1;
+                return (a.sortIndex || 0) - (b.sortIndex || 0);
+            })
+        };
+    }).filter(group => group.executions.length > 0);
 
     const handleCreate = async () => {
         const name = prompt("Enter Use Case Name:", "New Use Case");
@@ -109,8 +100,9 @@ export function UseCaseManager() {
         setIsRunning(useCase.id);
         setCurrentStepIdx(0);
         setRunLogs([]);
+        setExecutionVars({ ...(useCase.blackboard || {}) });
 
-        let sessionVars: Record<string, string> = {};
+        let sessionVars: Record<string, string> = { ...(useCase.blackboard || {}) };
         const logs: typeof runLogs = [];
         let lastResponse: ResponseData | undefined = undefined;
 
@@ -181,6 +173,7 @@ export function UseCaseManager() {
 
                 logs[i] = { stepIdx: i, status: 'success', response: lastResponse };
                 setRunLogs([...logs]);
+                setExecutionVars({ ...sessionVars });
             }
             alert("Use Case completed successfully!");
         } catch (err: any) {
@@ -195,6 +188,12 @@ export function UseCaseManager() {
             setIsRunning(null);
             setCurrentStepIdx(-1);
         }
+    };
+
+    const handleUpdateBlackboard = (useCaseId: string, blackboard: Record<string, string>) => {
+        useCases.value = useCases.value.map(u =>
+            u.id === useCaseId ? { ...u, blackboard } : u
+        );
     };
 
     return (
@@ -262,6 +261,58 @@ export function UseCaseManager() {
                                 </button>
                             </div>
 
+                            {/* Blackboard Section */}
+                            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Database size={16} color="var(--accent-primary)" />
+                                        <h4 style={{ margin: 0 }}>Blackboard</h4>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const key = prompt("Variable name:");
+                                            if (key && activeUseCase) handleUpdateBlackboard(activeUseCase.id, { ...(activeUseCase.blackboard || {}), [key]: "" });
+                                        }}
+                                        style={{ background: 'none', color: 'var(--accent-primary)', border: 'none', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    >
+                                        <Plus size={14} /> Add Variable
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {Object.entries(activeUseCase.blackboard || {}).length === 0 && (
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No variables defined. Extraction rules will populate this during execution.</span>
+                                    )}
+                                    {Object.entries({ ...(activeUseCase.blackboard || {}), ...executionVars }).map(([key, value]) => (
+                                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--bg-base)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{key}:</span>
+                                            <input
+                                                value={value}
+                                                onInput={(e) => {
+                                                    if (!activeUseCase) return;
+                                                    const newBlackboard = { ...(activeUseCase.blackboard || {}), [key]: e.currentTarget.value };
+                                                    handleUpdateBlackboard(activeUseCase.id, newBlackboard);
+                                                }}
+                                                disabled={!!isRunning}
+                                                style={{ border: 'none', background: 'none', color: 'var(--text-primary)', fontSize: '0.8rem', width: '80px', outline: 'none' }}
+                                            />
+                                            {!isRunning && (
+                                                <button
+                                                    onClick={() => {
+                                                        if (!activeUseCase) return;
+                                                        const newBlackboard = { ...(activeUseCase.blackboard || {}) };
+                                                        delete newBlackboard[key];
+                                                        handleUpdateBlackboard(activeUseCase.id, newBlackboard);
+                                                    }}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {activeUseCase.steps.map((step, idx) => (
                                     <div key={step.id} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-surface)' }}>
@@ -276,8 +327,14 @@ export function UseCaseManager() {
                                                     style={{ padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', flex: 1, maxWidth: '200px' }}
                                                 >
                                                     <option value="">Select Execution...</option>
-                                                    {executions.value.map(ex => (
-                                                        <option key={ex.id} value={ex.id}>{getExecutionFullName(ex)}</option>
+                                                    {groupedExecutions.map(group => (
+                                                        <optgroup key={group.request.id} label={group.request.name}>
+                                                            {group.executions.map(ex => (
+                                                                <option key={ex.id} value={ex.id}>
+                                                                    {ex.name === 'default' ? 'Default' : ex.name}
+                                                                </option>
+                                                            ))}
+                                                        </optgroup>
                                                     ))}
                                                 </select>
 

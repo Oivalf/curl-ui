@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TabBar**: Tabs now dynamically expand their width on hover to show the full name when truncated
 - **TabBar**: Continuous scroll arrows (left/right) appear when tabs overflow the available space, and automatic scroll into view when selecting items from the sidebar (or activating tabs)
 - **Use Cases**: Full request and response visibility for each execution step during and after execution
+- **Use Cases**: Added a persistent **Blackboard** to each Use Case for sharing and capturing variables between execution steps
 
 ### Fixed
 - **Windows**: Drag & drop not working due to WebView2 intercepting HTML5 DragEvent (disabled native file drop handler)
@@ -18,9 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Path Params**: Fixed bug where `{param}` placeholders in the URL were permanently replaced with their values in the store upon execution
 - **Use Cases**: Fixed bugs causing Use Case requests to ignore path parameters, query parameters, authentication settings, and form data from their respective execution overrides
 - **Use Cases**: Use Case steps now run in ephemeral mode, preserving the original Execution's response data in the UI
+- **Path Params**: Fixed bug where path parameters were lost when switching between tabs
+- **Project Loading**: Fixed bug where execution state from previous projects was not cleared on project switch
 
 ### Changed
-- **Use Cases**: Execution dropdowns now show the full hierarchical path for easier selection
+- **Use Cases**: Execution dropdowns are now grouped by Request and sorted (Default first) for significantly better navigation and clarity
+- **Use Cases**: Refactored execution full path logic to be cleaner and more descriptive inside the grouped selection list
 
 ---
 

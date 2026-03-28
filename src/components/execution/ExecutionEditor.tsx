@@ -399,9 +399,6 @@ export function ExecutionEditor() {
         const execId = activeExecutionId.value;
         if (!execId || execId !== lastLoadedId.current) return;
 
-        // Skip saving overrides if this is a read-only execution (default)
-        if (isReadOnly.peek()) return;
-
         const allExecutions = executions.peek();
         const idx = allExecutions.findIndex(e => e.id === execId);
 

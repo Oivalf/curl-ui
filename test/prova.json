@@ -203,7 +203,7 @@
       "id": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
       "name": "sample get",
       "method": "GET",
-      "url": "{{sampleURL}}/{id}",
+      "url": "{{sampleURL}}/{id}?gino=fdre",
       "headers": [
         {
           "key": "ciao",
@@ -250,7 +250,10 @@
             "ne"
           ]
         }
-      ]
+      ],
+      "pathParams": {
+        "id": "1"
+      }
     },
     {
       "id": "9ff2c3c4-fd7d-411d-a15f-c84dccda6338",
@@ -715,11 +718,43 @@
         }
       ],
       "lastResponse": {
-        "status": 405,
+        "status": 200,
         "headers": [
           [
-            "allow",
-            "POST"
+            "ciao",
+            "secco"
+          ],
+          [
+            "ciao",
+            "bello"
+          ],
+          [
+            "set-cookie",
+            "co1=123"
+          ],
+          [
+            "set-cookie",
+            "co2=456"
+          ],
+          [
+            "oh2",
+            "ohv2"
+          ],
+          [
+            "oh3",
+            "ohv3"
+          ],
+          [
+            "oh4",
+            "ohv4"
+          ],
+          [
+            "oh5",
+            "ohv5"
+          ],
+          [
+            "oh6",
+            "ohv6"
           ],
           [
             "content-type",
@@ -731,16 +766,16 @@
           ],
           [
             "date",
-            "Sat, 28 Mar 2026 10:56:40 GMT"
+            "Sat, 28 Mar 2026 11:36:11 GMT"
           ]
         ],
-        "body": "{\"timestamp\":\"2026-03-28T10:56:40.503Z\",\"status\":405,\"error\":\"Method Not Allowed\",\"path\":\"/sample\"}",
-        "time": 7,
-        "size": 99,
-        "requestUrl": "http://localhost:8080/sample",
+        "body": "{\"id\":1326634973105178603,\"name\":\"THjDRbPaqGjvVLsIUO\",\"surname\":\"YaahxwwkK\",\"contacts\":[\"aNVLssRUe\",\"MedmIqFUtdxTB\",\"RRVabC\"]}",
+        "time": 4229,
+        "size": 126,
+        "requestUrl": "http://localhost:8080/sample/3",
         "requestMethod": "GET",
-        "requestRaw": "GET http://localhost:8080/sample HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciao: ciaone\r\nciao: zì\r\nloo: fdfdfdfd\r\nAuthorization: Basic YmFzOmlj\r\n\r\n",
-        "requestCurl": "curl -X GET \"http://localhost:8080/sample\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciao: ciaone\" -H \"ciao: zì\" -H \"loo: fdfdfdfd\" -H \"Authorization: Basic YmFzOmlj\""
+        "requestRaw": "GET http://localhost:8080/sample/3 HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciao: ciaone\r\nciao: zì\r\nloo: fdfdfdfd\r\nAuthorization: Basic YmFzOmlj\r\n\r\n",
+        "requestCurl": "curl -X GET \"http://localhost:8080/sample/3\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciao: ciaone\" -H \"ciao: zì\" -H \"loo: fdfdfdfd\" -H \"Authorization: Basic YmFzOmlj\""
       },
       "resultsVisible": true,
       "bodyType": "none",
@@ -1003,7 +1038,7 @@
       "name": "default",
       "resultsVisible": true,
       "lastResponse": {
-        "status": 414,
+        "status": 200,
         "headers": [
           [
             "ciao",
@@ -1042,25 +1077,28 @@
             "ohv6"
           ],
           [
-            "content-length",
-            "0"
+            "content-type",
+            "application/json"
+          ],
+          [
+            "transfer-encoding",
+            "chunked"
           ],
           [
             "date",
-            "Sat, 28 Mar 2026 11:06:00 GMT"
-          ],
-          [
-            "connection",
-            "close"
+            "Sat, 28 Mar 2026 11:42:11 GMT"
           ]
         ],
-        "body": "",
-        "time": 6840,
-        "size": 0,
-        "requestUrl": "http://localhost:8080/sample/1",
+        "body": "{\"id\":-457112246358890037,\"name\":\"GcGUaENkutTuUTC\",\"surname\":\"nBJbTUuAgHABZTPBC\",\"contacts\":[\"VaNvgPNPNdoDlMXoAwSuSKKPcTH\",\"ZBzhTZzyzEYLAEhIrdjvCmERMl\",\"QwRtlgJMzFfzLvgGOdyoxJF\",\"IVsRIMiVnPwvmkahoHdVyCizi\"]}",
+        "time": 4855,
+        "size": 207,
+        "requestUrl": "http://localhost:8080/sample/1?gino=fdre",
         "requestMethod": "GET",
-        "requestRaw": "GET http://localhost:8080/sample/1 HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciao: grgre\r\nciao: secco\r\nloo: fdfdfdfd\r\nAuthorization: Basic YmFzOmlj\r\nContent-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]",
-        "requestCurl": "curl -X GET \"http://localhost:8080/sample/1\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciao: grgre\" -H \"ciao: secco\" -H \"loo: fdfdfdfd\" -H \"Authorization: Basic YmFzOmlj\" -F \"mul1=one\" -F \"might=one for all\" -F \"che=ne\""
+        "requestRaw": "GET http://localhost:8080/sample/1?gino=fdre HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciao: grgre\r\nciao: secco\r\nloo: fdfdfdfd\r\nAuthorization: Basic YmFzOmlj\r\nCookie: co2=456; co1=123\r\nContent-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]",
+        "requestCurl": "curl -X GET \"http://localhost:8080/sample/1?gino=fdre\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciao: grgre\" -H \"ciao: secco\" -H \"loo: fdfdfdfd\" -H \"Authorization: Basic YmFzOmlj\" -H \"Cookie: co2=456; co1=123\" -F \"mul1=one\" -F \"might=one for all\" -F \"che=ne\""
+      },
+      "pathParams": {
+        "id": "2"
       }
     },
     {
