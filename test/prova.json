@@ -62,7 +62,10 @@
         "body": "{\n\"ciao\": \"dal mock\"\n}",
         "enabled": true
       },
-      "sortIndex": 1
+      "sortIndex": 1,
+      "bodyType": "json",
+      "formData": [],
+      "collapsed": true
     },
     {
       "id": "c8af9e83-8989-4829-b72c-d7e0dd074f40",
@@ -112,7 +115,8 @@
       ],
       "sortIndex": 0,
       "bodyType": "none",
-      "formData": []
+      "formData": [],
+      "collapsed": true
     },
     {
       "id": "48a976d2-8831-481b-ac0a-b69128fb876d",
@@ -128,7 +132,9 @@
       },
       "preScripts": [],
       "postScripts": [],
-      "sortIndex": 0
+      "sortIndex": 0,
+      "bodyType": "none",
+      "formData": []
     },
     {
       "id": "8a177af0-0f5c-470e-b0be-b041f6f19c8b",
@@ -171,7 +177,7 @@
           "enabled": true
         }
       ],
-      "collapsed": false,
+      "collapsed": true,
       "bodyType": "none",
       "formData": []
     },
@@ -189,13 +195,15 @@
       },
       "preScripts": [],
       "postScripts": [],
-      "sortIndex": 3
+      "sortIndex": 3,
+      "bodyType": "none",
+      "formData": []
     },
     {
       "id": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
       "name": "sample get",
       "method": "GET",
-      "url": "http://localhost:4000/pet/1",
+      "url": "{{sampleURL}}/{id}",
       "headers": [
         {
           "key": "ciao",
@@ -707,11 +715,37 @@
         }
       ],
       "lastResponse": {
-        "status": 0,
-        "headers": {},
-        "body": "Error: Request failed: error sending request for url (http://localhost:8080/pet/1)",
-        "size": 0,
-        "time": 0
+        "status": 405,
+        "headers": [
+          [
+            "allow",
+            "POST"
+          ],
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "transfer-encoding",
+            "chunked"
+          ],
+          [
+            "date",
+            "Sat, 28 Mar 2026 10:56:40 GMT"
+          ]
+        ],
+        "body": "{\"timestamp\":\"2026-03-28T10:56:40.503Z\",\"status\":405,\"error\":\"Method Not Allowed\",\"path\":\"/sample\"}",
+        "time": 7,
+        "size": 99,
+        "requestUrl": "http://localhost:8080/sample",
+        "requestMethod": "GET",
+        "requestRaw": "GET http://localhost:8080/sample HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciao: ciaone\r\nciao: zì\r\nloo: fdfdfdfd\r\nAuthorization: Basic YmFzOmlj\r\n\r\n",
+        "requestCurl": "curl -X GET \"http://localhost:8080/sample\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciao: ciaone\" -H \"ciao: zì\" -H \"loo: fdfdfdfd\" -H \"Authorization: Basic YmFzOmlj\""
+      },
+      "resultsVisible": true,
+      "bodyType": "none",
+      "pathParams": {
+        "id": "3"
       }
     },
     {
@@ -966,7 +1000,68 @@
       "id": "477c74e2-e909-4fd4-8214-5984c16d13b2",
       "requestId": "aade9f20-0cf6-46dd-9c31-14e7c2386252",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "default"
+      "name": "default",
+      "resultsVisible": true,
+      "lastResponse": {
+        "status": 414,
+        "headers": [
+          [
+            "ciao",
+            "secco"
+          ],
+          [
+            "ciao",
+            "bello"
+          ],
+          [
+            "set-cookie",
+            "co1=123"
+          ],
+          [
+            "set-cookie",
+            "co2=456"
+          ],
+          [
+            "oh2",
+            "ohv2"
+          ],
+          [
+            "oh3",
+            "ohv3"
+          ],
+          [
+            "oh4",
+            "ohv4"
+          ],
+          [
+            "oh5",
+            "ohv5"
+          ],
+          [
+            "oh6",
+            "ohv6"
+          ],
+          [
+            "content-length",
+            "0"
+          ],
+          [
+            "date",
+            "Sat, 28 Mar 2026 11:06:00 GMT"
+          ],
+          [
+            "connection",
+            "close"
+          ]
+        ],
+        "body": "",
+        "time": 6840,
+        "size": 0,
+        "requestUrl": "http://localhost:8080/sample/1",
+        "requestMethod": "GET",
+        "requestRaw": "GET http://localhost:8080/sample/1 HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciao: grgre\r\nciao: secco\r\nloo: fdfdfdfd\r\nAuthorization: Basic YmFzOmlj\r\nContent-Type: multipart/form-data; boundary=...\r\n\r\n[Multipart Body]",
+        "requestCurl": "curl -X GET \"http://localhost:8080/sample/1\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciao: grgre\" -H \"ciao: secco\" -H \"loo: fdfdfdfd\" -H \"Authorization: Basic YmFzOmlj\" -F \"mul1=one\" -F \"might=one for all\" -F \"che=ne\""
+      }
     },
     {
       "id": "bfc4d843-7329-4cfb-94a1-ef80b9af7e58",
@@ -1057,7 +1152,15 @@
       "id": "edc1827e-404a-41de-90f8-0013710438ae",
       "requestId": "bf482369-35f2-4520-bc6f-b1ec5d156c63",
       "collectionId": "3d91038f-e5fd-4c4a-b683-ff4e96f1783c",
-      "name": "default"
+      "name": "default",
+      "resultsVisible": true,
+      "lastResponse": {
+        "status": 0,
+        "headers": {},
+        "body": "Error: Request failed: error sending request for url (https://jsonplaceholder.local.com/todos/12)",
+        "size": 0,
+        "time": 0
+      }
     },
     {
       "id": "8d1200ab-5630-460f-bff2-5b35d85cfe38",

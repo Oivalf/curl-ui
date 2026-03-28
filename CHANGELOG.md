@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **TabBar**: Tabs now dynamically expand their width on hover to show the full name when truncated
 - **TabBar**: Continuous scroll arrows (left/right) appear when tabs overflow the available space, and automatic scroll into view when selecting items from the sidebar (or activating tabs)
+- **Use Cases**: Full request and response visibility for each execution step during and after execution
 
 ### Fixed
 - **Windows**: Drag & drop not working due to WebView2 intercepting HTML5 DragEvent (disabled native file drop handler)
 - **macOS**: Application freeze when using custom title bar with transparent window (enabled macOS Private API)
+- **Path Params**: Fixed bug where `{param}` placeholders in the URL were permanently replaced with their values in the store upon execution
+
+### Changed
+- **Use Cases**: Execution dropdowns now show the full hierarchical path for easier selection
 
 ---
 

@@ -1,9 +1,32 @@
 import { useState } from 'preact/hooks';
-import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, substituteVariables, requests } from '../store';
+import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, substituteVariables, requests, folders, collections, ExecutionItem } from '../store';
 import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-preact';
 import { invoke } from '@tauri-apps/api/core';
 import { ResponseData } from '../store';
 import { ResponsePanel } from './response/ResponsePanel';
+
+const getExecutionFullName = (ex: ExecutionItem) => {
+    let path = ex.name;
+    const req = requests.value.find(r => r.id === ex.requestId);
+    if (req) {
+        path = `${req.name} → ${path}`;
+        let currentFolderId = req.parentId;
+        while (currentFolderId) {
+            const folder = folders.value.find(f => f.id === currentFolderId);
+            if (folder) {
+                path = `${folder.name} / ${path}`;
+                currentFolderId = folder.parentId || null;
+            } else {
+                break;
+            }
+        }
+        const collection = collections.value.find(c => c.id === ex.collectionId);
+        if (collection) {
+            path = `${collection.name} / ${path}`;
+        }
+    }
+    return path;
+};
 
 export function UseCaseManager() {
     const activeUseCase = useCases.value.find(u => u.id === activeUseCaseId.value);
@@ -118,9 +141,24 @@ export function UseCaseManager() {
                     }
                 });
 
-                const res = await invoke<{ status: number, headers: string[][], body: string }>('http_request', {
+                const method = execution.method || parentRequest?.method || 'GET';
+                lastResponse = {
+                    status: 0,
+                    headers: [],
+                    body: "Requesting...",
+                    time: 0,
+                    size: 0,
+                    requestUrl: finalUrl,
+                    requestMethod: method
+                };
+
+                logs[i] = { stepIdx: i, status: 'running', response: lastResponse };
+                setRunLogs([...logs]);
+
+                const startTime = Date.now();
+                const res = await invoke<{ status: number, headers: string[][], body: string, time_taken?: number, request_raw?: string, request_curl?: string }>('http_request', {
                     args: {
-                        method: execution.method || parentRequest?.method || 'GET',
+                        method: method,
                         url: finalUrl,
                         headers: finalHeaders,
                         body: substituteVariables(execution.body || parentRequest?.body || "", variableMap),
@@ -132,8 +170,12 @@ export function UseCaseManager() {
                     status: res.status,
                     headers: res.headers,
                     body: res.body,
-                    time: 0,
-                    size: res.body.length
+                    time: res.time_taken || (Date.now() - startTime),
+                    size: res.body.length,
+                    requestUrl: finalUrl,
+                    requestMethod: method,
+                    requestRaw: res.request_raw,
+                    requestCurl: res.request_curl
                 };
 
                 // Validate Status Code
@@ -176,12 +218,16 @@ export function UseCaseManager() {
                     }
                 }
 
-                logs.push({ stepIdx: i, status: 'success', response: lastResponse });
+                logs[i] = { stepIdx: i, status: 'success', response: lastResponse };
                 setRunLogs([...logs]);
             }
             alert("Use Case completed successfully!");
         } catch (err: any) {
-            logs.push({ stepIdx: currentStepIdx, status: 'error', message: err.message, response: lastResponse });
+            if (currentStepIdx >= 0) {
+                logs[currentStepIdx] = { stepIdx: currentStepIdx, status: 'error', message: err.message, response: lastResponse };
+            } else {
+                logs.push({ stepIdx: currentStepIdx, status: 'error', message: err.message, response: lastResponse });
+            }
             setRunLogs([...logs]);
             alert(`Use Case failed: ${err.message}`);
         } finally {
@@ -270,7 +316,7 @@ export function UseCaseManager() {
                                                 >
                                                     <option value="">Select Execution...</option>
                                                     {executions.value.map(ex => (
-                                                        <option key={ex.id} value={ex.id}>{ex.name}</option>
+                                                        <option key={ex.id} value={ex.id}>{getExecutionFullName(ex)}</option>
                                                     ))}
                                                 </select>
 

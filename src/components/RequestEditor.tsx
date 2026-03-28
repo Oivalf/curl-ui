@@ -88,7 +88,24 @@ export function RequestEditor() {
         return matches.map(m => m.slice(1, -1)); // remove { and }
     });
 
-    const getFinalUrl = (includeQuery = true) => {
+    const getStoreUrl = () => {
+        let finalUrl = url.value;
+        if (queryParams.value.length > 0) {
+            const searchParams = new URLSearchParams();
+            queryParams.value.forEach(p => {
+                if (p.key) {
+                    p.values.forEach(v => searchParams.append(p.key, v));
+                }
+            });
+            const qs = searchParams.toString();
+            if (qs) {
+                finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs;
+            }
+        }
+        return finalUrl;
+    };
+
+    const getPreviewUrl = () => {
         let finalUrl = url.value;
         // Substitute Path Params
         detectedPathKeys.value.forEach(key => {
@@ -97,7 +114,7 @@ export function RequestEditor() {
             }
         });
 
-        if (includeQuery && queryParams.value.length > 0) {
+        if (queryParams.value.length > 0) {
             const searchParams = new URLSearchParams();
             queryParams.value.forEach(p => {
                 if (p.key) {
@@ -113,7 +130,7 @@ export function RequestEditor() {
     };
 
     const finalUrlPreview = useComputed(() => {
-        return substituteVariables(getFinalUrl());
+        return substituteVariables(getPreviewUrl());
     });
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -126,7 +143,7 @@ export function RequestEditor() {
     useSignalEffect(() => {
         const currentName = name.value;
         const currentMethod = method.value;
-        const currentUrl = getFinalUrl(true);
+        const currentUrl = getStoreUrl();
         const currentHeaders = headers.value;
         const currentBodyType = bodyType.value;
         const currentBody = body.value;
