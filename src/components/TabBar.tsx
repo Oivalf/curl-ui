@@ -292,7 +292,6 @@ export function TabBar() {
                         <div
                             key={tab.id}
                             data-tab-id={tab.id}
-                            title={freshName}
                             draggable={true}
                             onDragStart={handleDragStart}
                             onDragOver={handleDragOver}
@@ -301,6 +300,14 @@ export function TabBar() {
                             onDrop={handleDrop}
                             onClick={() => activateTab(tab)}
                             onContextMenu={(e) => handleContextMenu(e, tab.id)}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.maxWidth = '600px';
+                                e.currentTarget.style.flexShrink = '0';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.maxWidth = '200px';
+                                e.currentTarget.style.flexShrink = '';
+                            }}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
