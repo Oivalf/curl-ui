@@ -60,7 +60,8 @@ export function TitleBar() {
             url: `/?projectName=${encodeURIComponent(projectName)}`,
             title: `cURL-UI - ${projectName}`,
             decorations: false,
-            transparent: true
+            transparent: true,
+            dragDropEnabled: false
         });
         webview.once('tauri://error', function (e) {
             console.error(e);
@@ -98,7 +99,8 @@ export function TitleBar() {
             url: `/?projectName=${encodeURIComponent(projectName)}`,
             title: `cURL-UI - ${projectName}`,
             decorations: false,
-            transparent: true
+            transparent: true,
+            dragDropEnabled: false
         });
         webview.once('tauri://error', function (e) {
             console.error(e);
