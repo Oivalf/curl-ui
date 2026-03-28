@@ -14,7 +14,7 @@ export const activeHttpRequests = new Map<string, string>();
 /**
  * Helper to substitute variables in text
  */
-export const substituteVariables = (text: string, requestId: string): string => {
+export const substituteVariables = (text: string, requestId: string, extraVars?: Record<string, string>): string => {
     if (!text) return text;
     const placeholders = Array.from(new Set(text.match(/{{([\s\S]+?)}}/g) || []));
     if (placeholders.length === 0) return text;
@@ -40,13 +40,20 @@ export const substituteVariables = (text: string, requestId: string): string => 
         const key = placeholder.slice(2, -2).trim();
         let value: string | null = null;
 
+        // 0. Check Extra Variables
+        if (extraVars && typeof extraVars[key] === 'string') {
+            value = extraVars[key];
+        }
+
         // 1. Check Folder Scopes (Leaf -> Root)
-        for (const folder of folderScopes) {
-            if (folder.variables) {
-                const vars = folder.variables as Record<string, string>;
-                if (typeof vars[key] === 'string') {
-                    value = vars[key];
-                    break;
+        if (value === null) {
+            for (const folder of folderScopes) {
+                if (folder.variables) {
+                    const vars = folder.variables as Record<string, string>;
+                    if (typeof vars[key] === 'string') {
+                        value = vars[key];
+                        break;
+                    }
                 }
             }
         }
@@ -108,8 +115,10 @@ export interface ExecutionOverrides {
  */
 export const runExecution = async (
     executionId: string, 
-    overrides?: ExecutionOverrides
-) => {
+    overrides?: ExecutionOverrides,
+    extraVars?: Record<string, string>,
+    isEphemeral?: boolean
+): Promise<ResponseData | undefined> => {
     const execution = executions.peek().find(e => e.id === executionId);
     if (!execution) return;
 
@@ -132,10 +141,12 @@ export const runExecution = async (
         responseStatus: null
     };
 
+    const activeExecutionId = isEphemeral ? `temp_${executionId}` : executionId;
+
     const updateProgress = (next: Partial<ExecutionProgressState>) => {
         executionProgressMap.value = {
             ...executionProgressMap.peek(),
-            [executionId]: { ...progress, ...next }
+            [activeExecutionId]: { ...progress, ...next }
         };
         Object.assign(progress, next); // Sync local copy for easier access
     };
@@ -148,13 +159,14 @@ export const runExecution = async (
     };
 
     const updateExecutionResponse = (data: ResponseData) => {
+        if (isEphemeral) return;
         executions.value = executions.peek().map(e =>
             e.id === executionId ? { ...e, lastResponse: data, resultsVisible: true } : e
         );
     };
 
     const tauriRequestId = Math.random().toString(36).substring(7);
-    activeHttpRequests.set(executionId, tauriRequestId);
+    activeHttpRequests.set(activeExecutionId, tauriRequestId);
     updateProgress(progress);
 
     updateExecutionResponse({
@@ -237,7 +249,7 @@ export const runExecution = async (
         const finalHeaders: [string, string][] = [];
         parentHeaders.forEach(h => {
             if (h.key && h.values) {
-                h.values.forEach(v => finalHeaders.push([h.key, substituteVariables(v, parentRequest.id)]));
+                h.values.forEach(v => finalHeaders.push([h.key, substituteVariables(v, parentRequest.id, extraVars)]));
             }
         });
         // Apply overrides (exec or passed)
@@ -246,7 +258,7 @@ export const runExecution = async (
                 // Filter out parent headers with same key
                 const idxs = finalHeaders.reduce((acc, fh, i) => (fh[0] === h.key ? [i, ...acc] : acc), [] as number[]);
                 idxs.forEach(i => finalHeaders.splice(i, 1));
-                h.values.forEach((v: string) => finalHeaders.push([h.key, substituteVariables(v, parentRequest.id)]));
+                h.values.forEach((v: string) => finalHeaders.push([h.key, substituteVariables(v, parentRequest.id, extraVars)]));
             }
         });
 
@@ -257,17 +269,17 @@ export const runExecution = async (
             if (resolved) authConfig = resolved.config;
         }
         if (authConfig.type === 'basic' && authConfig.basic) {
-            const token = btoa(`${substituteVariables(authConfig.basic.username, parentRequest.id)}:${substituteVariables(authConfig.basic.password, parentRequest.id)}`);
+            const token = btoa(`${substituteVariables(authConfig.basic.username, parentRequest.id, extraVars)}:${substituteVariables(authConfig.basic.password, parentRequest.id, extraVars)}`);
             finalHeaders.push(['Authorization', `Basic ${token}`]);
         } else if (authConfig.type === 'bearer' && authConfig.bearer) {
-            finalHeaders.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token, parentRequest.id)}`]);
+            finalHeaders.push(['Authorization', `Bearer ${substituteVariables(authConfig.bearer.token, parentRequest.id, extraVars)}`]);
         }
 
         // Final URL with Query Params
-        let finalUrl = substituteVariables(effectiveUrlBase, parentRequest.id);
+        let finalUrl = substituteVariables(effectiveUrlBase, parentRequest.id, extraVars);
         // Substitute Path Params
         Object.entries(effectivePathParams).forEach(([k, v]) => {
-            finalUrl = finalUrl.replace(`{${k}}`, substituteVariables(String(v), parentRequest.id));
+            finalUrl = finalUrl.replace(`{${k}}`, substituteVariables(String(v), parentRequest.id, extraVars));
         });
 
         const searchParams = new URLSearchParams();
@@ -276,27 +288,27 @@ export const runExecution = async (
         // For simplicity here, we assume effectiveQueryParams contains the merged state (handled by UI components).
         effectiveQueryParams.forEach(p => {
             if (p.key && p.enabled) {
-                p.values.forEach((v: string) => searchParams.append(p.key, substituteVariables(v, parentRequest.id)));
+                p.values.forEach((v: string) => searchParams.append(p.key, substituteVariables(v, parentRequest.id, extraVars)));
             }
         });
         const qs = searchParams.toString();
         if (qs) finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs;
 
         // Body
-        let finalBody = effectiveBodyType === 'none' ? null : substituteVariables(effectiveBody, parentRequest.id);
+        let finalBody = effectiveBodyType === 'none' ? null : substituteVariables(effectiveBody, parentRequest.id, extraVars);
         let formDataArgs: any = null;
 
         if (effectiveBodyType === 'form_urlencoded') {
             const params = new URLSearchParams();
             effectiveFormData.forEach((group: any) => {
-                group.values.forEach((v: string) => params.append(group.key, substituteVariables(v, parentRequest.id)));
+                group.values.forEach((v: string) => params.append(group.key, substituteVariables(v, parentRequest.id, extraVars)));
             });
             finalBody = params.toString();
             if (!finalHeaders.find(fh => fh[0] === 'Content-Type')) finalHeaders.push(['Content-Type', 'application/x-www-form-urlencoded']);
         } else if (effectiveBodyType === 'multipart') {
             formDataArgs = effectiveFormData.flatMap((group: any) => group.values.map((v: string, idx: number) => ({
                 key: group.key,
-                value: substituteVariables(v, parentRequest.id),
+                value: substituteVariables(v, parentRequest.id, extraVars),
                 entry_type: group.type,
                 content_type: group.contentTypes ? group.contentTypes[idx] : undefined
             })));
@@ -404,6 +416,7 @@ export const runExecution = async (
         }
         setStepStatus('post-scripts', 'completed', undefined, Date.now() - postStartTime);
         updateProgress({ totalTime: Date.now() - startTime });
+        return lastResponse;
 
     } catch (err) {
         const errStr = String(err);
@@ -415,16 +428,18 @@ export const runExecution = async (
              const steps = progress.steps.map(s => s.status === 'running' ? { ...s, status: 'error' as const, message: errStr } : s);
              updateProgress({ steps });
         }
-        updateExecutionResponse({
+        const errorResponse: ResponseData = {
             status: 0,
             headers: {},
-            body: isCanceled ? 'Request Canceled' : `Error: ${err}`,
+            body: isCanceled ? 'Request Canceled' : `Error: ${errStr}`,
             size: 0,
             time: 0
-        });
+        };
+        updateExecutionResponse(errorResponse);
+        return errorResponse;
     } finally {
         updateProgress({ isLoading: false });
-        activeHttpRequests.delete(executionId);
+        activeHttpRequests.delete(activeExecutionId);
     }
 };
 

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Windows**: Drag & drop not working due to WebView2 intercepting HTML5 DragEvent (disabled native file drop handler)
 - **macOS**: Application freeze when using custom title bar with transparent window (enabled macOS Private API)
 - **Path Params**: Fixed bug where `{param}` placeholders in the URL were permanently replaced with their values in the store upon execution
+- **Use Cases**: Fixed bugs causing Use Case requests to ignore path parameters, query parameters, authentication settings, and form data from their respective execution overrides
+- **Use Cases**: Use Case steps now run in ephemeral mode, preserving the original Execution's response data in the UI
 
 ### Changed
 - **Use Cases**: Execution dropdowns now show the full hierarchical path for easier selection

@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
-import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, substituteVariables, requests, folders, collections, ExecutionItem } from '../store';
+import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, requests, folders, collections, ExecutionItem } from '../store';
+import { runExecution } from '../utils/execution';
 import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-preact';
-import { invoke } from '@tauri-apps/api/core';
 import { ResponseData } from '../store';
 import { ResponsePanel } from './response/ResponsePanel';
 
@@ -128,55 +128,16 @@ export function UseCaseManager() {
                 const parentRequest = requests.value.find(r => r.id === execution.requestId);
                 const variableMap = resolveVariables(parentRequest?.parentId || null, sessionVars);
 
-                const finalUrl = substituteVariables(execution.url || parentRequest?.url || "", variableMap);
-                const finalHeaders: string[][] = [];
-
-                // Process headers
-                const rawHeaders = execution.headers || parentRequest?.headers || [];
-                rawHeaders.forEach((h: any) => {
-                    // In requests, enabled might not be present (default true)
-                    const isEnabled = h.enabled !== false;
-                    if (isEnabled) {
-                        h.values.forEach((v: string) => finalHeaders.push([h.key, substituteVariables(v, variableMap)]));
-                    }
-                });
-
-                const method = execution.method || parentRequest?.method || 'GET';
-                lastResponse = {
-                    status: 0,
-                    headers: [],
-                    body: "Requesting...",
-                    time: 0,
-                    size: 0,
-                    requestUrl: finalUrl,
-                    requestMethod: method
-                };
-
-                logs[i] = { stepIdx: i, status: 'running', response: lastResponse };
+                logs[i] = { stepIdx: i, status: 'running', response: undefined };
                 setRunLogs([...logs]);
 
-                const startTime = Date.now();
-                const res = await invoke<{ status: number, headers: string[][], body: string, time_taken?: number, request_raw?: string, request_curl?: string }>('http_request', {
-                    args: {
-                        method: method,
-                        url: finalUrl,
-                        headers: finalHeaders,
-                        body: substituteVariables(execution.body || parentRequest?.body || "", variableMap),
-                        project_name: activeProjectName.peek()
-                    }
-                });
-
-                lastResponse = {
-                    status: res.status,
-                    headers: res.headers,
-                    body: res.body,
-                    time: res.time_taken || (Date.now() - startTime),
-                    size: res.body.length,
-                    requestUrl: finalUrl,
-                    requestMethod: method,
-                    requestRaw: res.request_raw,
-                    requestCurl: res.request_curl
-                };
+                const res = await runExecution(step.executionId, undefined, variableMap, true);
+                
+                if (!res) {
+                    throw new Error(`Execution failed: No response returned`);
+                }
+                
+                lastResponse = res;
 
                 // Validate Status Code
                 const successCodes = step.successCodes || "2xx";
