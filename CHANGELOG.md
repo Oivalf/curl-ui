@@ -1,0 +1,142 @@
+# Changelog
+
+All notable changes to cURL-UI will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased] - 0.1.8
+
+### Fixed
+- **Windows**: Drag & drop not working due to WebView2 intercepting HTML5 DragEvent (disabled native file drop handler)
+- **macOS**: Application freeze when using custom title bar with transparent window (enabled macOS Private API)
+
+---
+
+## [0.1.7] - 2026-03-15
+
+### Added
+- **Custom Title Bar**: Replaced system title bar with a custom one featuring burger menu, window controls, and project name display
+- **Drag & Drop Reordering**: Full drag & drop support for tabs, requests, folders, and executions in the sidebar
+- **Execution Duplication**: Ability to duplicate executions
+- **Postman Import/Export**: Support for importing and exporting Postman collections
+- **Multipart Content-Type**: Automatic detection and specification of `Content-Type` for files in `multipart/form-data` requests
+- **User Guide**: Updated and expanded user guide documentation
+- **Sub-tab Memory**: Application remembers the last selected sub-tab within editors
+
+### Fixed
+- Code editor horizontal scrollbar and overflow issues
+- Content tab loading on startup
+- Progress bar resizing and response sub-tab scrollbars
+- New projects popup duplication
+- Build warnings and errors
+
+### Changed
+- Default execution is now unchangeable and cannot be moved via drag & drop
+- Execution name and reference displayed on the same line
+- Updated README
+
+---
+
+## [0.1.6] - 2026-03-01
+
+### Added
+- **Execution System Refactoring**: Major rework of the execution architecture with dedicated `ExecutionEditor`
+- **Default Execution**: Automatic creation and management of a default execution per request
+- **Side-by-Side View**: Default execution displayed side-by-side within the request editor
+- **Execution Progress**: Compact view for execution progress indicators
+- **Tab Bar Context Menu**: Right-click context menu on tabs with additional actions
+- **Session Persistence**: Save and restore session status (open tabs, active selections)
+- **User Guide**: Comprehensive user guide documentation
+
+### Fixed
+- Code editor scrolling issues
+- Raw response and cURL panel preview
+- Build issues
+- Various presentation and naming fixes
+
+### Changed
+- Complete sidebar refactoring with `BaseSidebarItem` component
+- Response panel refactoring for better modularity
+
+---
+
+## [0.1.5] - 2026-02-15
+
+### Added
+- **Use Cases**: Introduction of Use Case workflows for chaining multiple requests
+- **Variable Suggestions**: Autocomplete suggestions for variables in the code editor
+- **Body Response Saving**: Ability to save response bodies to disk
+- **User Guide**: Initial user guide pages
+
+### Fixed
+- Shared response handling
+- Git merge conflict resolution improvements
+
+---
+
+## [0.1.4] - 2026-02-01
+
+### Added
+- **Multi-Value Headers**: Support for headers with multiple values
+- **Cookie Management**: Improved cookie handling in requests
+- **Rust Backend Logging**: Redirect Rust layer logs to the in-app console
+- **User Guide**: Additional documentation pages
+
+### Fixed
+- External mock path parameters handling
+- Compilation errors
+
+---
+
+## [0.1.3] - 2026-01-20
+
+### Added
+- **Custom App Icons**: New cURL-UI application icons
+
+### Fixed
+- Query parameters handling and edge cases
+
+---
+
+## [0.1.2] - 2026-01-15
+
+### Fixed
+- Splitted input field rendering issues
+
+---
+
+## [0.1.1] - 2026-01-10
+
+### Added
+- **Version Check**: Automatic check for new application versions
+- **Windows Standalone**: Raw `.exe` binary distribution for Windows
+
+---
+
+## [0.1.0] - 2026-01-01
+
+### Added
+- **Core Application**: Initial release of cURL-UI
+- **Collections**: Create, save, and load request collections from disk
+- **Requests**: Full HTTP request builder with method, URL, headers, query parameters, and body support
+- **Executions**: Parameterized request executions with environment variable overrides
+- **Environments**: Global, Local, Dev, Test, and Prod environment management with variable inheritance
+- **Variable System**: Variable highlighting and autocompletion across editors
+- **Pre/Post Scripts**: JavaScript pre-request and post-response scripting support
+- **Mock Server**: Built-in collection mock server and external mock support (including Swagger import)
+- **Import/Export**: cURL command import functionality
+- **Git Integration**: Built-in Git panel for version control of collections
+- **Project Management**: Multi-project support with welcome screen and project switching
+- **Response Panel**: Response viewer with HTTP status, headers, body, and cURL preview
+- **User Guide**: Integrated user guide with in-app rendering
+
+[Unreleased]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.7...HEAD
+[0.1.7]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.6...cURL-UI-v0.1.7
+[0.1.6]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.5...cURL-UI-v0.1.6
+[0.1.5]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.4...cURL-UI-v0.1.5
+[0.1.4]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.3...cURL-UI-v0.1.4
+[0.1.3]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.2...cURL-UI-v0.1.3
+[0.1.2]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.1...cURL-UI-v0.1.2
+[0.1.1]: https://github.com/Oivalf/curl-ui/compare/app-v0.1.0...cURL-UI-v0.1.1
+[0.1.0]: https://github.com/Oivalf/curl-ui/releases/tag/app-v0.1.0

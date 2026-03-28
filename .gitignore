@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI agent local data (not .agents/ which contains skills and should be tracked)
+.gemini
