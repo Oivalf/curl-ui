@@ -292,6 +292,7 @@ export function TabBar() {
                         <div
                             key={tab.id}
                             data-tab-id={tab.id}
+                            title={freshName}
                             draggable={true}
                             onDragStart={handleDragStart}
                             onDragOver={handleDragOver}

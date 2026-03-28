@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 0.1.8
 
 ### Added
+- **TabBar**: Added tooltip (title attribute) showing the full name of truncated tabs on hover
 - **TabBar**: Continuous scroll arrows (left/right) appear when tabs overflow the available space, and automatic scroll into view when selecting items from the sidebar (or activating tabs)
 
 ### Fixed
