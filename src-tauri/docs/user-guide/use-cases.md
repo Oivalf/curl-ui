@@ -48,12 +48,6 @@ Step scripts are small JavaScript snippets that run **immediately before** a ste
 
 Suppose Step 1 creates a user and you want Step 2 to fetch that user.
 
-**Step 1 Script (Storing the ID):**
-```javascript
-// Step 1 returns the created user ID. We can extract it and save it.
-// (Alternatively, you can just rely on step_1_response in Step 2)
-```
-
 **Step 2 Script (Using the ID):**
 ```javascript
 // Extract the response from Step 1

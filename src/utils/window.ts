@@ -17,7 +17,7 @@ export async function openUserGuideWindow() {
         height: 800,
         resizable: true,
         decorations: false,
-        transparent: true,
+        transparent: false,
         dragDropEnabled: false
     });
 

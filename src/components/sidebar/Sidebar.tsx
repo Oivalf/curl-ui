@@ -186,7 +186,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
             </div>
 
             <nav
-                style={{ flex: 1, overflowY: 'auto' }}
+                style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}
             >
                 {collections.value.map(collection => (
                     <div key={collection.id} style={{ marginBottom: '16px' }}>
@@ -636,51 +636,51 @@ export function Sidebar({ width = 250 }: SidebarProps) {
             </div>
 
             {/* UseCases Section */}
-            <div style={{ padding: '8px 0', borderTop: '1px solid var(--border-color)', marginBottom: '8px' }}>
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '6px 8px',
-                        cursor: 'pointer',
-                        color: activeTabId.value === 'use-case-manager' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        backgroundColor: activeTabId.value === 'use-case-manager' ? 'var(--bg-surface)' : 'transparent',
-                        borderRadius: 'var(--radius-sm)',
-                        transition: 'background-color 0.1s'
-                    }}
-                    onClick={() => {
-                        if (!openTabs.value.find(t => t.id === 'use-case-manager')) {
-                            openTabs.value = [...openTabs.value, {
-                                id: 'use-case-manager',
-                                type: 'use-case',
-                                name: 'Use Cases'
-                            }];
-                        }
-                        activeTabId.value = 'use-case-manager';
-                    }}
-                    onMouseEnter={(e) => !(activeTabId.value === 'use-case-manager') && (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
-                    onMouseLeave={(e) => !(activeTabId.value === 'use-case-manager') && (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <ListTreeIcon size={16} color="var(--accent-primary)" />
-                        <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Use Cases</span>
-                        {useCases.value.length > 0 && (
-                            <span style={{
-                                fontSize: '0.7rem',
-                                backgroundColor: 'var(--bg-tertiary)',
-                                color: 'var(--text-primary)',
-                                padding: '1px 6px',
-                                borderRadius: '10px',
-                                marginLeft: '6px',
-                                fontWeight: 'normal'
-                            }}>
-                                {useCases.value.length}
-                            </span>
-                        )}
+                <div style={{ padding: '8px 0', borderTop: '1px solid var(--border-color)', marginBottom: '8px' }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '6px 8px',
+                            cursor: 'pointer',
+                            color: activeTabId.value === 'use-case-manager' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            backgroundColor: activeTabId.value === 'use-case-manager' ? 'var(--bg-surface)' : 'transparent',
+                            borderRadius: 'var(--radius-sm)',
+                            transition: 'background-color 0.1s'
+                        }}
+                        onClick={() => {
+                            if (!openTabs.value.find(t => t.id === 'use-case-manager')) {
+                                openTabs.value = [...openTabs.value, {
+                                    id: 'use-case-manager',
+                                    type: 'use-case',
+                                    name: 'Use Cases'
+                                }];
+                            }
+                            activeTabId.value = 'use-case-manager';
+                        }}
+                        onMouseEnter={(e) => !(activeTabId.value === 'use-case-manager') && (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+                        onMouseLeave={(e) => !(activeTabId.value === 'use-case-manager') && (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <ListTreeIcon size={16} color="var(--accent-primary)" />
+                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Use Cases</span>
+                            {useCases.value.length > 0 && (
+                                <span style={{
+                                    fontSize: '0.7rem',
+                                    backgroundColor: 'var(--bg-tertiary)',
+                                    color: 'var(--text-primary)',
+                                    padding: '1px 6px',
+                                    borderRadius: '10px',
+                                    marginLeft: '6px',
+                                    fontWeight: 'normal'
+                                }}>
+                                    {useCases.value.length}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
             <div style={{
                 marginTop: 'auto',

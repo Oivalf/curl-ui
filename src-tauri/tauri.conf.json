@@ -17,7 +17,7 @@
         "height": 600,
         "center": true,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "dragDropEnabled": false
       }
     ],

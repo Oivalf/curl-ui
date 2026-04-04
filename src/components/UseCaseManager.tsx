@@ -14,6 +14,7 @@ export function UseCaseManager() {
     const [runLogs, setRunLogs] = useState<{ stepIdx: number, status: 'running' | 'success' | 'error', message?: string, response?: ResponseData }[]>([]);
     const [openResponses, setOpenResponses] = useState<Record<number, boolean>>({});
     const [openScripts, setOpenScripts] = useState<Record<string, boolean>>({});
+    const [isSaving, setIsSaving] = useState(false);
     const blackboard = useCaseBlackboards.value[activeUseCase?.id || ''] || {};
 
     const groupedExecutions = requests.value.map(req => {
@@ -405,10 +406,27 @@ export function UseCaseManager() {
 
             <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-color)', backgroundColor: 'var(--bg-sidebar)', display: 'flex', justifyContent: 'flex-end' }}>
                 <button
-                    onClick={() => syncProjectManifest(activeProjectName.peek())}
-                    style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', padding: '6px 16px', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}
+                    onClick={async () => {
+                        await syncProjectManifest(activeProjectName.peek());
+                        setIsSaving(true);
+                        setTimeout(() => setIsSaving(false), 1500);
+                    }}
+                    style={{ 
+                        backgroundColor: isSaving ? 'var(--success)' : 'var(--bg-surface)', 
+                        color: isSaving ? '#fff' : 'var(--text-primary)',
+                        border: '1px solid',
+                        borderColor: isSaving ? 'var(--success)' : 'var(--border-color)', 
+                        padding: '6px 16px', 
+                        borderRadius: 'var(--radius-md)', 
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}
                 >
-                    Save Changes
+                    {isSaving && <CheckCircle size={14} />}
+                    {isSaving ? 'Saved!' : 'Save Changes'}
                 </button>
             </div>
         </div>

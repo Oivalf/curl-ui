@@ -570,7 +570,12 @@ export const syncProjectManifest = async (projectName: string) => {
                     steps: u.steps.map(s => ({
                         id: s.id,
                         execution_id: s.executionId,
-                        extraction_rules: s.extractionRules,
+                        extraction_rules: s.extractionRules.map((er: any) => ({
+                            source: er.source,
+                            json_path: er.jsonPath,
+                            regex: er.regex,
+                            variable_name: er.variableName
+                        })),
                         success_codes: s.successCodes,
                         script: s.script
                     }))
@@ -637,7 +642,12 @@ export const openProject = async (name: string) => {
             steps: (u.steps || []).map((s: any) => ({
                 id: s.id,
                 executionId: s.execution_id || s.executionId,
-                extractionRules: s.extraction_rules || s.extractionRules || [],
+                extractionRules: (s.extraction_rules || s.extractionRules || []).map((er: any) => ({
+                    source: er.source,
+                    jsonPath: er.json_path || er.jsonPath,
+                    regex: er.regex,
+                    variableName: er.variable_name || er.variableName
+                })),
                 successCodes: s.success_codes || s.successCodes || "2xx",
                 script: s.script || ""
             }))
