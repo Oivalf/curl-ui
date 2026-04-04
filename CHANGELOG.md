@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TabBar**: Continuous scroll arrows (left/right) appear when tabs overflow the available space, and automatic scroll into view when selecting items from the sidebar (or activating tabs)
 - **Use Cases**: Full request and response visibility for each execution step during and after execution
 - **Use Cases**: Added a persistent **Blackboard** to each Use Case for sharing and capturing variables between execution steps
+- **Use Cases**: JavaScript scripting support for each step with access to `blackboard`, `request`, and `response` objects
+- **Use Cases**: Step responses are automatically saved to the blackboard as `step_N_response`
 
 ### Fixed
 - **Windows**: Drag & drop not working due to WebView2 intercepting HTML5 DragEvent (disabled native file drop handler)
@@ -21,10 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Use Cases**: Use Case steps now run in ephemeral mode, preserving the original Execution's response data in the UI
 - **Path Params**: Fixed bug where path parameters were lost when switching between tabs
 - **Project Loading**: Fixed bug where execution state from previous projects was not cleared on project switch
+- **Swagger Import**: Request body was incorrectly populated with the response body example instead of the request body
+- **Swagger Import**: Content-Type header was hardcoded to `application/json` instead of using the actual type from the spec
+- **cURL Import**: Unknown flags with value arguments (e.g. `--connect-timeout 30`) could cause the value to be misinterpreted as the URL
+- **Postman Import**: Crash when importing collections with `formdata` or `urlencoded` body mode but missing array data
 
 ### Changed
 - **Use Cases**: Execution dropdowns are now grouped by Request and sorted (Default first) for significantly better navigation and clarity
 - **Use Cases**: Refactored execution full path logic to be cleaner and more descriptive inside the grouped selection list
+- **Use Cases**: Blackboard is now transient (memory-only) and no longer persisted to disk to avoid bloating project files
+- **Use Cases**: Replaced extraction rules with a full JavaScript script editor powered by CodeMirror
+- **Use Cases**: Step scripts are injected as additional pre-scripts and can modify the request before it is sent
 
 ---
 

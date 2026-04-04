@@ -235,7 +235,7 @@ function mapRequestFromPostman(item: any): ParsedRequest {
             parsed.body = r.body.raw;
         } else if (r.body.mode === 'formdata') {
             parsed.bodyType = 'multipart';
-            parsed.formData = r.body.formdata.map((fd: any) => ({
+            parsed.formData = (r.body.formdata || []).map((fd: any) => ({
                 key: fd.key,
                 type: fd.type === 'file' ? 'file' : 'text',
                 values: [fd.value || fd.src || ""],
@@ -243,7 +243,7 @@ function mapRequestFromPostman(item: any): ParsedRequest {
             }));
         } else if (r.body.mode === 'urlencoded') {
             parsed.bodyType = 'form_urlencoded';
-            parsed.formData = r.body.urlencoded.map((ue: any) => ({
+            parsed.formData = (r.body.urlencoded || []).map((ue: any) => ({
                 key: ue.key,
                 type: 'text',
                 values: [ue.value || ""],

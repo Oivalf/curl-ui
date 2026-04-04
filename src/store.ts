@@ -564,7 +564,17 @@ export const syncProjectManifest = async (projectName: string) => {
                 name: projectName,
                 collectionPaths: paths,
                 externalMockPaths: mockPaths,
-                useCases: useCases.value.map(({ blackboard, ...u }) => u),
+                useCases: useCases.value.map(u => ({
+                    id: u.id,
+                    name: u.name,
+                    steps: u.steps.map(s => ({
+                        id: s.id,
+                        execution_id: s.executionId,
+                        extraction_rules: s.extractionRules,
+                        success_codes: s.successCodes,
+                        script: s.script
+                    }))
+                })),
                 openTabs: openTabs.peek(),
                 activeTabId: activeTabId.peek(),
                 itemRequestTabStates: itemRequestTabStates.peek(),
@@ -621,7 +631,17 @@ export const openProject = async (name: string) => {
         isExternalMocksExpanded.value = manifest.is_external_mocks_expanded || false;
         expandedCollectionIds.value = manifest.expanded_collection_ids || [];
         expandedFolderIds.value = manifest.expanded_folder_ids || [];
-        useCases.value = manifest.use_cases || [];
+        useCases.value = (manifest.use_cases || []).map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            steps: (u.steps || []).map((s: any) => ({
+                id: s.id,
+                executionId: s.execution_id || s.executionId,
+                extractionRules: s.extraction_rules || s.extractionRules || [],
+                successCodes: s.success_codes || s.successCodes || "2xx",
+                script: s.script || ""
+            }))
+        }));
 
         for (const path of manifest.collections) {
             await loadCollectionFromPath(path);

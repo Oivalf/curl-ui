@@ -157,7 +157,8 @@ export function ImportModal() {
                             method: pr.method,
                             url: pr.url,
                             headers: pr.headers.map(h => ({ key: h.key, values: [...h.values] })),
-                            body: pr.body,
+                            body: pr.requestBody || '',
+                            bodyType: pr.requestBody ? 'json' : undefined,
                             parentId
                         });
                     });

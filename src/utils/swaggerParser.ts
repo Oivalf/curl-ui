@@ -7,6 +7,7 @@ export interface ParsedSwaggerRequest {
     path: string;
     headers: { key: string, values: string[] }[];
     body: string;
+    requestBody: string;
     responseStatus?: number;
     tags: string[];
 }
@@ -56,17 +57,34 @@ export function parseSwagger(content: string): ParsedSwagger {
             }
 
             // OpenAPI 3.x requestBody
+            let requestBody = '';
             if (op.requestBody) {
-                const content = op.requestBody.content || {};
-                const firstType = Object.keys(content)[0];
-                if (firstType === 'application/json') {
-                    headers.push({ key: 'Content-Type', values: ['application/json'] });
+                const reqContent = op.requestBody.content || {};
+                const firstType = Object.keys(reqContent)[0];
+                if (firstType) {
+                    headers.push({ key: 'Content-Type', values: [firstType] });
+                    const mediaObj = reqContent[firstType];
+                    if (mediaObj) {
+                        if (mediaObj.example) {
+                            requestBody = JSON.stringify(mediaObj.example, null, 2);
+                        } else if (mediaObj.examples) {
+                            const firstExample = Object.values(mediaObj.examples)[0] as any;
+                            requestBody = JSON.stringify(firstExample?.value || firstExample, null, 2);
+                        } else if (mediaObj.schema) {
+                            const example = generateExampleFromSchema(mediaObj.schema, spec);
+                            if (example !== null) requestBody = JSON.stringify(example, null, 2);
+                        }
+                    }
                 }
             } else if (op.parameters) {
                 // Swagger 2.0 body
                 const bodyParam = op.parameters.find((p: any) => p.in === 'body');
                 if (bodyParam) {
                     headers.push({ key: 'Content-Type', values: ['application/json'] });
+                    if (bodyParam.schema) {
+                        const example = generateExampleFromSchema(bodyParam.schema, spec);
+                        if (example !== null) requestBody = JSON.stringify(example, null, 2);
+                    }
                 }
             }
 
@@ -105,6 +123,7 @@ export function parseSwagger(content: string): ParsedSwagger {
                 path: path,
                 headers,
                 body: responseBody,
+                requestBody,
                 responseStatus,
                 tags
             });

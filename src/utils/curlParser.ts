@@ -68,6 +68,29 @@ export function parseCurl(curlCommand: string): ParsedCurl {
             }
         }
 
+        // Known flags that take a value argument — skip them so the value isn't treated as URL
+        const flagsWithValue = new Set([
+            '--connect-timeout', '--max-time', '-m', '--retry', '--retry-delay', '--retry-max-time',
+            '-o', '--output', '-w', '--write-out', '-e', '--referer', '-A', '--user-agent',
+            '--proxy', '-x', '--resolve', '--cert', '--key', '--cacert', '-b', '--cookie',
+            '-c', '--cookie-jar', '--interface', '--dns-servers', '--limit-rate', '-T', '--upload-file'
+        ]);
+        if (flagsWithValue.has(arg)) {
+            i += 2; // skip flag + value
+            continue;
+        }
+
+        // Known boolean flags (no value) — skip them
+        const booleanFlags = new Set([
+            '--compressed', '-L', '--location', '-k', '--insecure', '-s', '--silent',
+            '-S', '--show-error', '-v', '--verbose', '-i', '--include', '-f', '--fail',
+            '-N', '--no-buffer', '--raw', '--globoff', '-G', '--get'
+        ]);
+        if (booleanFlags.has(arg)) {
+            i++;
+            continue;
+        }
+
         // Potential URL (not starting with dash)
         if (!arg.startsWith('-') && !result.url) {
             result.url = arg;

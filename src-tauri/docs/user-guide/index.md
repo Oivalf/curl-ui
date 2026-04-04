@@ -13,6 +13,7 @@ This guide describes how to use **cURL-UI**, an HTTP client built with Tauri and
 | **[Folder Editor](folder-editor.md)** | Configure variables and settings shared across a folder. |
 | **[Environments](environments.md)** | Manage variables for different environments (Dev, Test, Prod). |
 | **[Mock Manager](mock-manager.md)** | Simulate API responses with local mock servers (Collection & External). |
+| **[Use Cases](use-cases.md)** | Chain multiple requests into automated workflows with scripts and a transient Blackboard. |
 | **[Scripting](scripting.md)** | Use JavaScript for pre-request and post-response logic. |
 
 ## 🚀 Quick Start

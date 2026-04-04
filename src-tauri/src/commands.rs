@@ -532,6 +532,8 @@ pub struct UseCaseStep {
     pub extraction_rules: Vec<ExtractionRule>,
     #[serde(default = "default_success_codes")]
     pub success_codes: String,
+    #[serde(default)]
+    pub script: Option<String>,
 }
 
 fn default_success_codes() -> String {
