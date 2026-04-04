@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
-import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, ExtractionRule, resolveVariables, requests } from '../store';
+import { Plus, Trash2, Play, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle, X, Code } from 'lucide-preact';
+import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, resolveVariables, requests, useCaseBlackboards } from '../store';
 import { runExecution } from '../utils/execution';
-import { Plus, Trash2, Play, ChevronRight, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle, X } from 'lucide-preact';
+import { CodeEditor } from './CodeEditor';
 import { ResponseData } from '../store';
 import { ResponsePanel } from './response/ResponsePanel';
 
@@ -12,7 +13,8 @@ export function UseCaseManager() {
     const [currentStepIdx, setCurrentStepIdx] = useState<number>(-1);
     const [runLogs, setRunLogs] = useState<{ stepIdx: number, status: 'running' | 'success' | 'error', message?: string, response?: ResponseData }[]>([]);
     const [openResponses, setOpenResponses] = useState<Record<number, boolean>>({});
-    const [executionVars, setExecutionVars] = useState<Record<string, string>>({});
+    const [openScripts, setOpenScripts] = useState<Record<string, boolean>>({});
+    const blackboard = useCaseBlackboards.value[activeUseCase?.id || ''] || {};
 
     const groupedExecutions = requests.value.map(req => {
         const reqExecs = executions.value.filter(e => e.requestId === req.id);
@@ -79,30 +81,15 @@ export function UseCaseManager() {
         );
     };
 
-    const handleAddExtractionRule = (useCaseId: string, stepId: string) => {
-        const newRule: ExtractionRule = {
-            source: "body",
-            variableName: "new_var"
-        };
-        useCases.value = useCases.value.map(u =>
-            u.id === useCaseId ? {
-                ...u,
-                steps: u.steps.map(s => s.id === stepId ? {
-                    ...s,
-                    extractionRules: [...s.extractionRules, newRule]
-                } : s)
-            } : u
-        );
-    };
+    // Removed handleAddExtractionRule as we are moving to Scripts
 
     const handleRun = async (useCase: UseCase) => {
         if (isRunning) return;
         setIsRunning(useCase.id);
         setCurrentStepIdx(0);
         setRunLogs([]);
-        setExecutionVars({ ...(useCase.blackboard || {}) });
-
-        let sessionVars: Record<string, string> = { ...(useCase.blackboard || {}) };
+        const initialBlackboard = useCaseBlackboards.value[useCase.id] || {};
+        let sessionVars: Record<string, string> = { ...initialBlackboard };
         const logs: typeof runLogs = [];
         let lastResponse: ResponseData | undefined = undefined;
 
@@ -123,57 +110,64 @@ export function UseCaseManager() {
                 logs[i] = { stepIdx: i, status: 'running', response: undefined };
                 setRunLogs([...logs]);
 
-                const res = await runExecution(step.executionId, undefined, variableMap, true);
-                
-                if (!res) {
-                    throw new Error(`Execution failed: No response returned`);
-                }
-                
+                // 1. Run Execution with injected script and blackboard context
+                const res = await runExecution(
+                    step.executionId,
+                    {
+                        additionalPreScripts: [{
+                            id: 'use-case-step-script',
+                            name: 'Use Case Step Script',
+                            content: step.script || '',
+                            enabled: true
+                        }]
+                    },
+                    variableMap,
+                    true,
+                    {
+                        blackboard: {
+                            get: (key: string) => sessionVars[key],
+                            set: (key: string, value: any) => {
+                                sessionVars[key] = String(value);
+                                handleUpdateBlackboard(useCase.id, { ...sessionVars });
+                            },
+                            delete: (key: string) => {
+                                delete sessionVars[key];
+                                handleUpdateBlackboard(useCase.id, { ...sessionVars });
+                            },
+                            getAll: () => ({ ...sessionVars })
+                        }
+                    }
+                );
+
+                if (!res) throw new Error("Execution failed to return a response.");
                 lastResponse = res;
 
-                // Validate Status Code
+                // 2. Validate Success Codes
                 const successCodes = step.successCodes || "2xx";
-                let isSuccess = false;
-                if (successCodes === 'all') {
-                    isSuccess = true;
-                } else if (successCodes === '2xx' && res.status >= 200 && res.status < 300) {
-                    isSuccess = true;
-                } else {
-                    const allowed = successCodes.split(',').map(s => s.trim());
-                    if (allowed.includes(res.status.toString())) {
-                        isSuccess = true;
+                const isSuccess = successCodes.split(',').map(c => c.trim()).some(c => {
+                    if (c.includes('x')) {
+                        const prefix = c.replace(/x/g, '');
+                        return res.status.toString().startsWith(prefix);
                     }
-                }
+                    return res.status.toString() === c;
+                });
 
                 if (!isSuccess) {
                     throw new Error(`Step failed with status ${res.status}. Expected: ${successCodes}`);
                 }
 
-                // Extraction
-                for (const rule of step.extractionRules) {
-                    if (rule.source === 'body') {
-                        try {
-                            const data = JSON.parse(res.body);
-                            let val = data;
-                            if (rule.jsonPath) {
-                                const parts = rule.jsonPath.split('.');
-                                for (const part of parts) {
-                                    if (part === '$' || part === '') continue;
-                                    val = val[part];
-                                }
-                            }
-                            if (val !== undefined) {
-                                sessionVars[rule.variableName] = String(val);
-                            }
-                        } catch (e) {
-                            console.error("Extraction failed", e);
-                        }
-                    }
-                }
+                // Save response to blackboard (automatic variable)
+                sessionVars[`step_${i + 1}_response`] = JSON.stringify({
+                    status: res.status,
+                    headers: res.headers,
+                    body: res.body,
+                    time: res.time,
+                    size: res.size
+                });
 
                 logs[i] = { stepIdx: i, status: 'success', response: lastResponse };
                 setRunLogs([...logs]);
-                setExecutionVars({ ...sessionVars });
+                handleUpdateBlackboard(useCase.id, { ...sessionVars });
             }
             alert("Use Case completed successfully!");
         } catch (err: any) {
@@ -191,9 +185,10 @@ export function UseCaseManager() {
     };
 
     const handleUpdateBlackboard = (useCaseId: string, blackboard: Record<string, string>) => {
-        useCases.value = useCases.value.map(u =>
-            u.id === useCaseId ? { ...u, blackboard } : u
-        );
+        useCaseBlackboards.value = {
+            ...useCaseBlackboards.value,
+            [useCaseId]: blackboard
+        };
     };
 
     return (
@@ -271,7 +266,7 @@ export function UseCaseManager() {
                                     <button
                                         onClick={() => {
                                             const key = prompt("Variable name:");
-                                            if (key && activeUseCase) handleUpdateBlackboard(activeUseCase.id, { ...(activeUseCase.blackboard || {}), [key]: "" });
+                                            if (key && activeUseCase) handleUpdateBlackboard(activeUseCase.id, { ...blackboard, [key]: "" });
                                         }}
                                         style={{ background: 'none', color: 'var(--accent-primary)', border: 'none', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                                     >
@@ -279,17 +274,17 @@ export function UseCaseManager() {
                                     </button>
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {Object.entries(activeUseCase.blackboard || {}).length === 0 && (
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No variables defined. Extraction rules will populate this during execution.</span>
+                                    {Object.entries(blackboard).length === 0 && (
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No variables defined. Extraction rules and step responses will populate this during execution.</span>
                                     )}
-                                    {Object.entries({ ...(activeUseCase.blackboard || {}), ...executionVars }).map(([key, value]) => (
+                                    {Object.entries(blackboard).map(([key, value]) => (
                                         <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--bg-base)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
                                             <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{key}:</span>
                                             <input
                                                 value={value}
                                                 onInput={(e) => {
                                                     if (!activeUseCase) return;
-                                                    const newBlackboard = { ...(activeUseCase.blackboard || {}), [key]: e.currentTarget.value };
+                                                    const newBlackboard = { ...blackboard, [key]: e.currentTarget.value };
                                                     handleUpdateBlackboard(activeUseCase.id, newBlackboard);
                                                 }}
                                                 disabled={!!isRunning}
@@ -299,7 +294,7 @@ export function UseCaseManager() {
                                                 <button
                                                     onClick={() => {
                                                         if (!activeUseCase) return;
-                                                        const newBlackboard = { ...(activeUseCase.blackboard || {}) };
+                                                        const newBlackboard = { ...blackboard };
                                                         delete newBlackboard[key];
                                                         handleUpdateBlackboard(activeUseCase.id, newBlackboard);
                                                     }}
@@ -348,13 +343,13 @@ export function UseCaseManager() {
                                                     />
                                                 </div>
 
-                                                {runLogs.find(l => l.stepIdx === idx)?.status === 'success' && <div style={{ color: 'var(--success)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Success</div>}
-                                                {runLogs.find(l => l.stepIdx === idx)?.status === 'error' && <div style={{ color: 'var(--error)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14} /> Error</div>}
+                                                {runLogs.find((l: any) => l.stepIdx === idx)?.status === 'success' && <div style={{ color: 'var(--success)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Success</div>}
+                                                {runLogs.find((l: any) => l.stepIdx === idx)?.status === 'error' && <div style={{ color: 'var(--error)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14} /> Error</div>}
                                             </div>
                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                {runLogs.find(l => l.stepIdx === idx)?.response && (
+                                                {runLogs.find((l: any) => l.stepIdx === idx)?.response && (
                                                     <button
-                                                        onClick={() => setOpenResponses(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                                        onClick={() => setOpenResponses((prev: any) => ({ ...prev, [idx]: !prev[idx] }))}
                                                         style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                                                         title="Toggle Response"
                                                     >
@@ -365,57 +360,35 @@ export function UseCaseManager() {
                                             </div>
                                         </div>
 
-                                        {openResponses[idx] && runLogs.find(l => l.stepIdx === idx)?.response && (
+                                        {openResponses[idx] && runLogs.find((l: any) => l.stepIdx === idx)?.response && (
                                             <div style={{ marginBottom: '16px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '300px' }}>
-                                                <ResponsePanel id={step.id} response={runLogs.find(l => l.stepIdx === idx)!.response!} />
+                                                <ResponsePanel id={step.id} response={runLogs.find((l: any) => l.stepIdx === idx)!.response!} />
                                             </div>
                                         )}
 
                                         <div style={{ marginLeft: '32px' }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Database size={14} /> Extraction Rules
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Code size={14} /> Script
+                                                </div>
+                                                <button
+                                                    onClick={() => setOpenScripts((prev: any) => ({ ...prev, [step.id]: !prev[step.id] }))}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                >
+                                                    {openScripts[step.id] ? 'Hide Editor' : 'Show Editor'}
+                                                </button>
                                             </div>
-                                            {step.extractionRules.map((rule, ruleIdx) => (
-                                                <div key={ruleIdx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                                    <input
-                                                        placeholder="Source (e.g. body)"
-                                                        value={rule.source}
-                                                        onInput={(e) => {
-                                                            const newRules = [...step.extractionRules];
-                                                            newRules[ruleIdx].source = e.currentTarget.value;
-                                                            handleUpdateStep(activeUseCase.id, step.id, { extractionRules: newRules });
-                                                        }}
-                                                        style={{ flex: 1, padding: '4px 8px', fontSize: '0.8rem' }}
-                                                    />
-                                                    <input
-                                                        placeholder="JSONPath (e.g. data.id)"
-                                                        value={rule.jsonPath}
-                                                        onInput={(e) => {
-                                                            const newRules = [...step.extractionRules];
-                                                            newRules[ruleIdx].jsonPath = e.currentTarget.value;
-                                                            handleUpdateStep(activeUseCase.id, step.id, { extractionRules: newRules });
-                                                        }}
-                                                        style={{ flex: 1, padding: '4px 8px', fontSize: '0.8rem' }}
-                                                    />
-                                                    <ChevronRight size={14} style={{ alignSelf: 'center' }} />
-                                                    <input
-                                                        placeholder="Var Name"
-                                                        value={rule.variableName}
-                                                        onInput={(e) => {
-                                                            const newRules = [...step.extractionRules];
-                                                            newRules[ruleIdx].variableName = e.currentTarget.value;
-                                                            handleUpdateStep(activeUseCase.id, step.id, { extractionRules: newRules });
-                                                        }}
-                                                        style={{ flex: 1, padding: '4px 8px', fontSize: '0.8rem' }}
+
+                                            {openScripts[step.id] && (
+                                                <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '200px' }}>
+                                                    <CodeEditor
+                                                        value={step.script || ''}
+                                                        onChange={(val) => handleUpdateStep(activeUseCase.id, step.id, { script: val })}
+                                                        language="javascript"
+                                                        enableScriptAutocompletion={true}
                                                     />
                                                 </div>
-                                            ))}
-                                            <button
-                                                onClick={() => handleAddExtractionRule(activeUseCase.id, step.id)}
-                                                style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}
-                                            >
-                                                + Add Rule
-                                            </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

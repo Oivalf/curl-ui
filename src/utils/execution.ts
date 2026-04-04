@@ -106,6 +106,8 @@ export interface ExecutionOverrides {
     auth?: AuthConfig;
     preScripts?: ScriptItem[];
     postScripts?: ScriptItem[];
+    additionalPreScripts?: ScriptItem[];
+    additionalPostScripts?: ScriptItem[];
     formData?: any[];
     pathParams?: Record<string, string>;
 }
@@ -117,7 +119,8 @@ export const runExecution = async (
     executionId: string, 
     overrides?: ExecutionOverrides,
     extraVars?: Record<string, string>,
-    isEphemeral?: boolean
+    isEphemeral?: boolean,
+    scriptContextOverrides?: any
 ): Promise<ResponseData | undefined> => {
     const execution = executions.peek().find(e => e.id === executionId);
     if (!execution) return;
@@ -182,20 +185,24 @@ export const runExecution = async (
     try {
         const activeEnv = environments.peek().find(e => e.name === activeEnvironmentName.peek());
 
-        // Helper to get effective values (override or inherit)
         const getVal = (key: keyof ExecutionOverrides, fallback: any) => (overrides && (overrides as any)[key] !== undefined) ? (overrides as any)[key] : fallback;
 
-        const effectiveMethod = getVal('method', execution.method ?? parentRequest.method);
-        const effectiveUrlBase = getVal('url', execution.url ?? parentRequest.url).split('?')[0];
-        const effectiveHeaders = getVal('headers', execution.headers ?? []) as any[];
-        const effectiveQueryParams = getVal('queryParams', execution.queryParams ?? []) as any[];
-        const effectivePathParams = getVal('pathParams', execution.pathParams ?? {});
-        const effectiveBody = getVal('body', execution.body ?? parentRequest.body ?? '');
-        const effectiveBodyType = getVal('bodyType', execution.bodyType ?? parentRequest.bodyType ?? 'none');
-        const effectiveAuth = getVal('auth', execution.auth ?? parentRequest.auth ?? { type: 'inherit' });
-        const effectivePreScripts = getVal('preScripts', execution.preScripts ?? parentRequest.preScripts ?? []);
-        const effectivePostScripts = getVal('postScripts', execution.postScripts ?? parentRequest.postScripts ?? []);
-        const effectiveFormData = getVal('formData', execution.formData ?? parentRequest.formData ?? []);
+        // Mutable request state for scripts
+        const requestState = {
+            method: String(getVal('method', (execution.method ?? parentRequest.method) || 'GET')),
+            url: String(getVal('url', (execution.url ?? parentRequest.url) || '')).split('?')[0],
+            headers: [...(getVal('headers', execution.headers ?? []) as any[])],
+            queryParams: [...(getVal('queryParams', execution.queryParams ?? []) as any[])],
+            pathParams: { ...(getVal('pathParams', execution.pathParams ?? {}) as Record<string, string>) },
+            body: String(getVal('body', execution.body ?? parentRequest.body ?? '')),
+            bodyType: String(getVal('bodyType', execution.bodyType ?? parentRequest.bodyType ?? 'none')),
+            auth: getVal('auth', execution.auth ?? parentRequest.auth ?? { type: 'inherit' }),
+            preScripts: getVal('preScripts', (execution.preScripts ?? parentRequest.preScripts ?? [])),
+            postScripts: getVal('postScripts', (execution.postScripts ?? parentRequest.postScripts ?? [])),
+            additionalPreScripts: overrides?.additionalPreScripts || [],
+            additionalPostScripts: overrides?.additionalPostScripts || [],
+            formData: [...(getVal('formData', execution.formData ?? parentRequest.formData ?? []) as any[])]
+        };
 
         // Script Context
         const scriptContext = {
@@ -220,16 +227,57 @@ export const runExecution = async (
                     else targetEnv.variables.push({ key, value });
                     environments.value = [...environments.peek()];
                 }
-            }
-            // Note: In store.ts version, we don't allow scripts to update transient UI signals (like RequestEditor state)
-            // but they can still interact with the env. 
-            // If we wanted to allow them to change request headers, we'd need more complex callback.
+            },
+            request: {
+                get method() { return requestState.method; },
+                set method(val) { requestState.method = String(val); },
+                get url() { return requestState.url; },
+                set url(val) { requestState.url = String(val); },
+                get body() { return requestState.body; },
+                set body(val) { requestState.body = String(val); },
+                headers: {
+                    get: (key: string) => {
+                        const h = requestState.headers.find(h => h.key.toLowerCase() === key.toLowerCase() && h.enabled);
+                        return h ? h.values[0] : undefined;
+                    },
+                    set: (key: string, value: string) => {
+                        const idx = requestState.headers.findIndex(h => h.key.toLowerCase() === key.toLowerCase());
+                        if (idx !== -1) {
+                            requestState.headers[idx] = { ...requestState.headers[idx], values: [String(value)], enabled: true };
+                        } else {
+                            requestState.headers.push({ key, values: [String(value)], enabled: true });
+                        }
+                    },
+                    remove: (key: string) => {
+                        requestState.headers = requestState.headers.filter(h => h.key.toLowerCase() !== key.toLowerCase());
+                    }
+                },
+                queryParams: {
+                    get: (key: string) => {
+                        const p = requestState.queryParams.find(p => p.key === key && p.enabled);
+                        return p ? p.values[0] : undefined;
+                    },
+                    set: (key: string, value: string) => {
+                        const idx = requestState.queryParams.findIndex(p => p.key === key);
+                        if (idx !== -1) {
+                            requestState.queryParams[idx] = { ...requestState.queryParams[idx], values: [String(value)], enabled: true };
+                        } else {
+                            requestState.queryParams.push({ key, values: [String(value)], enabled: true });
+                        }
+                    },
+                    remove: (key: string) => {
+                        requestState.queryParams = requestState.queryParams.filter(p => p.key !== key);
+                    }
+                }
+            },
+            ...(scriptContextOverrides || {})
         };
 
         // 1. Pre-scripts
         const preStartTime = Date.now();
         setStepStatus('pre-scripts', 'running', undefined, preStartTime);
-        const enabledPreScripts = effectivePreScripts.filter((s: any) => s.enabled);
+        const allPreScripts = [...requestState.preScripts, ...requestState.additionalPreScripts];
+        const enabledPreScripts = allPreScripts.filter((s: any) => s.enabled);
         for (const script of enabledPreScripts) {
             try {
                 await executeScript(script.content, scriptContext);
@@ -253,17 +301,17 @@ export const runExecution = async (
             }
         });
         // Apply overrides (exec or passed)
-        effectiveHeaders.forEach(h => {
+        requestState.headers.forEach(h => {
             if (h.key && h.enabled) {
                 // Filter out parent headers with same key
-                const idxs = finalHeaders.reduce((acc, fh, i) => (fh[0] === h.key ? [i, ...acc] : acc), [] as number[]);
+                const idxs = finalHeaders.reduce((acc, fh, i) => (fh[0].toLowerCase() === h.key.toLowerCase() ? [i, ...acc] : acc), [] as number[]);
                 idxs.forEach(i => finalHeaders.splice(i, 1));
                 h.values.forEach((v: string) => finalHeaders.push([h.key, substituteVariables(v, parentRequest.id, extraVars)]));
             }
         });
 
         // Auth
-        let authConfig = effectiveAuth;
+        let authConfig = requestState.auth;
         if (authConfig.type === 'inherit') {
             const resolved = resolveAuth(parentRequest.id);
             if (resolved) authConfig = resolved.config;
@@ -276,17 +324,14 @@ export const runExecution = async (
         }
 
         // Final URL with Query Params
-        let finalUrl = substituteVariables(effectiveUrlBase, parentRequest.id, extraVars);
+        let finalUrl = substituteVariables(requestState.url, parentRequest.id, extraVars);
         // Substitute Path Params
-        Object.entries(effectivePathParams).forEach(([k, v]) => {
+        Object.entries(requestState.pathParams).forEach(([k, v]) => {
             finalUrl = finalUrl.replace(`{${k}}`, substituteVariables(String(v), parentRequest.id, extraVars));
         });
 
         const searchParams = new URLSearchParams();
-        // Resolve parent query params from URL if not already processed? 
-        // Actually ExecutionEditor logic for merging queryParams is better.
-        // For simplicity here, we assume effectiveQueryParams contains the merged state (handled by UI components).
-        effectiveQueryParams.forEach(p => {
+        requestState.queryParams.forEach(p => {
             if (p.key && p.enabled) {
                 p.values.forEach((v: string) => searchParams.append(p.key, substituteVariables(v, parentRequest.id, extraVars)));
             }
@@ -295,18 +340,18 @@ export const runExecution = async (
         if (qs) finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs;
 
         // Body
-        let finalBody = effectiveBodyType === 'none' ? null : substituteVariables(effectiveBody, parentRequest.id, extraVars);
+        let finalBody = requestState.bodyType === 'none' ? null : substituteVariables(requestState.body, parentRequest.id, extraVars);
         let formDataArgs: any = null;
 
-        if (effectiveBodyType === 'form_urlencoded') {
+        if (requestState.bodyType === 'form_urlencoded') {
             const params = new URLSearchParams();
-            effectiveFormData.forEach((group: any) => {
+            requestState.formData.forEach((group: any) => {
                 group.values.forEach((v: string) => params.append(group.key, substituteVariables(v, parentRequest.id, extraVars)));
             });
             finalBody = params.toString();
-            if (!finalHeaders.find(fh => fh[0] === 'Content-Type')) finalHeaders.push(['Content-Type', 'application/x-www-form-urlencoded']);
-        } else if (effectiveBodyType === 'multipart') {
-            formDataArgs = effectiveFormData.flatMap((group: any) => group.values.map((v: string, idx: number) => ({
+            if (!finalHeaders.find(fh => fh[0].toLowerCase() === 'content-type')) finalHeaders.push(['Content-Type', 'application/x-www-form-urlencoded']);
+        } else if (requestState.bodyType === 'multipart') {
+            formDataArgs = requestState.formData.flatMap((group: any) => group.values.map((v: string, idx: number) => ({
                 key: group.key,
                 value: substituteVariables(v, parentRequest.id, extraVars),
                 entry_type: group.type,
@@ -314,9 +359,9 @@ export const runExecution = async (
             })));
             finalBody = null;
         } else {
-            if (!finalHeaders.find(fh => fh[0] === 'Content-Type') && effectiveBodyType !== 'none') {
+            if (!finalHeaders.find(fh => fh[0].toLowerCase() === 'content-type') && requestState.bodyType !== 'none') {
                 const map: Record<string, string> = { json: 'application/json', xml: 'application/xml', yaml: 'application/x-yaml' };
-                if (map[effectiveBodyType]) finalHeaders.push(['Content-Type', map[effectiveBodyType]]);
+                if (map[requestState.bodyType]) finalHeaders.push(['Content-Type', map[requestState.bodyType]]);
             }
         }
 
@@ -326,7 +371,7 @@ export const runExecution = async (
         try {
             const [raw, curl] = await invoke<[string, string]>('reconstruct_request', {
                 args: {
-                    method: String(effectiveMethod || 'GET'),
+                    method: String(requestState.method || 'GET'),
                     url: String(finalUrl || ''),
                     headers: finalHeaders,
                     body: finalBody,
@@ -352,7 +397,7 @@ export const runExecution = async (
         setStepStatus('http', 'running', undefined, httpStartTime);
         const res = await invoke<{ status: number, headers: string[][], body: string, time_taken: number, request_raw: string, request_curl: string }>('http_request', {
             args: {
-                method: String(effectiveMethod || 'GET'),
+                method: String(requestState.method || 'GET'),
                 url: String(finalUrl || ''),
                 headers: finalHeaders,
                 body: finalBody,
@@ -379,7 +424,7 @@ export const runExecution = async (
             time: finalHttpTime,
             size: res.body.length,
             requestUrl: finalUrl,
-            requestMethod: effectiveMethod,
+            requestMethod: requestState.method,
             requestRaw: res.request_raw,
             requestCurl: res.request_curl,
         };
@@ -388,7 +433,8 @@ export const runExecution = async (
         // 4. Post-scripts
         const postStartTime = Date.now();
         setStepStatus('post-scripts', 'running', undefined, postStartTime);
-        const enabledPostScripts = effectivePostScripts.filter((s: any) => s.enabled);
+        const allPostScripts = [...requestState.postScripts, ...requestState.additionalPostScripts];
+        const enabledPostScripts = allPostScripts.filter((s: any) => s.enabled);
         if (enabledPostScripts.length > 0) {
             const postScriptContext = {
                 ...scriptContext,

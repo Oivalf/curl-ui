@@ -197,13 +197,14 @@ export interface UseCaseStep {
     executionId: string;
     extractionRules: ExtractionRule[];
     successCodes: string;
+    script?: string;
 }
 
 export interface UseCase {
     id: string;
     name: string;
     steps: UseCaseStep[];
-    blackboard?: Record<string, string>;
+    blackboard?: Record<string, string>; // Kept for type compatibility during transition, but not synced
 }
 
 export interface Tab {
@@ -276,6 +277,7 @@ export const folders = signal<Folder[]>([]);
 export const executions = signal<ExecutionItem[]>([]);
 export const environments = signal<Environment[]>([]);
 export const useCases = signal<UseCase[]>([]);
+export const useCaseBlackboards = signal<Record<string, Record<string, string>>>({});
 
 export const activeRequestId = signal<string | null>(null);
 export const activeFolderId = signal<string | null>(null);
@@ -562,7 +564,7 @@ export const syncProjectManifest = async (projectName: string) => {
                 name: projectName,
                 collectionPaths: paths,
                 externalMockPaths: mockPaths,
-                useCases: useCases.value,
+                useCases: useCases.value.map(({ blackboard, ...u }) => u),
                 openTabs: openTabs.peek(),
                 activeTabId: activeTabId.peek(),
                 itemRequestTabStates: itemRequestTabStates.peek(),

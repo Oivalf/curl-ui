@@ -848,18 +848,27 @@
           ],
           [
             "date",
-            "Sat, 14 Mar 2026 05:43:25 GMT"
+            "Sat, 04 Apr 2026 11:39:34 GMT"
           ]
         ],
-        "body": "{\"id\":-5106534569952410475,\"name\":\"eOMtThyhVNLWUZNRcBaQKxI\",\"surname\":\"yedUsFwdkelQbxeTeQOvaScfqIOOmaa\",\"contacts\":[\"JxkyvRnL\",\"RYtGKbgicZaHCBRQDSx\",\"VLhpfQGTMDYpsBZxvfBoeygjb\",\"UMaAIKKIkknjWEXJUfPxxQHeWKEJ\",\"dpHYZGhtgdntugzvvKAXLhM\",\"LlN\",\"gNfZBdyFGRajVfJNonEnOinZj\",\"UfzQhdgLLfDTDGspDb\",\"QvBQYuxiXXVytGCxzVllpgTJKhRQq\"]}",
-        "time": 5191,
-        "size": 322,
+        "body": "{\"id\":-3758321679654915806,\"name\":\"BItmxBtJpbqEfQgWhKXmKMICCEU\",\"surname\":\"YIvewgAhbiAslSgvGJGPPEpl\",\"contacts\":[\"FkG\",\"BXjwiQjQKBhPbNYa\",\"oDLDPR\",\"JuhuUTlSCYdTVoSsJGyClHNnCWZGwZ\"]}",
+        "time": 3943,
+        "size": 181,
         "requestUrl": "http://localhost:8080/sample",
         "requestMethod": "POST",
-        "requestRaw": "POST http://localhost:8080/sample HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciccio: pasticcio\r\nciccio: ne\r\nContent-Type: application/json\r\nCookie: co1=123; co2=456\r\nContent-Length: 165\r\n\r\n{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n",
-        "requestCurl": "curl -X POST \"http://localhost:8080/sample\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciccio: pasticcio\" -H \"ciccio: ne\" -H \"Content-Type: application/json\" -H \"Cookie: co1=123; co2=456\" -d '{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n'"
+        "requestRaw": "POST http://localhost:8080/sample HTTP/1.1\r\nfh: fh1\r\nfh: fh2\r\nciccio: pasticcio\r\nciccio: ne\r\nAuthorization: Basic YmFzOmlj\r\nContent-Type: application/json\r\nContent-Length: 165\r\n\r\n{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n",
+        "requestCurl": "curl -X POST \"http://localhost:8080/sample\" -H \"fh: fh1\" -H \"fh: fh2\" -H \"ciccio: pasticcio\" -H \"ciccio: ne\" -H \"Authorization: Basic YmFzOmlj\" -H \"Content-Type: application/json\" -d '{\n    \"ftr\": { \"bho\": \"ll\" },\n    \"name\": \"ffds\",\n    \"surname\": \"dhui\",\n    \"contacts\": [\"c1\", \"c2\"],\n    \"gino\": \"pino\",\n    \"test\": {\n        \"nu\": 34353\n    }\n}\n'"
       },
-      "resultsVisible": true
+      "resultsVisible": true,
+      "preScripts": [
+        {
+          "id": "64d56f8a-acbd-48ec-b412-71e585d6f29d",
+          "name": "New Script",
+          "content": "console.log('sample post');",
+          "enabled": true,
+          "executeOnStatusCodes": ""
+        }
+      ]
     },
     {
       "id": "7ea2f0ee-4c1f-43eb-bf2e-d9b4c1ca8298",
