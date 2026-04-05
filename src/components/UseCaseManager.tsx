@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { Plus, Trash2, Play, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle, X, Code } from 'lucide-preact';
+import { Plus, Trash2, Play, ListTree, Database, Eye, EyeOff, CheckCircle, XCircle, X, Code, Search, ChevronDown } from 'lucide-preact';
 import { useCases, executions, syncProjectManifest, activeProjectName, activeUseCaseId, UseCase, UseCaseStep, resolveVariables, requests, useCaseBlackboards } from '../store';
 import { runExecution } from '../utils/execution';
 import { CodeEditor } from './CodeEditor';
@@ -20,6 +20,10 @@ const WOW_STYLES = `
         from { opacity: 0; }
         to { opacity: 1; }
     }
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
 `;
 
 export function UseCaseManager() {
@@ -38,6 +42,7 @@ function UseCaseManagerContent() {
     const [runLogs, setRunLogs] = useState<{ stepIdx: number, status: 'running' | 'success' | 'error', message?: string, response?: ResponseData }[]>([]);
     const [openResponses, setOpenResponses] = useState<Record<number, boolean>>({});
     const [openScripts, setOpenScripts] = useState<Record<string, boolean>>({});
+    const [activeSelectorStepId, setActiveSelectorStepId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const blackboard = useCaseBlackboards.value[activeUseCase?.id || ''] || {};
     const manualVariables = activeUseCase?.variables || {};
@@ -48,17 +53,7 @@ function UseCaseManagerContent() {
         );
     };
 
-    const groupedExecutions = requests.value.map(req => {
-        const reqExecs = executions.value.filter(e => e.requestId === req.id);
-        return {
-            request: req,
-            executions: reqExecs.sort((a, b) => {
-                if (a.name === 'default') return -1;
-                if (b.name === 'default') return 1;
-                return (a.sortIndex || 0) - (b.sortIndex || 0);
-            })
-        };
-    }).filter(group => group.executions.length > 0);
+
 
     const handleCreate = async () => {
         const name = prompt("Enter Use Case Name:", "New Use Case");
@@ -319,7 +314,7 @@ function UseCaseManagerContent() {
                     })}
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px', position: 'relative' }}>
                     {activeUseCase ? (
                         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                             <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -465,7 +460,7 @@ function UseCaseManagerContent() {
                                                 backdropFilter: 'blur(5px)',
                                                 boxShadow: isCurrent ? '0 0 20px rgba(var(--accent-hover-rgb), 0.15)' : 'none',
                                                 transition: 'all 0.3s ease',
-                                                zIndex: 1,
+                                                zIndex: activeSelectorStepId === step.id ? 100 : 1,
                                                 position: 'relative',
                                                 borderLeft: isCurrent ? '4px solid var(--accent-primary)' : 
                                                            isSuccess ? '4px solid var(--success)' :
@@ -500,32 +495,48 @@ function UseCaseManagerContent() {
                                                              (idx + 1)}
                                                         </div>
 
-                                                        <select
-                                                            value={step.executionId}
-                                                            onChange={(e) => handleUpdateStep(activeUseCase.id, step.id, { executionId: e.currentTarget.value })}
-                                                            style={{ 
-                                                                padding: '6px 12px', 
-                                                                borderRadius: 'var(--radius-md)', 
-                                                                border: '1px solid var(--border-color)', 
-                                                                backgroundColor: 'var(--bg-input)', 
-                                                                color: 'var(--text-primary)', 
-                                                                flex: 1, 
-                                                                maxWidth: '220px',
-                                                                fontSize: '0.9rem',
-                                                                fontWeight: '500'
-                                                            }}
-                                                        >
-                                                            <option value="">Select Execution...</option>
-                                                            {groupedExecutions.map(group => (
-                                                                <optgroup key={group.request.id} label={group.request.name}>
-                                                                    {group.executions.map(ex => (
-                                                                        <option key={ex.id} value={ex.id}>
-                                                                            {ex.name === 'default' ? 'Default' : ex.name}
-                                                                        </option>
-                                                                    ))}
-                                                                </optgroup>
-                                                            ))}
-                                                        </select>
+                                                        {/* Premium Execution Selector */}
+                                                        <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+                                                            <button
+                                                                onClick={() => setActiveSelectorStepId(activeSelectorStepId === step.id ? null : step.id)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'space-between',
+                                                                    gap: '8px',
+                                                                    width: '100%',
+                                                                    padding: '8px 12px',
+                                                                    backgroundColor: 'var(--bg-input)',
+                                                                    border: '1px solid var(--border-color)',
+                                                                    borderRadius: 'var(--radius-md)',
+                                                                    color: step.executionId ? 'var(--text-primary)' : 'var(--text-muted)',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '0.9rem',
+                                                                    textAlign: 'left'
+                                                                }}
+                                                            >
+                                                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                    {(() => {
+                                                                        const ex = executions.value.find(e => e.id === step.executionId);
+                                                                        if (!ex) return "Select Execution...";
+                                                                        const req = requests.value.find(r => r.id === ex.requestId);
+                                                                        return `${req?.name || 'Unknown'} > ${ex.name === 'default' ? 'Default' : ex.name}`;
+                                                                    })()}
+                                                                </div>
+                                                                <ChevronDown size={16} />
+                                                            </button>
+
+                                                            {activeSelectorStepId === step.id && (
+                                                                <ExecutionSelector 
+                                                                    onSelect={(exId) => {
+                                                                        handleUpdateStep(activeUseCase.id, step.id, { executionId: exId });
+                                                                        setActiveSelectorStepId(null);
+                                                                    }}
+                                                                    onClose={() => setActiveSelectorStepId(null)}
+                                                                    currentId={step.executionId}
+                                                                />
+                                                            )}
+                                                        </div>
                                                         
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '12px', padding: '4px 10px', background: 'rgba(0,0,0,0.1)', borderRadius: 'var(--radius-sm)' }}>
                                                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>Success:</span>
@@ -629,6 +640,140 @@ function UseCaseManagerContent() {
                     {isSaving && <CheckCircle size={14} />}
                     {isSaving ? 'Saved!' : 'Save Changes'}
                 </button>
+            </div>
+        </div>
+    );
+}
+
+function ExecutionSelector({ onSelect, onClose, currentId }: { onSelect: (id: string) => void, onClose: () => void, currentId: string }) {
+    const [search, setSearch] = useState("");
+    
+    const filtered = requests.value.map(req => {
+        const reqExecs = executions.value.filter(e => e.requestId === req.id);
+        const matchesRequest = req.name.toLowerCase().includes(search.toLowerCase());
+        const filteredExecs = reqExecs.filter(e => 
+            matchesRequest || e.name.toLowerCase().includes(search.toLowerCase())
+        );
+        
+        if (filteredExecs.length === 0) return null;
+        
+        return {
+            request: req,
+            executions: filteredExecs.sort((a, b) => {
+                if (a.name === 'default') return -1;
+                if (b.name === 'default') return 1;
+                return (a.sortIndex || 0) - (b.sortIndex || 0);
+            })
+        };
+    }).filter(Boolean) as any[];
+
+    const getMethodColor = (method: string) => {
+        const m = (method || 'GET').toUpperCase();
+        if (m === 'GET') return '#a6e3a1'; // Green
+        if (m === 'POST') return '#89b4fa'; // Blue
+        if (m === 'PUT' || m === 'PATCH') return '#fab387'; // Orange
+        if (m === 'DELETE') return '#f38ba8'; // Red
+        return 'var(--text-secondary)';
+    };
+
+    return (
+        <div 
+            style={{ 
+                position: 'absolute', 
+                top: 'calc(100% + 8px)', 
+                left: 0, 
+                width: '400px', 
+                maxHeight: '400px', 
+                backgroundColor: 'var(--bg-sidebar)', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: 'var(--radius-lg)', 
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)', 
+                zIndex: 1000,
+                display: 'flex',
+                flexDirection: 'column',
+                animation: 'popIn 0.2s cubic-bezier(0.17, 0.67, 0.83, 0.67)',
+                overflow: 'hidden'
+            }}
+        >
+            <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+                <Search size={16} color="var(--text-muted)" />
+                <input 
+                    autoFocus
+                    placeholder="Search executions..."
+                    value={search}
+                    onInput={(e) => setSearch(e.currentTarget.value)}
+                    style={{ background: 'none', border: 'none', width: '100%', outline: 'none', fontSize: '0.9rem' }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') onClose();
+                    }}
+                />
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                {filtered.map(group => (
+                    <div key={group.request.id} style={{ marginBottom: '8px' }}>
+                        <div style={{ 
+                            padding: '4px 8px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 'bold', 
+                            color: 'var(--text-muted)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                        }}>
+                            <span style={{ 
+                                color: getMethodColor(group.request.method),
+                                border: `1px solid ${getMethodColor(group.request.method)}`,
+                                padding: '1px 4px',
+                                borderRadius: '3px',
+                                fontSize: '0.65rem'
+                            }}>
+                                {group.request.method || 'GET'}
+                            </span>
+                            {group.request.name}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                            {group.executions.map((ex: any) => (
+                                <button
+                                    key={ex.id}
+                                    onClick={() => onSelect(ex.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '6px 24px',
+                                        backgroundColor: currentId === ex.id ? 'rgba(var(--accent-primary-rgb), 0.1)' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius-sm)',
+                                        color: currentId === ex.id ? 'var(--accent-primary)' : 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        fontSize: '0.85rem',
+                                        transition: 'all 0.15s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (currentId !== ex.id) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (currentId !== ex.id) e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                >
+                                    {ex.name === 'default' ? 'Default Execution' : ex.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+                {filtered.length === 0 && (
+                    <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        No results found
+                    </div>
+                )}
+            </div>
+            <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border-color)', fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{filtered.length} requests matched</span>
+                <span>ESC to close</span>
             </div>
         </div>
     );

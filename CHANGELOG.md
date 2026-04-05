@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 0.1.9
 
 ### Added
+- **Use Case Manager**: Premium, searchable execution selector with HTTP method badges and pop-in animations
 - **Use Case Manager**: "Breathing" run indicator and glowing status markers for execution steps
 - **Use Case Manager**: Interactive vertical timeline with animated step connections
 
