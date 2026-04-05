@@ -5,7 +5,7 @@ All notable changes to cURL-UI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 0.1.9
+## [0.1.9] - 2026-04-05
 
 ### Added
 - **Use Case Manager**: Premium, searchable execution selector with HTTP method badges and pop-in animations
