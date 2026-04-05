@@ -14,11 +14,12 @@ export const activeHttpRequests = new Map<string, string>();
 /**
  * Helper to substitute variables in text
  */
-export const substituteVariables = (text: string, requestId: string, extraVars?: Record<string, string>): string => {
+export const substituteVariables = (text: string, requestId: string, extraVars?: Record<string, string>, maxDepth: number = 10): string => {
     if (!text) return text;
-    const placeholders = Array.from(new Set(text.match(/{{([\s\S]+?)}}/g) || []));
-    if (placeholders.length === 0) return text;
-
+    
+    let result = text;
+    let iterations = 0;
+    
     const env = environments.peek().find(e => e.name === activeEnvironmentName.peek());
     const req = requests.peek().find(r => r.id === requestId);
     if (!req) return text;
@@ -35,48 +36,64 @@ export const substituteVariables = (text: string, requestId: string, extraVars?:
         } else break;
     }
 
-    let result = text;
-    placeholders.forEach(placeholder => {
-        const key = placeholder.slice(2, -2).trim();
-        let value: string | null = null;
+    while (result.includes('{{') && iterations < maxDepth) {
+        const placeholders = Array.from(new Set(result.match(/{{([\s\S]+?)}}/g) || []));
+        if (placeholders.length === 0) break;
 
-        // 0. Check Extra Variables
-        if (extraVars && typeof extraVars[key] === 'string') {
-            value = extraVars[key];
-        }
+        let passResolved = false;
+        placeholders.forEach(placeholder => {
+            const key = placeholder.slice(2, -2).trim();
+            let value: string | null = null;
 
-        // 1. Check Folder Scopes (Leaf -> Root)
-        if (value === null) {
-            for (const folder of folderScopes) {
-                if (folder.variables) {
-                    const vars = folder.variables as Record<string, string>;
-                    if (typeof vars[key] === 'string') {
-                        value = vars[key];
-                        break;
+            // 0. Check Extra Variables
+            if (extraVars && typeof extraVars[key] === 'string') {
+                value = extraVars[key];
+            }
+
+            // 1. Check Folder Scopes (Leaf -> Root)
+            if (value === null) {
+                for (const folder of folderScopes) {
+                    if (folder.variables) {
+                        const vars = folder.variables as Record<string, string>;
+                        if (typeof vars[key] === 'string') {
+                            value = vars[key];
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        // 2. Check Environment
-        if (value === null && env) {
-            const envVar = env.variables.find(v => v.key === key);
-            if (envVar) value = envVar.value;
-        }
-
-        // 3. Check Global Environment Fallback
-        if (value === null) {
-            const globalEnv = environments.peek().find(e => e.name === 'Global');
-            if (globalEnv) {
-                const globalVar = globalEnv.variables.find(v => v.key === key);
-                if (globalVar) value = globalVar.value;
+            // 2. Check Environment
+            if (value === null && env) {
+                const envVar = env.variables.find(v => v.key === key);
+                if (envVar) value = envVar.value;
             }
-        }
 
-        if (value !== null) {
-            result = result.split(placeholder).join(value);
-        }
-    });
+            // 3. Check Global Environment Fallback
+            if (value === null) {
+                const globalEnv = environments.peek().find(e => e.name === 'Global');
+                if (globalEnv) {
+                    const globalVar = globalEnv.variables.find(v => v.key === key);
+                    if (globalVar) value = globalVar.value;
+                }
+            }
+
+            if (value !== null) {
+                const nextResult = result.split(placeholder).join(value);
+                if (nextResult !== result) {
+                    result = nextResult;
+                    passResolved = true;
+                }
+            }
+        });
+
+        if (!passResolved) break;
+        iterations++;
+    }
+
+    if (iterations >= maxDepth && result.includes('{{')) {
+        addLog('warn', `Circular dependency or too many nested variables detected in execution: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`, 'Variable Resolver');
+    }
 
     return result;
 };

@@ -112,6 +112,7 @@ export function RequestPanel({
                             onChange={(v) => auth.value = v}
                             inheritedAuth={inheritedAuth}
                             isOverridden={isAuthOverridden}
+                            parentId={parentId}
                         />
                     )}
                     {activeRequestTab === 'scripts' && (

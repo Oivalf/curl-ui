@@ -387,19 +387,37 @@ export const resolveVariables = (parentId: string | null, sessionVars: Record<st
     return vars;
 };
 
-export const substituteVariables = (text: string | null | undefined, variableMap: Record<string, string>): string => {
+export const substituteVariables = (text: string | null | undefined, variableMap: Record<string, string>, maxDepth: number = 10): string => {
     if (!text) return '';
-    const placeholders = Array.from(new Set(text.match(/{{\s*[\S]+?\s*}}/g) || []));
-    if (placeholders.length === 0) return text;
-
+    
     let result = text;
-    placeholders.forEach(placeholder => {
-        const key = placeholder.slice(2, -2).trim();
-        const value = variableMap[key];
-        if (value !== undefined) {
-            result = result.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-        }
-    });
+    let iterations = 0;
+    
+    while (result.includes('{{') && iterations < maxDepth) {
+        const placeholders = Array.from(new Set(result.match(/{{\s*[\S]+?\s*}}/g) || []));
+        if (placeholders.length === 0) break;
+        
+        let passResolved = false;
+        placeholders.forEach(placeholder => {
+            const key = placeholder.slice(2, -2).trim();
+            const value = variableMap[key];
+            if (value !== undefined) {
+                const nextResult = result.split(placeholder).join(value);
+                if (nextResult !== result) {
+                    result = nextResult;
+                    passResolved = true;
+                }
+            }
+        });
+        
+        if (!passResolved) break;
+        iterations++;
+    }
+
+    if (iterations >= maxDepth && result.includes('{{')) {
+        addLog('warn', `Circular dependency or too many nested variables detected: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`, 'Variable Resolver');
+    }
+
     return result;
 };
 

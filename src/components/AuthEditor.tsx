@@ -1,6 +1,7 @@
 import { Signal } from "@preact/signals";
 import { AuthConfig, AuthType, navigateToItem } from "../store";
 import { OverrideIndicator } from "./OverrideIndicator";
+import { VariableInput } from "./VariableInput";
 
 interface AuthEditorProps {
     auth: Signal<AuthConfig | undefined>;
@@ -9,9 +10,10 @@ interface AuthEditorProps {
     inheritedAuth?: { config: AuthConfig, source: string, sourceId?: string };
     isReadOnly?: boolean;
     isOverridden?: boolean;
+    parentId?: string | null;
 }
 
-export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, isReadOnly = false, isOverridden }: AuthEditorProps) {
+export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, isReadOnly = false, isOverridden, parentId }: AuthEditorProps) {
     const currentAuth = auth.value || { type: showInherit ? 'inherit' : 'none' };
 
     const handleTypeChange = (type: AuthType) => {
@@ -63,22 +65,13 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, 
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Username</label>
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                             {isOverridden && <OverrideIndicator />}
-                            <input
-                                type="text"
+                            <VariableInput
                                 placeholder="Username"
                                 value={currentAuth.basic?.username || ''}
                                 readOnly={isReadOnly}
-                                onInput={(e) => updateBasic('username', e.currentTarget.value)}
-                                style={{
-                                    padding: '8px',
-                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    color: 'var(--text-primary)',
-                                    outline: 'none',
-                                    flex: 1,
-                                    cursor: isReadOnly ? 'default' : 'text'
-                                }}
+                                onInput={(v) => updateBasic('username', v)}
+                                parentId={parentId}
+                                style={{ flex: 1 }}
                             />
                         </div>
                     </div>
@@ -86,22 +79,14 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, 
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Password</label>
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                             {isOverridden && <OverrideIndicator />}
-                            <input
+                            <VariableInput
                                 type="password"
                                 placeholder="Password"
                                 value={currentAuth.basic?.password || ''}
                                 readOnly={isReadOnly}
-                                onInput={(e) => updateBasic('password', e.currentTarget.value)}
-                                style={{
-                                    padding: '8px',
-                                    backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                    border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    color: 'var(--text-primary)',
-                                    outline: 'none',
-                                    flex: 1,
-                                    cursor: isReadOnly ? 'default' : 'text'
-                                }}
+                                onInput={(v) => updateBasic('password', v)}
+                                parentId={parentId}
+                                style={{ flex: 1 }}
                             />
                         </div>
                     </div>
@@ -113,22 +98,13 @@ export function AuthEditor({ auth, onChange, showInherit = true, inheritedAuth, 
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Token</label>
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                         {isOverridden && <OverrideIndicator />}
-                        <input
-                            type="text" // or password if preferred
+                        <VariableInput
                             value={currentAuth.bearer?.token || ''}
                             readOnly={isReadOnly}
-                            onInput={(e) => updateBearer(e.currentTarget.value)}
+                            onInput={(v) => updateBearer(v)}
                             placeholder="e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                            style={{
-                                padding: '8px',
-                                backgroundColor: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                border: isReadOnly ? '1px solid transparent' : '1px solid var(--border-color)',
-                                borderRadius: 'var(--radius-sm)',
-                                color: 'var(--text-primary)',
-                                outline: 'none',
-                                flex: 1,
-                                cursor: isReadOnly ? 'default' : 'text'
-                            }}
+                            parentId={parentId}
+                            style={{ flex: 1 }}
                         />
                     </div>
                 </div>
