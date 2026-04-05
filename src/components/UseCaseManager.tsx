@@ -16,6 +16,13 @@ export function UseCaseManager() {
     const [openScripts, setOpenScripts] = useState<Record<string, boolean>>({});
     const [isSaving, setIsSaving] = useState(false);
     const blackboard = useCaseBlackboards.value[activeUseCase?.id || ''] || {};
+    const manualVariables = activeUseCase?.variables || {};
+
+    const handleUpdateManualVariables = (useCaseId: string, vars: Record<string, string>) => {
+        useCases.value = useCases.value.map(u =>
+            u.id === useCaseId ? { ...u, variables: vars } : u
+        );
+    };
 
     const groupedExecutions = requests.value.map(req => {
         const reqExecs = executions.value.filter(e => e.requestId === req.id);
@@ -89,8 +96,8 @@ export function UseCaseManager() {
         setIsRunning(useCase.id);
         setCurrentStepIdx(0);
         setRunLogs([]);
-        const initialBlackboard = useCaseBlackboards.value[useCase.id] || {};
-        let sessionVars: Record<string, string> = { ...initialBlackboard };
+        const initialVars = useCase.variables || {};
+        let sessionVars: Record<string, string> = { ...initialVars };
         const logs: typeof runLogs = [];
         let lastResponse: ResponseData | undefined = undefined;
 
@@ -267,45 +274,78 @@ export function UseCaseManager() {
                                     <button
                                         onClick={() => {
                                             const key = prompt("Variable name:");
-                                            if (key && activeUseCase) handleUpdateBlackboard(activeUseCase.id, { ...blackboard, [key]: "" });
+                                            if (key && activeUseCase) {
+                                                handleUpdateManualVariables(activeUseCase.id, { ...manualVariables, [key]: "" });
+                                                // Also update runtime view immediately so it shows up
+                                                handleUpdateBlackboard(activeUseCase.id, { ...blackboard, [key]: "" });
+                                            }
                                         }}
                                         style={{ background: 'none', color: 'var(--accent-primary)', border: 'none', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                                     >
-                                        <Plus size={14} /> Add Variable
+                                        <Plus size={14} /> Add Initial Variable
                                     </button>
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {Object.entries(blackboard).length === 0 && (
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No variables defined. Extraction rules and step responses will populate this during execution.</span>
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No variables defined. Initial variables and step responses will populate this.</span>
                                     )}
-                                    {Object.entries(blackboard).map(([key, value]) => (
-                                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--bg-base)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
-                                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{key}:</span>
-                                            <input
-                                                value={value}
-                                                onInput={(e) => {
-                                                    if (!activeUseCase) return;
-                                                    const newBlackboard = { ...blackboard, [key]: e.currentTarget.value };
-                                                    handleUpdateBlackboard(activeUseCase.id, newBlackboard);
-                                                }}
-                                                disabled={!!isRunning}
-                                                style={{ border: 'none', background: 'none', color: 'var(--text-primary)', fontSize: '0.8rem', width: '80px', outline: 'none' }}
-                                            />
-                                            {!isRunning && (
-                                                <button
-                                                    onClick={() => {
+                                    {Object.entries(blackboard).map(([key, value]) => {
+                                        const isManual = key in manualVariables;
+                                        return (
+                                            <div key={key} style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '4px', 
+                                                backgroundColor: isManual ? 'var(--bg-base)' : 'rgba(var(--accent-primary-rgb), 0.05)', 
+                                                padding: '4px 8px', 
+                                                borderRadius: '4px', 
+                                                border: isManual ? '1px solid var(--border-color)' : '1px solid var(--accent-primary)',
+                                                opacity: !isManual ? 0.8 : 1
+                                            }}>
+                                                <span style={{ 
+                                                    fontSize: '0.8rem', 
+                                                    fontWeight: 'bold', 
+                                                    color: isManual ? 'var(--accent-primary)' : 'var(--text-primary)',
+                                                    title: isManual ? 'Persistent variable' : 'Transient variable (volatile)'
+                                                }}>
+                                                    {key}:
+                                                </span>
+                                                <input
+                                                    value={value}
+                                                    onInput={(e) => {
                                                         if (!activeUseCase) return;
-                                                        const newBlackboard = { ...blackboard };
-                                                        delete newBlackboard[key];
-                                                        handleUpdateBlackboard(activeUseCase.id, newBlackboard);
+                                                        const newVal = e.currentTarget.value;
+                                                        // Update runtime anyway
+                                                        handleUpdateBlackboard(activeUseCase.id, { ...blackboard, [key]: newVal });
+                                                        // Update persistence ONLY if it was a manual variable
+                                                        if (isManual) {
+                                                            handleUpdateManualVariables(activeUseCase.id, { ...manualVariables, [key]: newVal });
+                                                        }
                                                     }}
-                                                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
-                                                >
-                                                    <X size={12} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                                                    disabled={!!isRunning || !isManual}
+                                                    style={{ border: 'none', background: 'none', color: 'var(--text-primary)', fontSize: '0.8rem', width: '80px', outline: 'none' }}
+                                                />
+                                                {!isRunning && isManual && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (!activeUseCase) return;
+                                                            const newManual = { ...manualVariables };
+                                                            delete newManual[key];
+                                                            handleUpdateManualVariables(activeUseCase.id, newManual);
+                                                            
+                                                            const newRuntime = { ...blackboard };
+                                                            delete newRuntime[key];
+                                                            handleUpdateBlackboard(activeUseCase.id, newRuntime);
+                                                        }}
+                                                        style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                )}
+                                                {!isManual && <span style={{ fontSize: '0.65rem', color: 'var(--accent-primary)', marginLeft: '4px' }}>volatile</span>}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 

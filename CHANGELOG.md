@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 
 ### Changed
-- 
+- **Use Cases**: Blackboard persistence refined. Only variables manually defined in the UI are persisted in the project manifest. Variables set via scripts or step responses remain completely volatile and are lost upon restart.
 
 ---
 

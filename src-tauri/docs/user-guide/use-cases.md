@@ -20,8 +20,9 @@ You must define what constitutes a "successful" execution for a step. If a step 
 
 ### The Blackboard
 
-The **Blackboard** is a transient, memory-only storage space dedicated to a single Use Case execution. It allows you to store variables in one step and use them in subsequent steps. The blackboard is reset whenever you restart the application, keeping your project files clean.
+The **Blackboard** is a storage space dedicated to a single Use Case execution. It allows you to store variables in one step and use them in subsequent steps. Variables that you add manually or define via scripts are persisted alongside your project, keeping them available when you restart the application.
 
+To avoid bloating project files, the automatic `step_X_response` variables are transient (memory-only) and are reset whenever you restart the application.
 When a step executes, its HTTP response is automatically saved to the blackboard under a conventional name:
 - `step_1_response`
 - `step_2_response`
