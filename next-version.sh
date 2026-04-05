@@ -41,3 +41,15 @@ echo "Next version: $NEW_VERSION"
 
 # 3. Richiama update-version.sh
 ./update-version.sh "$NEW_VERSION"
+
+# 4. Aggiungi la nuova sezione Unreleased nel CHANGELOG.md
+NEW_CHANGELOG_SECTION="## [Unreleased] - ${NEW_VERSION}\n\n### Added\n- \n\n### Fixed\n- \n\n### Changed\n- \n\n---\n"
+awk -v new_sec="$NEW_CHANGELOG_SECTION" '
+    /^## \[/ && !done {
+        printf "%s\n", new_sec
+        done=1
+    }
+    {print}
+' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+
+echo "CHANGELOG.md updated with Unreleased section."

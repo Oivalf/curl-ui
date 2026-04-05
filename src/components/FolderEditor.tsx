@@ -2,6 +2,7 @@ import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
 import { activeFolderId, folders, environments, activeEnvironmentName, type Folder, unsavedItemIds, AuthConfig, navigateToItem, resolveHeaders } from "../store";
 import { Folder as FolderIcon } from "lucide-preact";
 import { AuthEditor } from "./AuthEditor";
+import { VariableInput } from "./VariableInput";
 
 export function FolderEditor() {
     const currentFolder = folders.value.find(f => f.id === activeFolderId.value);
@@ -212,11 +213,12 @@ export function FolderEditor() {
                                 )}
                                 {header.values.map((val, valIdx) => (
                                     <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                        <input
+                                        <VariableInput
                                             placeholder="Value"
                                             value={val}
-                                            onInput={(e) => updateHeaderValue(index, valIdx, e.currentTarget.value)}
-                                            style={{ flex: 1, background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: 'var(--spacing-sm)', fontSize: '0.9rem', outline: 'none' }}
+                                            onInput={(v) => updateHeaderValue(index, valIdx, v)}
+                                            parentId={currentFolder.parentId}
+                                            style={{ flex: 1 }}
                                         />
                                         <button onClick={() => {
                                             const newHeaders = [...headers.value];
@@ -292,10 +294,11 @@ export function FolderEditor() {
                                 onInput={(e) => updateVariable(index, 'key', e.currentTarget.value)}
                                 style={{ flex: 1, minWidth: 0 }}
                             />
-                            <input
+                            <VariableInput
                                 placeholder="Value"
                                 value={variable.value}
-                                onInput={(e) => updateVariable(index, 'value', e.currentTarget.value)}
+                                onInput={(v) => updateVariable(index, 'value', v)}
+                                parentId={currentFolder.parentId}
                                 style={{ flex: 1, minWidth: 0 }}
                             />
                             <button

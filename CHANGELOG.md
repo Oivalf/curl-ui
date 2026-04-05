@@ -5,7 +5,24 @@ All notable changes to cURL-UI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 0.1.8
+## [Unreleased] - 0.1.9
+
+### Added
+- **Use Case Manager**: Premium, searchable execution selector with HTTP method badges and pop-in animations
+- **Use Case Manager**: "Breathing" run indicator and glowing status markers for execution steps
+- **Use Case Manager**: Interactive vertical timeline with animated step connections
+
+### Fixed
+- **Use Case Manager**: Error alerts now include the specific step number that caused the failure
+
+### Changed
+- **Use Case Manager**: Blackboard is now automatically cleared of volatile variables at the start of each Use Case execution
+- **Use Case Manager**: Full aesthetic overhaul with glassmorphism, linear gradients, and premium card layouts
+- **Use Cases**: Blackboard persistence refined. Only variables manually defined in the UI are persisted in the project manifest. Variables set via scripts or step responses remain completely volatile and are lost upon restart.
+
+---
+
+## [0.1.8] - 2026-04-04 
 
 ### Added
 - **TabBar**: Tabs now dynamically expand their width on hover to show the full name when truncated
@@ -155,7 +172,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Response Panel**: Response viewer with HTTP status, headers, body, and cURL preview
 - **User Guide**: Integrated user guide with in-app rendering
 
-[Unreleased]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.7...HEAD
+[Unreleased]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.8...HEAD
+[0.1.8]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.7...cURL-UI-v0.1.8
 [0.1.7]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.6...cURL-UI-v0.1.7
 [0.1.6]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.5...cURL-UI-v0.1.6
 [0.1.5]: https://github.com/Oivalf/curl-ui/compare/cURL-UI-v0.1.4...cURL-UI-v0.1.5

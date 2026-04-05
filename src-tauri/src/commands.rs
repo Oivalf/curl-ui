@@ -553,6 +553,8 @@ pub struct UseCase {
     pub id: String,
     pub name: String,
     pub steps: Vec<UseCaseStep>,
+    #[serde(default)]
+    pub variables: Option<std::collections::HashMap<String, String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

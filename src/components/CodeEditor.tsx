@@ -5,6 +5,8 @@ import { html } from '@codemirror/lang-html';
 import { xml } from '@codemirror/lang-xml';
 import { javascript } from '@codemirror/lang-javascript';
 import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import { linter, lintGutter, Diagnostic } from '@codemirror/lint';
+import { jsonParseLinter } from '@codemirror/lang-json';
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { useSignal } from "@preact/signals";
 import { Wand2 } from "lucide-preact";
@@ -15,6 +17,7 @@ import * as parserYaml from "prettier/plugins/yaml";
 import * as parserEstree from "prettier/plugins/estree";
 // @ts-ignore
 import * as parserXml from "@prettier/plugin-xml";
+import * as yamlParser from "js-yaml";
 import { getScopedVariables } from '../store';
 
 interface CodeEditorProps {
@@ -148,6 +151,97 @@ const variableCompletions = (parentId: string | null) => (context: CompletionCon
     };
 };
 
+const yamlLinter = linter((view) => {
+    const diagnostics: Diagnostic[] = [];
+    const doc = view.state.doc.toString();
+    if (!doc.trim()) return diagnostics;
+
+    try {
+        yamlParser.load(doc);
+    } catch (e: any) {
+        if (e.mark) {
+            const pos = Math.min(e.mark.position, view.state.doc.length);
+            diagnostics.push({
+                from: pos,
+                to: pos,
+                severity: "error",
+                message: e.reason || e.message,
+            });
+        } else {
+            diagnostics.push({
+                from: 0,
+                to: view.state.doc.length,
+                severity: "error",
+                message: e.message,
+            });
+        }
+    }
+    return diagnostics;
+});
+
+const xmlLinter = linter((view) => {
+    const diagnostics: Diagnostic[] = [];
+    const doc = view.state.doc.toString();
+    if (!doc.trim()) return diagnostics;
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(doc, "application/xml");
+    const errorNode = xmlDoc.querySelector("parsererror");
+
+    if (errorNode) {
+        // DOMParser error messages often include the line/column
+        const errorText = errorNode.textContent || "XML Parsing Error";
+        const match = errorText.match(/line (\d+) at column (\d+)/);
+        
+        if (match) {
+            const line = parseInt(match[1], 10);
+            const col = parseInt(match[2], 10);
+            try {
+                const linePos = view.state.doc.line(line);
+                const from = Math.min(linePos.from + col - 1, view.state.doc.length);
+                diagnostics.push({
+                    from,
+                    to: from,
+                    severity: "error",
+                    message: errorText,
+                });
+            } catch (e) {
+                diagnostics.push({ from: 0, to: view.state.doc.length, severity: "error", message: errorText });
+            }
+        } else {
+            diagnostics.push({ from: 0, to: view.state.doc.length, severity: "error", message: errorText });
+        }
+    }
+    return diagnostics;
+});
+
+const javascriptLinter = linter((view) => {
+    const diagnostics: Diagnostic[] = [];
+    const doc = view.state.doc.toString();
+    if (!doc.trim()) return diagnostics;
+
+    try {
+        // Simple syntax check using new Function constructor
+        new Function(doc);
+    } catch (e: any) {
+        // Many browsers provide line number in the message or as a property for stack
+        let message = e.message;
+        let line = 0;
+        
+        // Very basic attempt to extract line number from message (varies by browser)
+        const match = message.match(/line (\d+)/);
+        if (match) line = parseInt(match[1], 10);
+
+        if (line > 0 && line <= view.state.doc.lines) {
+            const linePos = view.state.doc.line(line);
+            diagnostics.push({ from: linePos.from, to: linePos.to, severity: "error", message });
+        } else {
+            diagnostics.push({ from: 0, to: view.state.doc.length, severity: "error", message });
+        }
+    }
+    return diagnostics;
+});
+
 export function CodeEditor({ value, onChange, language = 'text', readOnly = false, height = '100%', style, enableScriptAutocompletion = false, parentId = null }: CodeEditorProps) {
     const isFormatting = useSignal(false);
     const extensions = [];
@@ -202,18 +296,34 @@ export function CodeEditor({ value, onChange, language = 'text', readOnly = fals
         }
     };
 
-    if (language === 'json') extensions.push(json());
-    if (language === 'yaml') extensions.push(yaml());
-    if (language === 'html') extensions.push(html());
-    if (language === 'xml') extensions.push(xml());
+    if (language === 'json') {
+        extensions.push(json());
+        if (!readOnly) extensions.push(linter(jsonParseLinter()));
+    }
+    if (language === 'yaml') {
+        extensions.push(yaml());
+        if (!readOnly) extensions.push(yamlLinter);
+    }
+    if (language === 'html') {
+        extensions.push(html());
+    }
+    if (language === 'xml') {
+        extensions.push(xml());
+        if (!readOnly) extensions.push(xmlLinter);
+    }
+
     const completionSources = [];
     if (!readOnly) {
         completionSources.push(variableCompletions(parentId));
+        extensions.push(lintGutter());
     }
     if (language === 'javascript') {
         extensions.push(javascript());
-        if (enableScriptAutocompletion) {
-            completionSources.push(scriptCompletions);
+        if (!readOnly) {
+            extensions.push(javascriptLinter);
+            if (enableScriptAutocompletion) {
+                completionSources.push(scriptCompletions);
+            }
         }
     }
 

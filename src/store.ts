@@ -204,7 +204,7 @@ export interface UseCase {
     id: string;
     name: string;
     steps: UseCaseStep[];
-    blackboard?: Record<string, string>; // Kept for type compatibility during transition, but not synced
+    variables?: Record<string, string>;
 }
 
 export interface Tab {
@@ -387,19 +387,37 @@ export const resolveVariables = (parentId: string | null, sessionVars: Record<st
     return vars;
 };
 
-export const substituteVariables = (text: string | null | undefined, variableMap: Record<string, string>): string => {
+export const substituteVariables = (text: string | null | undefined, variableMap: Record<string, string>, maxDepth: number = 10): string => {
     if (!text) return '';
-    const placeholders = Array.from(new Set(text.match(/{{\s*[\S]+?\s*}}/g) || []));
-    if (placeholders.length === 0) return text;
-
+    
     let result = text;
-    placeholders.forEach(placeholder => {
-        const key = placeholder.slice(2, -2).trim();
-        const value = variableMap[key];
-        if (value !== undefined) {
-            result = result.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-        }
-    });
+    let iterations = 0;
+    
+    while (result.includes('{{') && iterations < maxDepth) {
+        const placeholders = Array.from(new Set(result.match(/{{\s*[\S]+?\s*}}/g) || []));
+        if (placeholders.length === 0) break;
+        
+        let passResolved = false;
+        placeholders.forEach(placeholder => {
+            const key = placeholder.slice(2, -2).trim();
+            const value = variableMap[key];
+            if (value !== undefined) {
+                const nextResult = result.split(placeholder).join(value);
+                if (nextResult !== result) {
+                    result = nextResult;
+                    passResolved = true;
+                }
+            }
+        });
+        
+        if (!passResolved) break;
+        iterations++;
+    }
+
+    if (iterations >= maxDepth && result.includes('{{')) {
+        addLog('warn', `Circular dependency or too many nested variables detected: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`, 'Variable Resolver');
+    }
+
     return result;
 };
 
@@ -567,6 +585,7 @@ export const syncProjectManifest = async (projectName: string) => {
                 useCases: useCases.value.map(u => ({
                     id: u.id,
                     name: u.name,
+                    variables: u.variables || {},
                     steps: u.steps.map(s => ({
                         id: s.id,
                         execution_id: s.executionId,
@@ -607,6 +626,7 @@ export const openProject = async (name: string) => {
         requests.value = [];
         folders.value = [];
         executions.value = [];
+        useCaseBlackboards.value = {};
         openTabs.value = manifest.open_tabs || [];
         activeTabId.value = manifest.active_tab_id || null;
         
@@ -636,22 +656,29 @@ export const openProject = async (name: string) => {
         isExternalMocksExpanded.value = manifest.is_external_mocks_expanded || false;
         expandedCollectionIds.value = manifest.expanded_collection_ids || [];
         expandedFolderIds.value = manifest.expanded_folder_ids || [];
-        useCases.value = (manifest.use_cases || []).map((u: any) => ({
-            id: u.id,
-            name: u.name,
-            steps: (u.steps || []).map((s: any) => ({
-                id: s.id,
-                executionId: s.execution_id || s.executionId,
-                extractionRules: (s.extraction_rules || s.extractionRules || []).map((er: any) => ({
-                    source: er.source,
-                    jsonPath: er.json_path || er.jsonPath,
-                    regex: er.regex,
-                    variableName: er.variable_name || er.variableName
-                })),
-                successCodes: s.success_codes || s.successCodes || "2xx",
-                script: s.script || ""
-            }))
-        }));
+        const loadedBlackboards: Record<string, Record<string, string>> = {};
+        useCases.value = (manifest.use_cases || []).map((u: any) => {
+            const manualVars = u.variables || u.blackboard || {};
+            loadedBlackboards[u.id] = { ...manualVars };
+            return {
+                id: u.id,
+                name: u.name,
+                variables: manualVars,
+                steps: (u.steps || []).map((s: any) => ({
+                    id: s.id,
+                    executionId: s.execution_id || s.executionId,
+                    extractionRules: (s.extraction_rules || s.extractionRules || []).map((er: any) => ({
+                        source: er.source,
+                        jsonPath: er.json_path || er.jsonPath,
+                        regex: er.regex,
+                        variableName: er.variable_name || er.variableName
+                    })),
+                    successCodes: s.success_codes || s.successCodes || "2xx",
+                    script: s.script || ""
+                }))
+            };
+        });
+        useCaseBlackboards.value = loadedBlackboards;
 
         for (const path of manifest.collections) {
             await loadCollectionFromPath(path);

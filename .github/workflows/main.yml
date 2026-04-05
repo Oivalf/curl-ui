@@ -48,13 +48,30 @@ jobs:
       - name: install frontend dependencies
         run: npm install # change this to npm, pnpm or bun depending on which one you use.
 
+      - name: Extract release notes
+        id: extract_notes
+        shell: bash
+        run: |
+          VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
+          awk -v ver="$VERSION" '
+            /^## \[/ && index($0, ver) > 0 { p=1; next }
+            p && /^## \[/ { exit }
+            p && /^---/ { exit }
+            p { print }
+          ' CHANGELOG.md > release_notes.txt
+          
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "body<<$EOF" >> $GITHUB_OUTPUT
+          cat release_notes.txt >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: cURL-UI-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: 'cURL-UI v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: ${{ steps.extract_notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

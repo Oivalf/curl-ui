@@ -11,9 +11,13 @@ interface VariableInputProps {
     readOnly?: boolean;
     onKeyDown?: (e: any) => void;
     parentId?: string | null;
+    type?: 'text' | 'password';
 }
 
-export function VariableInput({ value, onInput, placeholder, style = {}, className = "", multiline = false, readOnly = false, onKeyDown, parentId }: VariableInputProps) {
+export function VariableInput({ 
+    value, onInput, placeholder, style = {}, className = "", 
+    multiline = false, readOnly = false, onKeyDown, parentId, type = 'text' 
+}: VariableInputProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const highlighterRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -187,7 +191,7 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
     const inputBaseStyles: any = {
         ...commonStyles,
         background: 'transparent',
-        color: 'transparent',
+        color: type === 'password' ? 'var(--text-primary)' : 'transparent',
         caretColor: 'var(--text-primary)',
         position: 'relative',
         zIndex: 2,
@@ -230,16 +234,19 @@ export function VariableInput({ value, onInput, placeholder, style = {}, classNa
             // Ensure no border/padding on container to avoid doubling
             border: 'none',
             padding: 0,
-            background: 'transparent'
+            background: 'transparent',
+            display: style.display || 'block'
         }}>
-            <div
-                ref={highlighterRef}
-                style={highlighterStyles}
-                dangerouslySetInnerHTML={{ __html: highlight(value) + (multiline && value.endsWith('\n') ? '<br/>' : '') }}
-
-            />
+            {type !== 'password' && (
+                <div
+                    ref={highlighterRef}
+                    style={highlighterStyles}
+                    dangerouslySetInnerHTML={{ __html: highlight(value) + (multiline && value.endsWith('\n') ? '<br/>' : '') }}
+                />
+            )}
             <InputTag
                 ref={inputRef as any}
+                type={type}
                 value={value}
                 onInput={handleInputInternal}
                 onScroll={syncScroll}
