@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Use Case Manager**: Error alerts now include the specific step number that caused the failure
 
 ### Changed
+- **Use Case Manager**: Blackboard is now automatically cleared of volatile variables at the start of each Use Case execution
 - **Use Case Manager**: Full aesthetic overhaul with glassmorphism, linear gradients, and premium card layouts
 - **Use Cases**: Blackboard persistence refined. Only variables manually defined in the UI are persisted in the project manifest. Variables set via scripts or step responses remain completely volatile and are lost upon restart.
 

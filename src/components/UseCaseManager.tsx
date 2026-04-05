@@ -122,6 +122,7 @@ function UseCaseManagerContent() {
         setRunLogs([]);
         const initialVars = useCase.variables || {};
         let sessionVars: Record<string, string> = { ...initialVars };
+        handleUpdateBlackboard(useCase.id, { ...sessionVars });
         const logs: typeof runLogs = [];
         let lastResponse: ResponseData | undefined = undefined;
 
