@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useMemo } from "preact/hooks";
-import { getScopedVariables, activeEnvironmentName } from "../store";
+import { getScopedVariables, activeEnvName } from "../store";
 
 interface VariableInputProps {
     value: string;
@@ -31,7 +31,7 @@ export function VariableInput({
         const allVars = getScopedVariables(parentId);
         if (!filterText) return allVars;
         return allVars.filter(v => v.name.toLowerCase().includes(filterText.toLowerCase()));
-    }, [filterText, parentId, activeEnvironmentName.value]);
+    }, [filterText, parentId, activeEnvName.value]);
 
     const highlight = (text: string) => {
         if (!text) return "&nbsp;"; // Needs a character to maintain height

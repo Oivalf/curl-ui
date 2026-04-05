@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'preact/hooks';
 import { Play, Square, Search, ChevronDown, ChevronRight, Plus, Trash2, FileJson } from 'lucide-preact';
-import { externalMocks, activeTabId, saveExternalMockToDisk, ExternalMockEndpoint, activeExternalMockId, importModalState } from '../store';
+import { externalMocks, activeTabId, saveExternalMockToDisk, ExternalMockEndpoint, activeExternalMockId, importModal, TableRow } from '../store';
 import { invoke } from '@tauri-apps/api/core';
 import { MethodSelect } from './MethodSelect';
 
@@ -52,7 +52,7 @@ export function ExternalMockEditor() {
             path: '/new-endpoint',
             response: {
                 statusCode: 200,
-                headers: [{ key: 'Content-Type', values: ['application/json'] }],
+                headers: [{ key: 'Content-Type', values: ['application/json'], enabled: boolean }],
                 body: '{\n  "message": "Hello World"\n}',
                 enabled: true
             }
@@ -166,7 +166,7 @@ export function ExternalMockEditor() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                         onClick={() => {
-                            importModalState.value = {
+                            importModal.value = {
                                 isOpen: true,
                                 type: 'swagger',
                                 collectionId: '', // Not used for external mock
@@ -281,7 +281,7 @@ export function ExternalMockEditor() {
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Response Headers</label>
                                         <button
                                             onClick={() => {
-                                                const newHeaders = [...ep.response.headers, { key: 'New-Header', values: [''] }];
+                                                const newHeaders: TableRow[] = [...ep.response.headers, { key: 'New-Header', values: [''], enabled: boolean }];
                                                 updateEndpoint(index, { headers: newHeaders });
                                             }}
                                             style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}

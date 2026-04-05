@@ -1,5 +1,5 @@
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
-import { activeFolderId, folders, environments, activeEnvironmentName, type Folder, unsavedItemIds, AuthConfig, navigateToItem, resolveHeaders } from "../store";
+import { activeFolderId, folders, environments, activeEnvName, type Folder, unsavedItemIds, AuthConfig, navigateToItem, resolveHeaders } from "../store";
 import { Folder as FolderIcon } from "lucide-preact";
 import { AuthEditor } from "./AuthEditor";
 import { VariableInput } from "./VariableInput";
@@ -45,7 +45,7 @@ export function FolderEditor() {
 
     useSignalEffect(() => {
         const folderId = activeFolderId.value;
-        const currentEnv = environments.value.find(e => e.name === activeEnvironmentName.value);
+        const currentEnv = environments.value.find(e => e.name === activeEnvName.value);
         const map = new Map<string, { value: string, source: string, sourceId?: string }>();
 
         // 0. Global Environment Fallback (Lowest Priority)
@@ -217,7 +217,7 @@ export function FolderEditor() {
                                             placeholder="Value"
                                             value={val}
                                             onInput={(v) => updateHeaderValue(index, valIdx, v)}
-                                            parentId={currentFolder.parentId}
+                                            parentId={currentFolder.id}
                                             style={{ flex: 1 }}
                                         />
                                         <button onClick={() => {
@@ -295,10 +295,11 @@ export function FolderEditor() {
                                 style={{ flex: 1, minWidth: 0 }}
                             />
                             <VariableInput
+                                aria-label="Variable Value"
                                 placeholder="Value"
                                 value={variable.value}
                                 onInput={(v) => updateVariable(index, 'value', v)}
-                                parentId={currentFolder.parentId}
+                                parentId={currentFolder.id}
                                 style={{ flex: 1, minWidth: 0 }}
                             />
                             <button
@@ -348,7 +349,7 @@ export function FolderEditor() {
                     <h3 style={{ margin: 0, fontSize: '1rem' }}>Authentication</h3>
                 </div>
                 <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-                    <AuthEditor auth={auth} onChange={(newAuth) => auth.value = newAuth} inheritedAuth={inheritedAuth.value} />
+                    <AuthEditor auth={auth} onChange={(newAuth) => auth.value = newAuth} inheritedAuth={inheritedAuth.value} parentId={currentFolder.id} />
                 </div>
             </div>
         </div>

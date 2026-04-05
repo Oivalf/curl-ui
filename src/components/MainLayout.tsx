@@ -1,6 +1,6 @@
 import { ComponentChildren } from 'preact';
 import { Sidebar } from './sidebar/Sidebar';
-import { confirmationState, environments, activeEnvironmentName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject, updateInfo, UpdateInfo } from '../store';
+import { confirmationState, environments, activeEnvName, isAboutOpen, isEnvManagerOpen, isConsoleOpen, saveActiveItemCollection, saveAllCollections, openProject, updateInfo, UpdateInfo } from '../store';
 import { useSignalEffect, useSignal } from '@preact/signals';
 import { Modal } from './Modal';
 import { EnvironmentManager } from './EnvironmentManager';
@@ -105,13 +105,13 @@ export function MainLayout({ children }: LayoutProps) {
 
     useSignalEffect(() => {
         const selectable = environments.value.filter(e => e.name !== 'Global');
-        const current = activeEnvironmentName.value;
+        const current = activeEnvName.value;
         const isValid = current && selectable.some(e => e.name === current);
 
         if (!isValid && selectable.length > 0) {
-            activeEnvironmentName.value = selectable[0].name;
+            activeEnvName.value = selectable[0].name;
         } else if (!isValid) {
-            activeEnvironmentName.value = null;
+            activeEnvName.value = 'Global';
         }
     });
 
@@ -198,8 +198,8 @@ export function MainLayout({ children }: LayoutProps) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Env:</div>
                         <select
-                            value={activeEnvironmentName.value || ''}
-                            onChange={(e) => activeEnvironmentName.value = e.currentTarget.value}
+                            value={activeEnvName.value || ''}
+                            onChange={(e) => activeEnvName.value = e.currentTarget.value}
                             style={{
                                 backgroundColor: 'transparent',
                                 border: 'none',

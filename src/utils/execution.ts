@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import { 
     executions, requests, folders, environments, 
-    activeEnvironmentName, activeProjectName, 
+    activeEnvName, activeProjectName, 
     addLog, ExecutionProgressState, executionProgressMap,
-    ResponseData, resolveHeaders, resolveAuth, AuthConfig, ScriptItem
+    ResponseData, resolveHeaders, resolveAuth, AuthConfig, ScriptItem, TableRow
 } from '../store';
 
 /**
@@ -20,7 +20,7 @@ export const substituteVariables = (text: string, requestId: string, extraVars?:
     let result = text;
     let iterations = 0;
     
-    const env = environments.peek().find(e => e.name === activeEnvironmentName.peek());
+    const env = environments.peek().find(e => e.name === activeEnvName.peek());
     const req = requests.peek().find(r => r.id === requestId);
     if (!req) return text;
 
@@ -116,8 +116,8 @@ export const executeScript = async (scriptContent: string, context: any) => {
 export interface ExecutionOverrides {
     url?: string;
     method?: string;
-    headers?: { key: string, values: string[], enabled: boolean }[];
-    queryParams?: { key: string, values: string[], enabled: boolean }[];
+    headers?: TableRow[];
+    queryParams?: TableRow[];
     body?: string;
     bodyType?: string;
     auth?: AuthConfig;
@@ -200,7 +200,7 @@ export const runExecution = async (
     const startTime = Date.now();
 
     try {
-        const activeEnv = environments.peek().find(e => e.name === activeEnvironmentName.peek());
+        const activeEnv = environments.peek().find(e => e.name === activeEnvName.peek());
 
         const getVal = (key: keyof ExecutionOverrides, fallback: any) => (overrides && (overrides as any)[key] !== undefined) ? (overrides as any)[key] : fallback;
 

@@ -1,6 +1,6 @@
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
 import { useRef, useCallback, useEffect } from "preact/hooks";
-import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, executionProgressMap } from "../store";
+import { activeRequestId, requests, folders, environments, activeEnvName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, executionProgressMap, TableRow } from "../store";
 import { RequestPanel } from "./RequestPanel";
 import { MethodSelect } from "./MethodSelect";
 import { VariableInput } from "./VariableInput";
@@ -19,12 +19,12 @@ export function RequestEditor() {
         if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
         const [base, query] = fullUrl.split('?', 2);
         const searchParams = new URLSearchParams(query);
-        const params: { key: string, values: string[] }[] = [];
+        const params: TableRow[] = [];
         const processedKeys = new Set<string>();
         searchParams.forEach((_, key) => {
             if (processedKeys.has(key)) return;
             processedKeys.add(key);
-            params.push({ key, values: searchParams.getAll(key) });
+            params.push({ key, values: searchParams.getAll(key), enabled: boolean });
         });
         return { base, params };
     };
@@ -36,8 +36,8 @@ export function RequestEditor() {
     const url = useSignal(initialBase);
     const method = useSignal(currentRequest.method);
     // Convert headers object to array for easier editing
-    const headers = useSignal<{ key: string, values: string[] }[]>(
-        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])] }))
+    const headers = useSignal<TableRow[]>(
+        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])], enabled: boolean }))
     );
     const body = useSignal(currentRequest.body || '');
     const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
@@ -69,14 +69,14 @@ export function RequestEditor() {
     });
 
     // Params State
-    const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
+    const queryParams = useSignal<TableRow[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>(currentRequest.pathParams || {});
-    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentRequest.formData || []);
+    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean }[]>(currentRequest.formData || []);
 
     // URL sync effect removed - handled by onInput and initial state
 
     // Reactive helper to update URL when Query Params change
-    const updateUrlFromParams = (newParams: { key: string, values: string[] }[]) => {
+    const updateUrlFromParams = (newParams: TableRow[]) => {
         queryParams.value = newParams;
     };
 
@@ -200,7 +200,7 @@ export function RequestEditor() {
         const placeholders = Array.from(new Set(text.match(/{{([\s\S]+?)}}/g) || []));
         if (placeholders.length === 0) return text;
 
-        const env = environments.value.find(e => e.name === activeEnvironmentName.value);
+        const env = environments.value.find(e => e.name === activeEnvName.value);
 
         // Build Scope Chain: [Leaf Folder, ..., Root Folder]
         const folderScopes: typeof folders.value[0][] = [];
@@ -334,8 +334,8 @@ export function RequestEditor() {
         runExecution(dExec.id, {
             url: url.peek(),
             method: method.peek(),
-            headers: headers.peek().map(h => ({ ...h, enabled: true })), // RequestEditor headers are implied enabled
-            queryParams: queryParams.peek().map(p => ({ ...p, enabled: true })),
+            headers: headers.peek().map(h => ({ ...h, enabled: boolean })), // RequestEditor headers are implied enabled
+            queryParams: queryParams.peek().map(p => ({ ...p, enabled: boolean })),
             body: body.peek(),
             bodyType: bodyType.peek(),
             auth: auth.peek(),
@@ -389,7 +389,7 @@ export function RequestEditor() {
                                         if (existing) {
                                             existing.values.push(v);
                                         } else {
-                                            nextParams.push({ key: k, values: [v] });
+                                            nextParams.push({ key: k, values: [v], enabled: boolean });
                                         }
                                     });
                                     queryParams.value = nextParams;

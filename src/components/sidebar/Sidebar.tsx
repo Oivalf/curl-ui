@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Layout, GitBranch, Plus, Settings, FolderPlus, Save, FolderOpen, ChevronRight, ChevronDown, Trash2, X, MoreVertical, ServerCog, FileJson, ListTree } from 'lucide-preact';
-import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModalState, useCases, createNewRequest, isExternalMocksExpanded, expandedCollectionIds, Folder, moveSidebarItem, createNewFolder } from '../../store';
+import { activeFolderId, activeRequestId, requests, folders, collections, saveCollectionToDisk, loadCollectionFromDisk, environments, activeProjectName, openTabs, activeTabId, showPrompt, externalMocks, activeExternalMockId, createExternalMock, deleteExternalMock, loadExternalMockFromDisk, importModal, useCases, createNewRequest, isExternalMocksExpanded, expandedCollectionIds, Folder, moveSidebarItem, createNewFolder } from '../../store';
 import { FolderSidebarItem } from './FolderSidebarItem';
 import { RequestSidebarItem } from './RequestSidebarItem';
 
@@ -541,7 +541,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setMockMenuOpen(false);
-                                            importModalState.value = {
+                                            importModal.value = {
                                                 isOpen: true,
                                                 type: 'swagger',
                                                 collectionId: '',

@@ -8,7 +8,7 @@ import { CodeEditor } from "../CodeEditor";
 interface RequestBodyEditorProps {
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
     body: Signal<string>;
-    formData: Signal<{ key: string, type: 'text' | 'file', values: string[], contentTypes?: string[] }[]>;
+    formData: Signal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean, contentTypes?: string[] }[]>;
     isReadOnly?: boolean;
     isOverridden?: boolean;
     isTypeReadOnly?: boolean;
@@ -239,7 +239,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                     ))}
                     {!isReadOnly && (
                         <button
-                            onClick={() => formData.value = [...formData.value, { key: '', type: 'text', values: [''], contentTypes: [''] }]}
+                            onClick={() => formData.value = [...formData.value, { key: "", type: "text", values: [""], contentTypes: [""], enabled: boolean }]}
                             style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
                         >
                             + Add Field

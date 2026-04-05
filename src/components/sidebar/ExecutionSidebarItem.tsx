@@ -105,7 +105,7 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
             }
 
             import('../../store').then(({ moveExecution }) => {
-                moveExecution(id, execution.id, pos);
+                moveExecution(id, execution.id, Number(pos));
             });
         }
     };

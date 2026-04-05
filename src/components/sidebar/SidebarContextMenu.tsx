@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModalState, collections, showPrompt, createNewRequest, environments } from '../../store';
+import { contextMenu, requests, folders, executions, activeRequestId, activeExecutionId, activeFolderId, openTabs, activeTabId, importModal, collections, showPrompt, createNewRequest, environments } from '../../store';
 import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, ServerCog, ExternalLink } from 'lucide-preact';
 import { exportToPostman } from '../../utils/postmanUtils';
 import { invoke } from '@tauri-apps/api/core';
@@ -249,7 +249,7 @@ export function SidebarContextMenu() {
     };
 
     const handleImport = (type: 'curl' | 'swagger') => {
-        importModalState.value = {
+        importModal.value = {
             isOpen: true,
             type,
             collectionId: menu.collectionId,

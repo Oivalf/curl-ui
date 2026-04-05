@@ -1,153 +1,38 @@
 import { Signal } from "@preact/signals";
-import { OverrideIndicator } from "../OverrideIndicator";
-import { VariableInput } from "../VariableInput";
+import { GenericTableEditor } from "../GenericTableEditor";
+import { TableRow, InheritedRow } from "../../store";
 
 interface RequestParamsEditorProps {
-    queryParams: Signal<{ key: string, values: string[] }[]>;
-    pathParams: Signal<Record<string, string>>;
-    detectedPathKeys: Signal<string[]>;
-    updateUrlFromParams: (newParams: { key: string, values: string[] }[]) => void;
-    isReadOnly?: boolean;
+    queryParams: Signal<TableRow[]>;
+    pathParams?: Signal<Record<string, string>>;
+    detectedPathKeys?: Signal<string[]>;
+    onUpdateParams: (newParams: TableRow[]) => void;
+    inheritedParams?: InheritedRow[];
     overriddenKeys?: Set<string>;
+    parentKeys?: Set<string>;
     parentId?: string | null;
 }
 
-export function RequestParamsEditor({ queryParams, pathParams, detectedPathKeys, updateUrlFromParams, isReadOnly, overriddenKeys, parentId }: RequestParamsEditorProps) {
+export function RequestParamsEditor({
+    queryParams,
+    onUpdateParams,
+    inheritedParams = [],
+    overriddenKeys = new Set(),
+    parentKeys = new Set(),
+    parentId
+}: RequestParamsEditorProps) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Path Params Section */}
-            {detectedPathKeys.value.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Path Variables</div>
-                    {detectedPathKeys.value.map(key => (
-                        <div key={key} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <div style={{ width: '120px', fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>{`{${key}}`}</div>
-                            <VariableInput
-                                placeholder="Value"
-                                value={pathParams.value[key] || ''}
-                                onInput={(val) => {
-                                    pathParams.value = { ...pathParams.value, [key]: val };
-                                }}
-                                style={{ flex: 1 }}
-                                parentId={parentId}
-                            />
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Query Params Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Query Parameters</div>
-                {queryParams.value.map((p, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
-                        <div style={{ width: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <input
-                                placeholder="Key"
-                                value={p.key}
-                                readOnly={isReadOnly}
-                                onInput={(e) => {
-                                    if (isReadOnly) return;
-                                    const newParams = queryParams.value.map((param, idx) =>
-                                        idx === i ? { ...param, key: e.currentTarget.value } : param
-                                    );
-                                    updateUrlFromParams(newParams);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    background: isReadOnly ? 'transparent' : 'var(--bg-input)',
-                                    color: 'var(--text-primary)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    padding: 'var(--spacing-sm)',
-                                    fontFamily: 'var(--font-mono)',
-                                    fontSize: '0.9rem',
-                                    outline: 'none',
-                                    boxSizing: 'border-box'
-                                }}
-                            />
-                        </div>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {p.values.length === 0 && !isReadOnly && (
-                                <button
-                                    onClick={() => {
-                                        const newParams = queryParams.value.map((param, idx) =>
-                                            idx === i ? { ...param, values: [''] } : param
-                                        );
-                                        updateUrlFromParams(newParams);
-                                    }}
-                                    style={{ alignSelf: 'flex-start', fontSize: '0.8rem', background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}
-                                >
-                                    + Add Value
-                                </button>
-                            )}
-                            {p.values.map((val, valIdx) => (
-                                <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                    {overriddenKeys?.has(p.key) && <OverrideIndicator />}
-                                    <VariableInput
-                                        placeholder="Value"
-                                        value={val}
-                                        onInput={(newVal) => {
-                                            const newParams = queryParams.value.map((param, idx) => {
-                                                if (idx !== i) return param;
-                                                const newValues = [...param.values];
-                                                newValues[valIdx] = newVal;
-                                                return { ...param, values: newValues };
-                                            });
-                                            updateUrlFromParams(newParams);
-                                        }}
-                                        style={{ flex: 1 }}
-                                        readOnly={isReadOnly}
-                                        parentId={parentId}
-                                    />
-                                    {!isReadOnly && (
-                                        <button
-                                            onClick={() => {
-                                                const newParams = queryParams.value.map((param, idx) => {
-                                                    if (idx !== i) return param;
-                                                    const newValues = param.values.filter((_, vIdx) => vIdx !== valIdx);
-                                                    return { ...param, values: newValues };
-                                                });
-                                                updateUrlFromParams(newParams);
-                                            }}
-                                            style={{ color: 'var(--text-muted)', padding: '0 4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                                        >
-                                            -
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                            {!isReadOnly && (
-                                <button
-                                    onClick={() => {
-                                        const newParams = queryParams.value.map((param, idx) =>
-                                            idx === i ? { ...param, values: [...param.values, ''] } : param
-                                        );
-                                        updateUrlFromParams(newParams);
-                                    }}
-                                    style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.8rem', background: 'none', border: 'none', cursor: 'pointer' }}
-                                >
-                                    +
-                                </button>
-                            )}
-                        </div>
-                        {!isReadOnly && (
-                            <button onClick={() => {
-                                const newParams = queryParams.value.filter((_, idx) => idx !== i);
-                                updateUrlFromParams(newParams);
-                            }} style={{ color: 'var(--error)', alignSelf: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
-                        )}
-                    </div>
-                ))}
-                {!isReadOnly && (
-                    <button
-                        onClick={() => updateUrlFromParams([...queryParams.value, { key: '', values: [''] }])}
-                        style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                        + Add Param
-                    </button>
-                )}
-            </div>
-        </div>
+        <GenericTableEditor
+            rows={queryParams}
+            onUpdate={onUpdateParams}
+            inheritedRows={inheritedParams}
+            overriddenKeys={overriddenKeys}
+            parentKeys={parentKeys}
+            parentId={parentId}
+            keyPlaceholder="Param Key"
+            valuePlaceholder="Param Value"
+            addLabel="Add Query Param"
+            inheritedLabel="Inherited Query Params"
+        />
     );
 }

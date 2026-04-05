@@ -1,5 +1,5 @@
 import { Plus, Trash2, Download } from 'lucide-preact';
-import { environments, activeEnvironmentName, Environment, selectedEnvironmentInManager, confirmationState } from '../store';
+import { environments, activeEnvName, Environment, selectedEnvironmentInManager, confirmationState } from '../store';
 import { Modal } from './Modal';
 import { exportEnvironmentToPostman } from '../utils/postmanUtils';
 import { save } from '@tauri-apps/plugin-dialog';
@@ -46,8 +46,8 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                 if (selectedEnvName.value === name) {
                     selectedEnvName.value = environments.value[0]?.name || null;
                 }
-                if (activeEnvironmentName.value === name) {
-                    activeEnvironmentName.value = null;
+                if (activeEnvName.value === name) {
+                    activeEnvName.value = null;
                 }
             }
         };
@@ -66,7 +66,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
 
         // Update selection states if needed
         if (selectedEnvName.value === oldName) selectedEnvName.value = newName;
-        if (activeEnvironmentName.value === oldName) activeEnvironmentName.value = newName;
+        if (activeEnvName.value === oldName) activeEnvName.value = newName;
     };
 
     const addVariable = (envName: string) => {
