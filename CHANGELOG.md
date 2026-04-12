@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Logging**: Implemented global error and unhandled rejection capture, ensuring all frontend crashes are visible in the in-app console
 - **Logging**: Integrated backend error reporting using `rust_error!` across all core commands (HTTP requests, Git, Project/Workspace management)
+- **Testing**: Introduced automated testing infrastructure with **Vitest** for store logic and **Playwright** for E2E interactions
+- **Testing**: Added integration tests for header and auth inheritance logic
 
 ### Fixed
 - **App**: Fixed application hang on the "Loading cURL-UI..." screen by implementing a proper startup initialization sequence
