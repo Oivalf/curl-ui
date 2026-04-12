@@ -1,4 +1,4 @@
-import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds, contextMenu } from "../store";
+import { openTabs, activeTabId, requests, folders, executions, activeRequestId, activeFolderId, activeExecutionId, Tab, unsavedItemIds, contextMenu, moveTab } from "../store";
 import { X, FileJson, Folder, ChevronDown, ChevronLeft, ChevronRight, Play, ServerCog } from 'lucide-preact';
 import { useSignal } from "@preact/signals";
 import { useEffect, useRef, useCallback } from "preact/hooks";
@@ -281,9 +281,7 @@ export function TabBar() {
                             }
                             
                             if (fromIndex !== toIndex && toIndex >= 0 && toIndex < openTabs.value.length) {
-                                import('../store').then(({ moveTab }) => {
-                                    moveTab(fromIndex, toIndex);
-                                });
+                                moveTab(fromIndex, toIndex);
                             }
                         }
                     };

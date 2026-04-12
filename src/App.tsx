@@ -3,7 +3,9 @@ import { RequestEditor } from "./components/RequestEditor";
 import { FolderEditor } from "./components/FolderEditor";
 import { ExecutionEditor } from "./components/execution/ExecutionEditor";
 import { TabBar } from "./components/TabBar";
-import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing } from "./store";
+import { openTabs, activeTabId, activeProjectName, knownProjects, isInitializing, openProject } from "./store";
+import { useEffect } from "preact/hooks";
+import { invoke } from "@tauri-apps/api/core";
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { UserGuideView } from "./components/UserGuideView";
 import { ImportModal } from "./components/ImportModal";
@@ -11,11 +13,33 @@ import { CollectionMockEditor } from "./components/CollectionMockEditor";
 import { ExternalMockEditor } from "./components/ExternalMockEditor";
 import { PromptModal } from "./components/PromptModal";
 import { UseCaseManager } from "./components/UseCaseManager";
+import { t } from "./i18n";
 
 function App() {
   // Simple "Routing" for separate windows
   const url = new URL(window.location.href);
   const view = url.searchParams.get('view');
+  
+  useEffect(() => {
+    const init = async () => {
+      try {
+        // 1. Get known projects
+        const projects = await invoke<string[]>('list_projects');
+        knownProjects.value = projects;
+
+        // 2. Open most recent project if any
+        if (projects.length > 0) {
+          await openProject(projects[0]);
+        }
+      } catch (err) {
+        console.error('Failed to initialize application:', err);
+      } finally {
+        isInitializing.value = false;
+      }
+    };
+
+    init();
+  }, []);
 
   if (view === 'user-guide') {
     return <UserGuideView />;
@@ -24,7 +48,7 @@ function App() {
   if (isInitializing.value) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-base)', color: 'var(--accent-primary)' }}>
-        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Loading cURL-UI...</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{t('common.loading')}</div>
       </div>
     )
   }
@@ -65,7 +89,7 @@ function App() {
             )
           ) : (
             <div style={{ padding: 'var(--spacing-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-              <p>Select a request or folder to get started.</p>
+              <p>{t('app.selectStarter')}</p>
             </div>
           )}
         </div>

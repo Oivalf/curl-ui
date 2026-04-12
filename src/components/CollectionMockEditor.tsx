@@ -85,7 +85,7 @@ export function CollectionMockEditor() {
                         requests: mockRequests
                     }
                 });
-                updateMockConfig({ enabled: boolean });
+                updateMockConfig({ enabled: true });
             }
         } catch (e) {
             alert("Mock Server Error: " + e);
@@ -207,7 +207,7 @@ export function CollectionMockEditor() {
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Response Headers</label>
                                         <button
                                             onClick={() => {
-                                                const newHeaders = [...(req.mockResponse?.headers || []), { key: "New-Header", values: [""], enabled: boolean }];
+                                                const newHeaders = [...(req.mockResponse?.headers || []), { key: "New-Header", values: [""], enabled: true }];
                                                 updateRequestMock(req.id, { headers: newHeaders });
                                             }}
                                             style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}

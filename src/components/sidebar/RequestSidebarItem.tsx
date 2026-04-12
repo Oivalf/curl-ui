@@ -2,6 +2,7 @@ import { FileJson, ChevronRight, ChevronDown } from 'lucide-preact';
 import { activeRequestId, activeFolderId, activeExecutionId, requests, executions, RequestItem, openTabs, activeTabId } from '../../store';
 import { BaseSidebarItem } from './BaseSidebarItem';
 import { ExecutionSidebarItem } from './ExecutionSidebarItem';
+import { t } from '../../i18n';
 
 interface RequestSidebarItemProps {
     request: RequestItem;
@@ -84,8 +85,8 @@ export function RequestSidebarItem({ request, depth = 0 }: RequestSidebarItemPro
         import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
-                title: 'Delete request?',
-                message: `Are you sure you want to delete "${request.name}"?`,
+                title: t('common.delete'),
+                message: t('alert.deleteRequest', { name: request.name }),
                 onConfirm: performDelete
             };
         });

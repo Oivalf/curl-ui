@@ -74,3 +74,14 @@ export const updateInfo = signal<UpdateInfo | null>(null);
 
 // --- Visibility Toggles ---
 export const isEnvManagerOpen = signal<boolean>(false);
+
+// --- Environment Manager ---
+export const selectedEnvironmentInManager = signal<string | null>(null);
+
+// --- Tab Management ---
+export function moveTab(fromIndex: number, toIndex: number) {
+    const tabs = [...openTabs.peek()];
+    const [moved] = tabs.splice(fromIndex, 1);
+    tabs.splice(toIndex, 0, moved);
+    openTabs.value = tabs;
+}

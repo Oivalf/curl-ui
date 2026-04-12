@@ -5,6 +5,7 @@ import { navigateToItem, TableRow, InheritedRow } from "../store";
 import { IconButton } from "./ui/IconButton";
 import { Plus, Minus, X } from "lucide-preact";
 import { Card } from "./ui/Card";
+import { t } from "../i18n";
 
 
 interface GenericTableEditorProps {
@@ -31,14 +32,18 @@ export function GenericTableEditor({
     overriddenKeys,
     parentKeys,
     parentId,
-    keyPlaceholder = "Key",
-    valuePlaceholder = "Value",
-    addLabel = "Add Item",
-    inheritedLabel = "Inherited Items"
+    keyPlaceholder,
+    valuePlaceholder,
+    addLabel,
+    inheritedLabel
 }: GenericTableEditorProps) {
+    const kPlaceholder = keyPlaceholder ?? t('tableEditor.key');
+    const vPlaceholder = valuePlaceholder ?? t('tableEditor.value');
+    const aLabel = addLabel ?? t('tableEditor.addItem');
+    const iLabel = inheritedLabel ?? t('tableEditor.inheritedItems');
     
     const handleAddRow = () => {
-        const newRow: TableRow = { key: '', values: [''], enabled: boolean };
+        const newRow: TableRow = { key: '', values: [''], enabled: true };
         if (showEnabledToggle) newRow.enabled = true;
         const next = [...rows.value, newRow];
         rows.value = next;
@@ -89,8 +94,8 @@ export function GenericTableEditor({
             {/* Header Labels */}
             <div style={{ display: 'flex', gap: '8px', padding: '0 4px', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>
                 {showEnabledToggle && <div style={{ width: '24px' }}></div>}
-                <div style={{ width: '150px' }}>{keyPlaceholder}</div>
-                <div style={{ flex: 1 }}>{valuePlaceholder}</div>
+                <div style={{ width: '150px' }}>{kPlaceholder}</div>
+                <div style={{ flex: 1 }}>{vPlaceholder}</div>
                 {!isReadOnly && <div style={{ width: '24px' }}></div>}
             </div>
 
@@ -125,7 +130,7 @@ export function GenericTableEditor({
                             {/* Key Input */}
                             <div style={{ width: '150px', marginTop: '4px' }}>
                                 <input
-                                    placeholder={keyPlaceholder}
+                                    placeholder={kPlaceholder}
                                     value={row.key}
                                     readOnly={!canEditKey}
                                     onInput={(e) => handleUpdateRow(i, { key: e.currentTarget.value })}
@@ -150,7 +155,7 @@ export function GenericTableEditor({
                                     <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                         {overriddenKeys?.has(row.key) && valIdx === 0 && <OverrideIndicator />}
                                         <VariableInput
-                                            placeholder={valuePlaceholder}
+                                            placeholder={vPlaceholder}
                                             value={val}
                                             onInput={(newVal) => handleUpdateValue(i, valIdx, newVal)}
                                             style={{ flex: 1 }}
@@ -172,7 +177,7 @@ export function GenericTableEditor({
                                         onClick={() => handleAddValue(i)}
                                         style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
                                     >
-                                        + Add Value
+                                        {t('tableEditor.addValue')}
                                     </button>
                                 )}
                             </div>
@@ -210,17 +215,17 @@ export function GenericTableEditor({
                         gap: '4px'
                     }}
                 >
-                    <Plus size={14} /> {addLabel}
+                    <Plus size={14} /> {aLabel}
                 </button>
             )}
 
             {/* Inherited Items Section */}
             {inheritedRows && inheritedRows.length > 0 && (
-                <Card variant="dashed" title={inheritedLabel} style={{ marginTop: '16px' }} padding="12px">
+                <Card variant="dashed" title={iLabel} style={{ marginTop: '16px' }} padding="12px">
                     <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr auto', gap: '12px', fontSize: '0.85rem' }}>
-                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{keyPlaceholder}</div>
-                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{valuePlaceholder}</div>
-                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Source</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{kPlaceholder}</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{vPlaceholder}</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.source')}</div>
 
                         {inheritedRows.map((h, idx) => (
                             <div key={idx} style={{ display: 'contents' }}>
@@ -240,7 +245,7 @@ export function GenericTableEditor({
                                         alignSelf: 'center'
                                     }}
                                     onClick={() => h.sourceId && navigateToItem(h.sourceId)}
-                                    title={h.sourceId ? "Go to source" : ""}
+                                    title={h.sourceId ? t('tableEditor.goToSource') : ""}
                                 >
                                     {h.source}
                                 </div>

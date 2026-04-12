@@ -1,6 +1,7 @@
 import { Signal } from "@preact/signals";
 import { GenericTableEditor } from "../GenericTableEditor";
 import { TableRow, InheritedRow } from "../../store";
+import { t } from "../../i18n";
 
 interface RequestHeadersEditorProps {
     headers: Signal<TableRow[]>;
@@ -20,10 +21,10 @@ export function RequestHeadersEditor({ headers, inheritedHeaders, isReadOnly, ov
             overriddenKeys={overriddenKeys}
             parentKeys={parentKeys}
             parentId={parentId}
-            keyPlaceholder="Header Key"
-            valuePlaceholder="Header Value"
-            addLabel="Add Header"
-            inheritedLabel="Inherited Headers"
+            keyPlaceholder={t('requestEditor.headers.keyPlaceholder')}
+            valuePlaceholder={t('requestEditor.headers.valuePlaceholder')}
+            addLabel={t('requestEditor.headers.addHeader')}
+            inheritedLabel={t('requestEditor.headers.inheritedHeaders')}
         />
     );
 }

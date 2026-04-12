@@ -124,6 +124,7 @@ pub async fn reconstruct_request(
 
 #[command]
 pub async fn http_request(
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, crate::HttpRequestState>,
     args: HttpRequestArgs,
 ) -> Result<HttpResponse, String> {
@@ -213,7 +214,11 @@ pub async fn http_request(
         let response = request_builder
             .send()
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
+            .map_err(|e| {
+                let msg = format!("Request failed: {}", e);
+                crate::rust_error!(&app_handle, "{}", msg);
+                msg
+            })?;
 
         let status = response.status().as_u16();
 
@@ -264,14 +269,22 @@ pub async fn cancel_http_request(
 }
 
 #[command]
-pub fn git_init(path: String) -> Result<String, String> {
-    Repository::init(&path).map_err(|e| e.to_string())?;
+pub fn git_init(app_handle: tauri::AppHandle, path: String) -> Result<String, String> {
+    Repository::init(&path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Init failed at {}: {}", path, msg);
+        msg
+    })?;
     Ok("Initialized successfully".to_string())
 }
 
 #[command]
-pub fn git_status(path: String) -> Result<Vec<FileStatus>, String> {
-    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+pub fn git_status(app_handle: tauri::AppHandle, path: String) -> Result<Vec<FileStatus>, String> {
+    let repo = Repository::open(&path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Status failed at {}: {}", path, msg);
+        msg
+    })?;
     let mut opts = StatusOptions::new();
     opts.include_untracked(true);
 
@@ -310,8 +323,12 @@ pub fn is_git_repo(path: String) -> Result<bool, String> {
 }
 
 #[command]
-pub fn git_add_all(path: String) -> Result<(), String> {
-    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+pub fn git_add_all(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
+    let repo = Repository::open(&path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Add All failed at {}: {}", path, msg);
+        msg
+    })?;
     let mut index = repo.index().map_err(|e| e.to_string())?;
 
     index
@@ -323,8 +340,12 @@ pub fn git_add_all(path: String) -> Result<(), String> {
 }
 
 #[command]
-pub fn git_add_file(path: String) -> Result<(), String> {
-    let repo = Repository::discover(&path).map_err(|e| e.to_string())?;
+pub fn git_add_file(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
+    let repo = Repository::discover(&path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Add File failed at {}: {}", path, msg);
+        msg
+    })?;
     let path_path = std::path::Path::new(&path);
 
     // Get relative path
@@ -339,8 +360,12 @@ pub fn git_add_file(path: String) -> Result<(), String> {
 }
 
 #[command]
-pub fn git_reset(path: String) -> Result<(), String> {
-    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+pub fn git_reset(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
+    let repo = Repository::open(&path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Reset failed at {}: {}", path, msg);
+        msg
+    })?;
     let head = repo.head().map_err(|e| e.to_string())?;
     let head_obj = head.peel_to_commit().map_err(|e| e.to_string())?;
 
@@ -351,8 +376,12 @@ pub fn git_reset(path: String) -> Result<(), String> {
 }
 
 #[command]
-pub fn git_commit(args: GitCommitArgs) -> Result<String, String> {
-    let repo = Repository::open(&args.path).map_err(|e| e.to_string())?;
+pub fn git_commit(app_handle: tauri::AppHandle, args: GitCommitArgs) -> Result<String, String> {
+    let repo = Repository::open(&args.path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Commit failed at {}: {}", args.path, msg);
+        msg
+    })?;
     let mut index = repo.index().map_err(|e| e.to_string())?;
     let tree_id = index.write_tree().map_err(|e| e.to_string())?;
     let tree = repo.find_tree(tree_id).map_err(|e| e.to_string())?;
@@ -393,7 +422,7 @@ pub fn get_git_root(path: String) -> Result<String, String> {
 }
 
 #[command]
-pub async fn git_push(path: String) -> Result<String, String> {
+pub async fn git_push(app_handle: tauri::AppHandle, path: String) -> Result<String, String> {
     let output = std::process::Command::new("git")
         .arg("push")
         .current_dir(&path)
@@ -403,10 +432,12 @@ pub async fn git_push(path: String) -> Result<String, String> {
     if output.status.success() {
         Ok("Pushed successfully".to_string())
     } else {
-        Err(format!(
+        let err_msg = format!(
             "Git push failed: {}",
             String::from_utf8_lossy(&output.stderr)
-        ))
+        );
+        crate::rust_error!(&app_handle, "{}", err_msg);
+        Err(err_msg)
     }
 }
 
@@ -454,7 +485,7 @@ pub async fn get_conflicted_versions(
 }
 
 #[command]
-pub async fn git_fetch(path: String) -> Result<(), String> {
+pub async fn git_fetch(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
     let output = std::process::Command::new("git")
         .arg("fetch")
         .current_dir(&path)
@@ -464,15 +495,17 @@ pub async fn git_fetch(path: String) -> Result<(), String> {
     if output.status.success() {
         Ok(())
     } else {
-        Err(format!(
+        let err_msg = format!(
             "Git fetch failed: {}",
             String::from_utf8_lossy(&output.stderr)
-        ))
+        );
+        crate::rust_error!(&app_handle, "{}", err_msg);
+        Err(err_msg)
     }
 }
 
 #[command]
-pub async fn git_pull(path: String) -> Result<String, String> {
+pub async fn git_pull(app_handle: tauri::AppHandle, path: String) -> Result<String, String> {
     let output = std::process::Command::new("git")
         .arg("pull")
         .arg("--no-rebase") // Force merge behavior for consistency with cURL-UI merge workflow
@@ -497,12 +530,18 @@ pub async fn git_pull(path: String) -> Result<String, String> {
         return Ok("Conflict".to_string());
     }
 
-    Err(format!("Git pull failed: {}", stderr))
+    let err_msg = format!("Git pull failed: {}", stderr);
+    crate::rust_error!(&app_handle, "{}", err_msg);
+    Err(err_msg)
 }
 
 #[command]
-pub async fn git_resolve_conflict(repo_path: String, file_path: String) -> Result<(), String> {
-    let repo = Repository::open(&repo_path).map_err(|e| e.to_string())?;
+pub async fn git_resolve_conflict(app_handle: tauri::AppHandle, repo_path: String, file_path: String) -> Result<(), String> {
+    let repo = Repository::open(&repo_path).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Git Resolve Conflict failed at {}: {}", file_path, msg);
+        msg
+    })?;
     let mut index = repo.index().map_err(|e| e.to_string())?;
 
     // Adding the file to the index resolves the conflict in Git
@@ -514,14 +553,22 @@ pub async fn git_resolve_conflict(repo_path: String, file_path: String) -> Resul
 }
 
 #[command]
-pub async fn save_workspace(path: String, data: String) -> Result<(), String> {
-    fs::write(&path, data).await.map_err(|e| e.to_string())?;
+pub async fn save_workspace(app_handle: tauri::AppHandle, path: String, data: String) -> Result<(), String> {
+    fs::write(&path, data).await.map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Failed to save workspace at {}: {}", path, msg);
+        msg
+    })?;
     Ok(())
 }
 
 #[command]
-pub async fn load_workspace(path: String) -> Result<String, String> {
-    let data = fs::read_to_string(&path).await.map_err(|e| e.to_string())?;
+pub async fn load_workspace(app_handle: tauri::AppHandle, path: String) -> Result<String, String> {
+    let data = fs::read_to_string(&path).await.map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Failed to load workspace from {}: {}", path, msg);
+        msg
+    })?;
     Ok(data)
 }
 
@@ -632,10 +679,18 @@ pub async fn sync_project_manifest(
         item_response_tab_states,
     };
 
-    let data = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
+    let data = serde_json::to_string_pretty(&manifest).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Failed to serialize project manifest: {}", msg);
+        msg
+    })?;
     fs::write(manifest_path, data)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            let msg = e.to_string();
+            crate::rust_error!(&app_handle, "Failed to write project manifest: {}", msg);
+            msg
+        })?;
 
     Ok(())
 }
@@ -689,8 +744,16 @@ pub async fn get_project_manifest(
 
     let data = fs::read_to_string(manifest_path)
         .await
-        .map_err(|e| e.to_string())?;
-    let manifest: ProjectManifest = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            let msg = e.to_string();
+            crate::rust_error!(&app_handle, "Failed to read project manifest for {}: {}", name, msg);
+            msg
+        })?;
+    let manifest: ProjectManifest = serde_json::from_str(&data).map_err(|e| {
+        let msg = e.to_string();
+        crate::rust_error!(&app_handle, "Failed to parse project manifest for {}: {}", name, msg);
+        msg
+    })?;
 
     Ok(manifest)
 }
@@ -892,12 +955,15 @@ pub struct UpdateInfo {
 
 #[command]
 pub async fn check_for_updates(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
+    // This is a stub for now, but we can log errors if it fails in the future
     let current_version_str = app.package_info().version.to_string();
     let current_version = semver::Version::parse(&current_version_str).map_err(|e| {
-        format!(
-            "Failed to parse current version '{}': {}",
+        let msg = format!(
+            "Failed to parse current version {}: {}",
             current_version_str, e
-        )
+        );
+        crate::rust_error!(&app, "{}", msg);
+        msg
     })?;
 
     let client = reqwest::Client::builder()

@@ -4,6 +4,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { OverrideIndicator } from "../OverrideIndicator";
 import { VariableInput } from "../VariableInput";
 import { CodeEditor } from "../CodeEditor";
+import { t } from "../../i18n";
 
 interface RequestBodyEditorProps {
     bodyType: Signal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>;
@@ -49,23 +50,23 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                     cursor: isReadOnly ? 'default' : 'pointer'
                 }}
             >
-                <option value="none">None</option>
-                <option value="json">JSON</option>
-                <option value="xml">XML</option>
-                <option value="html">HTML</option>
-                <option value="form_urlencoded">Form UrlEncoded</option>
-                <option value="multipart">Multipart Form</option>
-                <option value="text">Text</option>
-                <option value="javascript">Javascript</option>
-                <option value="yaml">YAML</option>
+                <option value="none">{t('requestEditor.body.types.none')}</option>
+                <option value="json">{t('requestEditor.body.types.json')}</option>
+                <option value="xml">{t('requestEditor.body.types.xml')}</option>
+                <option value="html">{t('requestEditor.body.types.html')}</option>
+                <option value="form_urlencoded">{t('requestEditor.body.types.formUrlEncoded')}</option>
+                <option value="multipart">{t('requestEditor.body.types.multipart')}</option>
+                <option value="text">{t('requestEditor.body.types.text')}</option>
+                <option value="javascript">{t('requestEditor.body.types.javascript')}</option>
+                <option value="yaml">{t('requestEditor.body.types.yaml')}</option>
             </select>
 
             {bodyType.value === 'multipart' || bodyType.value === 'form_urlencoded' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', padding: '0 8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        <div style={{ width: '150px' }}>Key</div>
-                        <div style={{ width: '80px' }}>Type</div>
-                        <div style={{ flex: 1 }}>Values</div>
+                        <div style={{ width: '150px' }}>{t('tableEditor.key')}</div>
+                        <div style={{ width: '80px' }}>{t('requestEditor.body.typeColumn')}</div>
+                        <div style={{ flex: 1 }}>{t('requestEditor.body.valuesColumn')}</div>
                         <div style={{ width: '24px' }}></div>
                     </div>
                     {formData.value.map((row, i) => (
@@ -73,7 +74,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                             {/* Key Column */}
                             <div style={{ width: '150px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <input
-                                    placeholder="Key"
+                                    placeholder={t('tableEditor.key')}
                                     value={row.key}
                                     readOnly={isReadOnly}
                                     onInput={(e) => {
@@ -112,8 +113,8 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                         appearance: isReadOnly ? 'none' : 'auto'
                                     }}
                                 >
-                                    <option value="text">Text</option>
-                                    <option value="file">File</option>
+                                    <option value="text">{t('requestEditor.body.typesOptions.text')}</option>
+                                    <option value="file">{t('requestEditor.body.typesOptions.file')}</option>
                                 </select>
                             </div>
 
@@ -136,7 +137,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                                         }
                                                         formData.value = newData;
                                                     }}
-                                                    placeholder={row.type === 'file' ? "File path..." : "Value"}
+                                                    placeholder={row.type === 'file' ? t('requestEditor.body.filePathPlaceholder') : t('tableEditor.value')}
                                                     style={{ flex: 1 }}
                                                     readOnly={isReadOnly}
                                                     parentId={parentId}
@@ -168,7 +169,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                                             cursor: 'pointer',
                                                             color: 'var(--text-secondary)'
                                                         }}
-                                                        title="Choose File"
+                                                        title={t('requestEditor.body.chooseFileTooltip')}
                                                     >
                                                         <FolderOpen size={14} />
                                                     </button>
@@ -176,7 +177,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                             </div>
                                             {row.type === 'file' && (
                                                 <input
-                                                    placeholder="Content-Type"
+                                                    placeholder={t('requestEditor.body.contentTypePlaceholder')}
                                                     value={row.contentTypes?.[valIdx] || ''}
                                                     readOnly={isReadOnly}
                                                     onInput={(e) => {
@@ -239,10 +240,10 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                     ))}
                     {!isReadOnly && (
                         <button
-                            onClick={() => formData.value = [...formData.value, { key: "", type: "text", values: [""], contentTypes: [""], enabled: boolean }]}
+                            onClick={() => formData.value = [...formData.value, { key: "", type: "text", values: [""], contentTypes: [""], enabled: true }]}
                             style={{ alignSelf: 'flex-start', color: 'var(--accent-primary)', fontSize: '0.9rem', marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
                         >
-                            + Add Field
+                            {t('requestEditor.body.addField')}
                         </button>
                     )}
                 </div>
@@ -252,7 +253,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                         {isOverridden && (
                             <div style={{ display: 'flex', gap: '4px', alignItems: 'center', padding: '4px 0' }}>
                                 <OverrideIndicator />
-                                <span style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>Body overridden</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--warning)' }}>{t('requestEditor.body.bodyOverridden')}</span>
                             </div>
                         )}
                         {(bodyType.value === 'json' || bodyType.value === 'yaml' || bodyType.value === 'html' || bodyType.value === 'xml') ? (
@@ -273,7 +274,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
                                     flex: 1,
                                     width: '100%',
                                 }}
-                                placeholder={`Enter ${bodyType.value.toUpperCase()} body...`}
+                                placeholder={t('requestEditor.body.enterBodyPlaceholder', { type: bodyType.value.toUpperCase() })}
                                 readOnly={isReadOnly}
                                 parentId={parentId}
                             />
@@ -284,7 +285,7 @@ export function RequestBodyEditor({ bodyType, body, formData, isReadOnly, isOver
 
             {bodyType.value === 'none' && (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                    This request has no body
+                    {t('requestEditor.body.noBodyText')}
                 </div>
             )}
         </div>

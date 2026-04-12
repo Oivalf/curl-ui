@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { promptState } from '../store';
+import { promptState, handlePromptSubmit } from '../store';
 import { Modal } from './Modal';
+import { t } from '../i18n';
 
 export function PromptModal() {
     const state = promptState.value;
@@ -20,11 +21,11 @@ export function PromptModal() {
     }, [state.isOpen, state.defaultValue]);
 
     const handleConfirm = () => {
-        state.resolve(inputValue);
+        handlePromptSubmit(inputValue);
     };
 
     const handleCancel = () => {
-        state.resolve(null);
+        handlePromptSubmit(null);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,7 +58,7 @@ export function PromptModal() {
                         outline: 'none',
                         width: '100%'
                     }}
-                    placeholder="Enter value..."
+                    placeholder={t('promptModal.placeholder')}
                 />
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
@@ -72,7 +73,7 @@ export function PromptModal() {
                             cursor: 'pointer'
                         }}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleConfirm}
@@ -86,7 +87,7 @@ export function PromptModal() {
                             cursor: 'pointer'
                         }}
                     >
-                        OK
+                        {t('common.ok')}
                     </button>
                 </div>
             </div>

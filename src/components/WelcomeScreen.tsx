@@ -4,6 +4,7 @@ import { activeProjectName, knownProjects, openProject, showPrompt } from '../st
 import { useEffect, useState } from 'preact/hooks';
 import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
 import { openUserGuideWindow } from '../utils/window';
+import { t } from '../i18n';
 
 // Cast icons to any to avoid Preact/React type conflicts
 const PlusIcon = Plus as any;
@@ -21,6 +22,7 @@ export function WelcomeScreen() {
     }, []);
 
     const openNewProjectWindow = async () => {
+        // We will need to move "Enter Project Name" to translations too later, but for now we focus on pure UI
         const projectName = await showPrompt("Enter Project Name:", "New Project");
         if (!projectName) return;
 
@@ -70,12 +72,12 @@ export function WelcomeScreen() {
                     <LayoutIcon size={40} color="#000" />
                 </div>
 
-                <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>Welcome to cURL-UI</h1>
+                <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold' }}>{t('welcome.greeting')}</h1>
 
                 {knownProjects.value.length > 0 ? (
                     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left' }}>
                         <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <FolderIcon size={18} /> Recent Projects
+                            <FolderIcon size={18} /> {t('welcome.recentProjects')}
                         </h3>
                         <div style={{
                             display: 'flex',
@@ -111,8 +113,8 @@ export function WelcomeScreen() {
                     </div>
                 ) : (
                     <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
-                        It looks like you don't have any projects yet.<br />
-                        Start by creating your first project to organize your collections.
+                        {t('welcome.noProjectsLine1')}<br />
+                        {t('welcome.noProjectsLine2')}
                     </p>
                 )}
 
@@ -145,7 +147,7 @@ export function WelcomeScreen() {
                         }}
                     >
                         <PlusIcon size={24} />
-                        New Project
+                        {t('welcome.newProject')}
                     </button>
 
                     <button
@@ -174,7 +176,7 @@ export function WelcomeScreen() {
                         }}
                     >
                         <BookIcon size={20} />
-                        User Guide
+                        {t('welcome.userGuide')}
                     </button>
                 </div>
 
@@ -191,8 +193,8 @@ export function WelcomeScreen() {
                     color: 'var(--text-muted)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
-                        <span>App v{appVersion}</span>
-                        <span>Tauri v{tauriVersion}</span>
+                        <span>{t('welcome.appVersion', { version: appVersion })}</span>
+                        <span>{t('welcome.tauriVersion', { version: tauriVersion })}</span>
                     </div>
                     <div style={{ opacity: 0.7 }}>
                         © 2025 Oivalf • MIT License
@@ -201,7 +203,7 @@ export function WelcomeScreen() {
             </div>
 
             <div style={{ marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                All your project data is stored locally in <code style={{ color: 'var(--accent-primary)' }}>~/.curl-ui</code>
+                {t('welcome.storageNotice')} <code style={{ color: 'var(--accent-primary)' }}>~/.curl-ui</code>
             </div>
         </div>
     );

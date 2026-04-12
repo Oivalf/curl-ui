@@ -52,7 +52,7 @@ export function ExternalMockEditor() {
             path: '/new-endpoint',
             response: {
                 statusCode: 200,
-                headers: [{ key: 'Content-Type', values: ['application/json'], enabled: boolean }],
+                headers: [{ key: 'Content-Type', values: ['application/json'], enabled: true }],
                 body: '{\n  "message": "Hello World"\n}',
                 enabled: true
             }
@@ -281,7 +281,7 @@ export function ExternalMockEditor() {
                                         <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Response Headers</label>
                                         <button
                                             onClick={() => {
-                                                const newHeaders: TableRow[] = [...ep.response.headers, { key: 'New-Header', values: [''], enabled: boolean }];
+                                                const newHeaders: TableRow[] = [...ep.response.headers, { key: 'New-Header', values: [''], enabled: true }];
                                                 updateEndpoint(index, { headers: newHeaders });
                                             }}
                                             style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}

@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Minus, Square, X, Copy, Menu, ChevronRight } from 'lucide-preact';
 import { saveActiveItemCollection, saveAllCollections, isAboutOpen, activeProjectName, showPrompt } from '../store';
 import { openUserGuideWindow } from '../utils/window';
+import { t } from '../i18n';
 
 export function TitleBar() {
     const isMaximized = useSignal(false);
@@ -17,7 +18,7 @@ export function TitleBar() {
     const url = new URL(window.location.href);
     const view = url.searchParams.get('view');
     const isUserGuide = view === 'user-guide';
-    const displayTitle = isUserGuide ? "cURL-UI - User Guide" : `cURL-UI - ${activeProjectName.value}`;
+    const displayTitle = isUserGuide ? t('titleBar.userGuideTitle') : t('titleBar.title', { name: activeProjectName.value });
 
     useEffect(() => {
         // Check initial maximized state
@@ -51,7 +52,7 @@ export function TitleBar() {
     };
 
     const openNewProjectWindow = async () => {
-        const projectName = await showPrompt("Enter Project Name:", "New Project");
+        const projectName = await showPrompt(t('prompt.enterProjectName'), t('welcome.newProject'));
         if (!projectName) return;
 
         // Open a new window for a new project/workspace
@@ -136,16 +137,16 @@ export function TitleBar() {
                     <div class="burger-backdrop" onClick={closeMenu} />
                     <div class="burger-dropdown">
                         {/* File Section */}
-                        <div class="burger-section-label">File</div>
+                        <div class="burger-section-label">{t('titleBar.menu.file')}</div>
                         <button class="burger-menu-item" onClick={() => handleAction('new_project')}>
-                            <span>New Project</span>
+                            <span>{t('titleBar.menu.newProject')}</span>
                         </button>
                         <button class="burger-menu-item" onClick={() => handleAction('save')}>
-                            <span>Save</span>
+                            <span>{t('common.save')}</span>
                             <span class="burger-shortcut">Ctrl+S</span>
                         </button>
                         <button class="burger-menu-item" onClick={() => handleAction('save_all')}>
-                            <span>Save All</span>
+                            <span>{t('common.saveAll')}</span>
                             <span class="burger-shortcut">Ctrl+Shift+S</span>
                         </button>
 
@@ -154,14 +155,14 @@ export function TitleBar() {
                             class={`burger-menu-item burger-submenu-trigger ${activeSubmenu.value === 'recent' ? 'active' : ''}`}
                             onMouseEnter={() => activeSubmenu.value = 'recent'}
                         >
-                            <span>Recent Projects</span>
+                            <span>{t('titleBar.menu.recentProjects')}</span>
                             <ChevronRight size={14} />
 
                             {activeSubmenu.value === 'recent' && (
                                 <div class="burger-submenu">
                                     {recentProjects.value.length === 0 ? (
                                         <div class="burger-menu-item disabled">
-                                            <span>No Other Projects</span>
+                                            <span>{t('titleBar.menu.noOtherProjects')}</span>
                                         </div>
                                     ) : (
                                         recentProjects.value.map(project => (
@@ -181,18 +182,18 @@ export function TitleBar() {
                         <div class="burger-separator" />
 
                         <button class="burger-menu-item" onClick={() => handleAction('quit')}>
-                            <span>Quit</span>
+                            <span>{t('titleBar.menu.quit')}</span>
                         </button>
 
                         <div class="burger-separator" />
 
                         {/* Help Section */}
-                        <div class="burger-section-label">Help</div>
+                        <div class="burger-section-label">{t('titleBar.menu.help')}</div>
                         <button class="burger-menu-item" onClick={() => handleAction('user_guide')}>
-                            <span>User Guide</span>
+                            <span>{t('titleBar.menu.userGuide')}</span>
                         </button>
                         <button class="burger-menu-item" onClick={() => handleAction('about')}>
-                            <span>About</span>
+                            <span>{t('titleBar.menu.about')}</span>
                         </button>
                     </div>
                 </>
@@ -202,21 +203,21 @@ export function TitleBar() {
                 <button
                     class="titlebar-btn"
                     onClick={() => appWindow.minimize()}
-                    title="Minimize"
+                    title={t('titleBar.controls.minimize')}
                 >
                     <Minus size={14} />
                 </button>
                 <button
                     class="titlebar-btn"
                     onClick={() => appWindow.toggleMaximize()}
-                    title={isMaximized.value ? "Restore" : "Maximize"}
+                    title={isMaximized.value ? t('titleBar.controls.restore') : t('titleBar.controls.maximize')}
                 >
                     {isMaximized.value ? <Copy size={12} /> : <Square size={12} />}
                 </button>
                 <button
                     class="titlebar-btn titlebar-btn-close"
                     onClick={() => appWindow.close()}
-                    title="Close"
+                    title={t('titleBar.controls.close')}
                 >
                     <X size={14} />
                 </button>

@@ -5,6 +5,7 @@ import { parseCurl } from '../utils/curlParser';
 import { parseSwagger } from '../utils/swaggerParser';
 import { parsePostmanCollection, parsePostmanEnvironment, ParsedFolder, ParsedRequest } from '../utils/postmanUtils';
 import { FileUp } from 'lucide-preact';
+import { t } from '../i18n';
 
 export function ImportModal() {
     const state = importModal.value;
@@ -68,7 +69,7 @@ export function ImportModal() {
                 newRequest.id = newId;
                 newRequest.method = parsed.method;
                 newRequest.url = parsed.url;
-                newRequest.headers = parsed.headers.map(h => ({ key: h.key, values: [...h.values], enabled: boolean }));
+                newRequest.headers = parsed.headers.map(h => ({ key: h.key, values: [...h.values], enabled: true }));
                 newRequest.body = parsed.body;
                 newRequest.bodyType = parsed.body ? 'json' : 'none';
 
@@ -108,7 +109,7 @@ export function ImportModal() {
                             path: pr.path,
                             response: {
                                 statusCode: pr.responseStatus || 200,
-                                headers: [...pr.headers, { key: 'Content-Type', values: ['application/json'], enabled: boolean }],
+                                headers: [...pr.headers, { key: 'Content-Type', values: ['application/json'], enabled: true }],
                                 body: pr.body || '{}',
                                 enabled: true
                             }
@@ -144,7 +145,7 @@ export function ImportModal() {
 
                         newReq.method = pr.method;
                         newReq.url = pr.url;
-                        newReq.headers = pr.headers.map(h => ({ key: h.key, values: [...h.values], enabled: boolean }));
+                        newReq.headers = pr.headers.map(h => ({ key: h.key, values: [...h.values], enabled: true }));
                         newReq.body = pr.requestBody || '';
                         newReq.bodyType = pr.requestBody ? 'json' : 'none';
                         
@@ -177,7 +178,7 @@ export function ImportModal() {
                             
                             newReq.method = item.method;
                             newReq.url = item.url;
-                            newReq.headers = item.headers.map(h => ({ ...h, enabled: boolean }));
+                            newReq.headers = item.headers.map(h => ({ ...h, enabled: true }));
                             newReq.bodyType = item.bodyType;
                             newReq.body = item.body;
                             newReq.formData = item.formData;
@@ -230,17 +231,17 @@ export function ImportModal() {
         <Modal
             isOpen={state.isOpen}
             onClose={handleClose}
-            title="Import Requests"
+            title={t('importModal.title')}
             zIndex={1200}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                 {/* Type Selector */}
                 <div style={{ display: 'flex', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '2px', alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '2px' }}>
                     {[
-                        { id: 'curl', label: 'cURL' },
-                        { id: 'swagger', label: 'Swagger / OpenAPI' },
-                        { id: 'postman-collection', label: 'Postman Collection' },
-                        { id: 'postman-environment', label: 'Postman Environment' }
+                        { id: 'curl', label: t('importModal.types.curl') },
+                        { id: 'swagger', label: t('importModal.types.swagger') },
+                        { id: 'postman-collection', label: t('importModal.types.postmanCollection') },
+                        { id: 'postman-environment', label: t('importModal.types.postmanEnvironment') }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -262,10 +263,10 @@ export function ImportModal() {
                 </div>
 
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {importType === 'curl' && 'Paste a bash-formatted cURL command below or load from a file.'}
-                    {importType === 'swagger' && 'Paste your Swagger 2.0 or OpenAPI 3.x specification (JSON or YAML) below or load from a file.'}
-                    {importType === 'postman-collection' && 'Paste your Postman Collection v2.1 JSON below or load from a file.'}
-                    {importType === 'postman-environment' && 'Paste your Postman Environment JSON below or load from a file.'}
+                    {importType === 'curl' && t('importModal.hints.curl')}
+                    {importType === 'swagger' && t('importModal.hints.swagger')}
+                    {importType === 'postman-collection' && t('importModal.hints.postmanCollection')}
+                    {importType === 'postman-environment' && t('importModal.hints.postmanEnvironment')}
                 </p>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -291,7 +292,7 @@ export function ImportModal() {
                             fontSize: '0.85rem'
                         }}
                     >
-                        <FileUp size={14} /> Load from File
+                        <FileUp size={14} /> {t('importModal.loadFromFile')}
                     </button>
                     {content.trim() && (
                         <button
@@ -305,7 +306,7 @@ export function ImportModal() {
                                 fontSize: '0.85rem'
                             }}
                         >
-                            Clear
+                            {t('importModal.clear')}
                         </button>
                     )}
                 </div>
@@ -355,7 +356,7 @@ export function ImportModal() {
                             cursor: 'pointer'
                         }}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleImport}
@@ -371,7 +372,7 @@ export function ImportModal() {
                             fontWeight: 'bold'
                         }}
                     >
-                        Import
+                        {t('importModal.importBtn')}
                     </button>
                 </div>
             </div>

@@ -9,6 +9,7 @@ import { Modal } from '../Modal';
 import { GitPanel } from '../GitPanel';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { t } from '../../i18n';
 import '../../styles/global.css';
 
 // Cast icons to any to avoid Preact/React type conflicts
@@ -77,7 +78,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
 
 
     const createNewCollection = async () => {
-        const name = await showPrompt("New Collection Name:", "New Collection");
+        const name = await showPrompt(t('prompt.newCollection'), t('prompt.newCollectionDefault'));
         if (name) {
             const newId = crypto.randomUUID();
             collections.value = [...collections.value, {
@@ -117,8 +118,8 @@ export function Sidebar({ width = 250 }: SidebarProps) {
         import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
-                title: `Delete project "${projectName}"?`,
-                message: `Are you sure you want to delete project "${projectName}"? This will delete the manifest file and close this window. Collections files will still be kept in the folders they are located in.`,
+                title: t('sidebar.deleteProjectTitle', { name: projectName }),
+                message: t('sidebar.deleteProjectMessage', { name: projectName }),
                 onConfirm: performDeleteProject
             };
         });
@@ -155,7 +156,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.color = 'var(--error)'}
                         onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                        title="Delete Project"
+                        title={t('sidebar.deleteProjectBtn')}
                     >
                         <TrashIcon size={16} />
                     </button>
@@ -171,17 +172,17 @@ export function Sidebar({ width = 250 }: SidebarProps) {
             <div style={{ marginBottom: 'var(--spacing-md)', display: 'flex', gap: '8px' }}>
                 <button
                     onClick={loadCollectionFromDisk}
-                    title="Load Collection"
+                    title={t('sidebar.loadCollection')}
                     style={{ flex: 1, padding: '6px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
                 >
-                    <FolderOpenIcon size={14} /> Load
+                    <FolderOpenIcon size={14} /> {t('sidebar.loadCollection')}
                 </button>
                 <button
                     onClick={createNewCollection}
-                    title="New Collection"
+                    title={t('sidebar.newCollection')}
                     style={{ flex: 1, padding: '6px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
                 >
-                    <PlusIcon size={14} /> New
+                    <PlusIcon size={14} /> {t('sidebar.newCollection')}
                 </button>
             </div>
 
@@ -242,11 +243,11 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{collection.name}</span>
                                     {collectionGitStatus[collection.id] && (
-                                        <GitBranchIcon size={12} color="var(--text-muted)" title="In Git Repository" />
+                                        <GitBranchIcon size={12} color="var(--text-muted)" title={t('sidebar.inGitRepo')} />
                                     )}
                                 </div>
                                 <span
-                                    title={collection.path || "Not saved"}
+                                    title={collection.path || t('sidebar.notSaved')}
                                     style={{
                                         fontSize: '0.7rem',
                                         color: 'var(--text-muted)',
@@ -258,7 +259,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                         textAlign: 'left'
                                     }}
                                 >
-                                    <span style={{ direction: 'ltr', unicodeBidi: 'embed' }}>{collection.path || "Not saved"}</span>
+                                    <span style={{ direction: 'ltr', unicodeBidi: 'embed' }}>{collection.path || t('sidebar.notSaved')}</span>
                                 </span>
                             </div>
 
@@ -308,14 +309,14 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                <SaveIcon size={14} /> Save
+                                                <SaveIcon size={14} /> {t('sidebar.menu.save')}
                                             </button>
                                             <button
                                                 className="menu-item"
                                                 onClick={async (e) => {
                                                     e.stopPropagation();
                                                     setOpenMenuCollectionId(null);
-                                                    const name = await showPrompt("Request Name:", "New Request");
+                                                    const name = await showPrompt(t('prompt.newRequest'), t('prompt.newRequestDefault'));
                                                     if (name) {
                                                         const newReq = createNewRequest(name, collection.id, null);
                                                         requests.value = [...requests.value, newReq];
@@ -331,14 +332,14 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                <PlusIcon size={14} /> New Request
+                                                <PlusIcon size={14} /> {t('sidebar.menu.newRequest')}
                                             </button>
                                             <button
                                                 className="menu-item"
                                                 onClick={async (e) => {
                                                     e.stopPropagation();
                                                     setOpenMenuCollectionId(null);
-                                                    const name = await showPrompt("Folder Name:", "New Folder");
+                                                    const name = await showPrompt(t('prompt.newFolder'), t('prompt.newFolderDefault'));
                                                     if (name) {
                                                         const newFolder = createNewFolder(name, collection.id, null);
                                                         folders.value = [...folders.value, newFolder];
@@ -348,7 +349,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                <FolderPlusIcon size={14} /> New Folder
+                                                <FolderPlusIcon size={14} /> {t('sidebar.menu.newFolder')}
                                             </button>
                                             <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
                                             <button
@@ -364,12 +365,11 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                         });
                                                     };
 
-                                                    // Trigger Modal using the store's confirmationState
                                                     import('../../store').then(({ confirmationState }) => {
                                                         confirmationState.value = {
                                                             isOpen: true,
-                                                            title: `Remove collection "${collection.name}"?`,
-                                                            message: `Are you sure you want to remove collection "${collection.name}" from the project? The file will not be deleted from disk.`,
+                                                            title: t('sidebar.menu.removeCollectionTitle', { name: collection.name }),
+                                                            message: t('sidebar.menu.removeCollectionMessage', { name: collection.name }),
                                                             onConfirm: performRemove
                                                         };
                                                     });
@@ -378,7 +378,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 0, 0, 0.1)'}
                                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                             >
-                                                <XIcon size={14} /> Remove
+                                                <XIcon size={14} /> {t('sidebar.menu.remove')}
                                             </button>
                                         </div>
                                     </>
@@ -396,7 +396,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     ].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
 
                                     if (rootItems.length === 0) {
-                                        return <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>Empty</div>;
+                                        return <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>{t('sidebar.emptyCollection')}</div>;
                                     }
 
                                     return rootItems.map(item => (
@@ -414,7 +414,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                             openTabs.value = [...openTabs.value, {
                                                 id: tabId,
                                                 type: 'collection',
-                                                name: `Mock: ${collection.name}`
+                                                name: t('sidebar.mockManagerTitle', { name: collection.name })
                                             }];
                                         }
                                         activeTabId.value = tabId;
@@ -450,7 +450,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     <div style={{ display: 'flex', color: 'var(--text-muted)' }}>
                                         <ServerCog size={14} />
                                     </div>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>{collection.name} Mocks</span>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', flex: 1 }}>{t('sidebar.mockManagerTitle', { name: collection.name })}</span>
                                     {collection.mockConfig?.enabled && (
                                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--success)', boxShadow: '0 0 4px var(--success)' }} />
                                     )}
@@ -473,7 +473,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {isExternalMocksExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
-                        <span style={{ fontWeight: 'bold' }}>External Mocks</span>
+                        <span style={{ fontWeight: 'bold' }}>{t('sidebar.externalMocks')}</span>
                         {externalMocks.value.length > 0 && (
                             <span style={{
                                 fontSize: '0.7rem',
@@ -535,7 +535,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
-                                        <PlusIcon size={14} /> From Scratch
+                                        <PlusIcon size={14} /> {t('sidebar.fromScratch')}
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -552,7 +552,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-active)'}
                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                     >
-                                        <FileJson size={14} /> From Swagger
+                                        <FileJson size={14} /> {t('sidebar.fromSwagger')}
                                     </button>
                                 </div>
                             </>
@@ -563,7 +563,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                 {isExternalMocksExpanded.value && (
                     <div style={{ marginLeft: '12px' }}>
                         {externalMocks.value.length === 0 && (
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>No External Mocks</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px' }}>{t('sidebar.noExternalMocks')}</div>
                         )}
                         {externalMocks.value.map(mock => (
                             <div
@@ -605,9 +605,9 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                                     <span style={{ fontSize: '0.85rem' }}>{mock.name}</span>
                                     <div
                                         style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                        title={mock.path || "Not saved"}
+                                        title={mock.path || t('sidebar.notSaved')}
                                     >
-                                        {mock.path ? mock.path.split('/').pop() : "Not saved"}
+                                        {mock.path ? mock.path.split('/').pop() : t('sidebar.notSaved')}
                                     </div>
                                 </div>
 
@@ -664,7 +664,7 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <ListTreeIcon size={16} color="var(--accent-primary)" />
-                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Use Cases</span>
+                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{t('sidebar.useCases')}</span>
                             {useCases.value.length > 0 && (
                                 <span style={{
                                     fontSize: '0.7rem',
@@ -692,11 +692,11 @@ export function Sidebar({ width = 250 }: SidebarProps) {
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px' }}
                 >
                     <GitBranchIcon size={16} />
-                    <span>Git Status</span>
+                    <span>{t('sidebar.gitStatus')}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px' }}>
                     <SettingsIcon size={16} />
-                    <span>Settings</span>
+                    <span>{t('sidebar.settings')}</span>
                 </div>
             </div>
 

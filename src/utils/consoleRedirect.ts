@@ -33,4 +33,13 @@ export function initConsoleRedirect() {
         const logLevel = (level === 'warn' || level === 'error') ? level : 'info';
         addLog(logLevel, message, 'Rust');
     });
+
+    // Global Error Listeners
+    window.addEventListener('error', (event) => {
+        console.error('Unhandled UI Error:', event.error || event.message);
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled Promise Rejection:', event.reason);
+    });
 }

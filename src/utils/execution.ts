@@ -482,6 +482,7 @@ export const runExecution = async (
         return lastResponse;
 
     } catch (err) {
+        console.error("Execution Error:", err);
         const errStr = String(err);
         const isCanceled = errStr.includes('Canceled');
         if (isCanceled) {

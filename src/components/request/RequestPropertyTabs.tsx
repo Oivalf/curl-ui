@@ -6,6 +6,7 @@ import { ScriptListEditor } from "./ScriptListEditor";
 import { AuthEditor } from "../AuthEditor";
 import { Tabs } from "../ui/Tabs";
 import { itemRequestTabStates, itemScriptTabStates, AuthConfig, ScriptItem, TableRow, InheritedRow } from "../../store";
+import { t } from "../../i18n";
 
 interface RequestPropertyTabsProps {
     id: string;
@@ -15,7 +16,7 @@ interface RequestPropertyTabsProps {
     auth: Signal<AuthConfig | undefined>;
     queryParams: Signal<TableRow[]>;
     pathParams: Signal<Record<string, string>>;
-    formData: Signal<{ key: string, type: 'text' | 'file', values: string[] }[]>;
+    formData: Signal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean, contentTypes?: string[] }[]>;
     detectedPathKeys: Signal<string[]>;
     onUpdateParams: (newParams: TableRow[]) => void;
     inheritedAuth?: { config: AuthConfig, source: string, sourceId?: string };
@@ -38,11 +39,11 @@ export function RequestPropertyTabs(props: RequestPropertyTabsProps) {
     const activeScriptTab = itemScriptTabStates.value[id] || 'pre';
 
     const tabs = [
-        { id: 'params', label: 'Params' },
-        { id: 'body', label: 'Body' },
-        { id: 'headers', label: 'Headers', badge: props.headers.value.filter(h => h.key).length || undefined },
-        { id: 'auth', label: 'Auth' },
-        { id: 'scripts', label: 'Scripts', badge: (props.preScripts.value.length + props.postScripts.value.length) || undefined },
+        { id: 'params', label: t('requestEditor.tabs.params') },
+        { id: 'body', label: t('requestEditor.tabs.body') },
+        { id: 'headers', label: t('requestEditor.tabs.headers'), badge: props.headers.value.filter(h => h.key).length || undefined },
+        { id: 'auth', label: t('requestEditor.tabs.auth') },
+        { id: 'scripts', label: t('requestEditor.tabs.scripts'), badge: (props.preScripts.value.length + props.postScripts.value.length) || undefined },
     ];
 
     const handleTabChange = (tabId: string) => {
@@ -106,18 +107,18 @@ export function RequestPropertyTabs(props: RequestPropertyTabsProps) {
                         <Tabs
                             variant="pills"
                             items={[
-                                { id: 'pre', label: 'Pre-request' },
-                                { id: 'post', label: 'Post-request' }
+                                { id: 'pre', label: t('requestEditor.tabs.preRequest') },
+                                { id: 'post', label: t('requestEditor.tabs.postRequest') }
                             ]}
                             activeId={activeScriptTab}
                             onChange={handleScriptTabChange}
                         />
                         <div style={{ flex: 1 }}>
                             {activeScriptTab === 'pre' && (
-                                <ScriptListEditor scripts={props.preScripts} title="Pre-request Scripts" parentId={props.parentId} />
+                                <ScriptListEditor scripts={props.preScripts} title={t('requestEditor.tabs.preRequest') + " Scripts"} parentId={props.parentId} />
                             )}
                             {activeScriptTab === 'post' && (
-                                <ScriptListEditor scripts={props.postScripts} title="Post-request Scripts" showStatusFilter={true} parentId={props.parentId} />
+                                <ScriptListEditor scripts={props.postScripts} title={t('requestEditor.tabs.postRequest') + " Scripts"} showStatusFilter={true} parentId={props.parentId} />
                             )}
                         </div>
                     </div>

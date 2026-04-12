@@ -3,6 +3,7 @@ import { activeFolderId, folders, environments, activeEnvName, type Folder, unsa
 import { Folder as FolderIcon } from "lucide-preact";
 import { AuthEditor } from "./AuthEditor";
 import { VariableInput } from "./VariableInput";
+import { t } from "../i18n";
 
 export function FolderEditor() {
     const currentFolder = folders.value.find(f => f.id === activeFolderId.value);
@@ -11,8 +12,8 @@ export function FolderEditor() {
 
     // Local signals
     const name = useSignal(currentFolder.name);
-    const headers = useSignal<{ key: string, values: string[] }[]>(
-        (currentFolder.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])] }))
+    const headers = useSignal<{ key: string, values: string[], enabled: boolean }[]>(
+        (currentFolder.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])], enabled: h.enabled ?? true }))
     );
     const variables = useSignal<{ key: string, value: string }[]>(
         Object.entries(currentFolder.variables || {}).map(([k, v]) => ({ key: k, value: v }))
@@ -136,7 +137,7 @@ export function FolderEditor() {
     });
 
     const addHeader = () => {
-        headers.value = [...headers.value, { key: '', values: [''] }];
+        headers.value = [...headers.value, { key: '', values: [''], enabled: true }];
     };
 
     const removeHeader = (index: number) => {
@@ -176,7 +177,7 @@ export function FolderEditor() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: 'var(--spacing-md)', borderBottom: '1px solid var(--border-color)' }}>
                 <FolderIcon size={32} color="var(--accent-primary)" />
                 <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Folder Name</label>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('folderEditor.folderNameLabel')}</label>
                     <input
                         value={name.value}
                         onInput={(e) => name.value = e.currentTarget.value}
@@ -188,16 +189,16 @@ export function FolderEditor() {
             {/* Shared Headers Section (unchanged) */}
             <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem' }}>Shared Headers</h3>
-                    <button onClick={addHeader} style={{ fontSize: '0.8rem', padding: '4px 8px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}>+ Add Header</button>
+                    <h3 style={{ margin: 0, fontSize: '1rem' }}>{t('folderEditor.sharedHeadersTitle')}</h3>
+                    <button onClick={addHeader} style={{ fontSize: '0.8rem', padding: '4px 8px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}>{t('requestEditor.headers.addHeader')}</button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {headers.value.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No headers defined.</div>}
+                    {headers.value.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>{t('folderEditor.noHeaders')}</div>}
                     {headers.value.map((header, index) => (
                         <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                             <div style={{ width: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                 <input
-                                    placeholder="Key"
+                                    placeholder={t('requestEditor.headers.keyPlaceholder')}
                                     value={header.key}
                                     onInput={(e) => updateHeaderKey(index, e.currentTarget.value)}
                                     style={{ width: '100%', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: 'var(--spacing-sm)', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
@@ -209,12 +210,12 @@ export function FolderEditor() {
                                         const newHeaders = [...headers.value];
                                         newHeaders[index].values = [''];
                                         headers.value = newHeaders;
-                                    }} style={{ alignSelf: 'flex-start', fontSize: '0.8rem', background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}>+ Add Value</button>
+                                    }} style={{ alignSelf: 'flex-start', fontSize: '0.8rem', background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}>{t('tableEditor.addValue')}</button>
                                 )}
                                 {header.values.map((val, valIdx) => (
                                     <div key={valIdx} style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                         <VariableInput
-                                            placeholder="Value"
+                                            placeholder={t('requestEditor.headers.valuePlaceholder')}
                                             value={val}
                                             onInput={(v) => updateHeaderValue(index, valIdx, v)}
                                             parentId={currentFolder.id}
@@ -247,11 +248,11 @@ export function FolderEditor() {
             {/* Inherited Headers */}
             {inheritedHeaders.value.length > 0 && (
                 <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-color)' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Inherited Headers</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('folderEditor.inheritedHeadersTitle')}</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
-                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Key</div>
-                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Value</div>
-                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Source</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.key')}</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.value')}</div>
+                        <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.source')}</div>
 
                         {inheritedHeaders.value.map((h, i) => (
                             <div key={i} style={{ display: 'contents' }}>
@@ -277,26 +278,24 @@ export function FolderEditor() {
             {/* Variables Section */}
             <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem' }}>Variables</h3>
-                    <button onClick={addVariable} style={{ fontSize: '0.8rem', padding: '4px 8px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}>+ Add Variable</button>
+                    <h3 style={{ margin: 0, fontSize: '1rem' }}>{t('folderEditor.variablesTitle')}</h3>
+                    <button onClick={addVariable} style={{ fontSize: '0.8rem', padding: '4px 8px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}>+ {t('environmentManager.addVariableBtn')}</button>
                 </div>
-                <p style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Variables defined here can be used in requests within this folder using <code>{'{{variable_name}}'}</code> syntax.
-                </p>
+                <p style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)', fontSize: '0.8rem', color: 'var(--text-muted)' }} dangerouslySetInnerHTML={{ __html: t('folderEditor.variablesHelpText') }} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {variables.value.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No variables defined.</div>}
+                    {variables.value.length === 0 && <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>{t('folderEditor.noVariables')}</div>}
                     {variables.value.map((variable, index) => (
                         <div key={index} style={{ display: 'flex', gap: '8px' }}>
                             <input
-                                placeholder="Variable Name"
+                                placeholder={t('folderEditor.variableNamePlaceholder')}
                                 value={variable.key}
                                 onInput={(e) => updateVariable(index, 'key', e.currentTarget.value)}
                                 style={{ flex: 1, minWidth: 0 }}
                             />
                             <VariableInput
                                 aria-label="Variable Value"
-                                placeholder="Value"
+                                placeholder={t('tableEditor.value')}
                                 value={variable.value}
                                 onInput={(v) => updateVariable(index, 'value', v)}
                                 parentId={currentFolder.id}
@@ -315,11 +314,11 @@ export function FolderEditor() {
                 {/* Inherited Variables */}
                 {inheritedVariables.value.length > 0 && (
                     <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-color)' }}>
-                        <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Inherited Variables</h4>
+                        <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('folderEditor.inheritedVariablesTitle')}</h4>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
-                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Key</div>
-                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Value</div>
-                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>Source</div>
+                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.key')}</div>
+                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.value')}</div>
+                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{t('tableEditor.source')}</div>
 
                             {inheritedVariables.value.map(v => (
                                 <>
@@ -346,7 +345,7 @@ export function FolderEditor() {
             {/* Authentication Section */}
             <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem' }}>Authentication</h3>
+                    <h3 style={{ margin: 0, fontSize: '1rem' }}>{t('folderEditor.authenticationTitle')}</h3>
                 </div>
                 <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
                     <AuthEditor auth={auth} onChange={(newAuth) => auth.value = newAuth} inheritedAuth={inheritedAuth.value} parentId={currentFolder.id} />

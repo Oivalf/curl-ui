@@ -4,6 +4,7 @@ import { Edit2, Trash2, FilePlus, FolderPlus, Copy, Save, X, Play, Download, Ser
 import { exportToPostman } from '../../utils/postmanUtils';
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
+import { t } from '../../i18n';
 
 const SaveIcon = Save as any;
 const XIcon = X as any;
@@ -129,7 +130,7 @@ export function SidebarContextMenu() {
 
         if (!item) return;
 
-        const newName = await showPrompt("Rename to:", item.name);
+        const newName = await showPrompt(t('prompt.renameTo'), item.name);
         if (newName && newName !== item.name) {
             if (menu.type === 'folder') {
                 folders.value = folders.value.map(f => f.id === menu.itemId ? { ...f, name: newName } : f);
@@ -149,7 +150,7 @@ export function SidebarContextMenu() {
             const item = folders.value.find(f => f.id === menu.itemId);
             if (!item) return;
 
-            if (confirm(`Delete folder "${item.name}"? This will delete all contents.`)) {
+            if (confirm(t('alert.deleteFolder', { name: item.name }))) {
                 // Recursive delete logic
                 const idsToDelete = new Set<string>([menu.itemId]);
                 let added = true;
@@ -172,7 +173,7 @@ export function SidebarContextMenu() {
         } else if (menu.type === 'request') {
             const item = requests.value.find(r => r.id === menu.itemId);
             if (!item) return;
-            if (confirm(`Delete request "${item.name}"?`)) {
+            if (confirm(t('alert.deleteRequest', { name: item.name }))) {
                 requests.value = requests.value.filter(r => r.id !== menu.itemId);
                 if (activeRequestId.value === menu.itemId) {
                     activeRequestId.value = null;
@@ -185,8 +186,8 @@ export function SidebarContextMenu() {
             import('../../store').then(({ confirmationState }) => {
                 confirmationState.value = {
                     isOpen: true,
-                    title: 'Delete execution?',
-                    message: `Are you sure you want to delete "${execution.name}"?`,
+                    title: t('alert.deleteExecutionTitle'),
+                    message: t('alert.deleteExecutionMessage', { name: execution.name }),
                     onConfirm: () => {
                         executions.value = executions.value.filter(e => e.id !== menu.itemId);
 
@@ -218,10 +219,10 @@ export function SidebarContextMenu() {
     };
 
     const handleAddRequest = async () => {
-        const name = await showPrompt("Enter request name:", "New Request");
+        const name = await showPrompt(t('prompt.newRequest'), t('prompt.newRequestDefault'));
         if (name === null) return;
 
-        const newReq = createNewRequest(name || "New Request", menu.collectionId, menu.itemId);
+        const newReq = createNewRequest(name || t('prompt.newRequestDefault'), menu.collectionId, menu.itemId);
         requests.value = [...requests.value, newReq];
         activeRequestId.value = newReq.id;
 
@@ -234,13 +235,13 @@ export function SidebarContextMenu() {
     };
 
     const handleAddFolder = async () => {
-        const name = await showPrompt("Enter folder name:", "New Folder");
+        const name = await showPrompt(t('prompt.newFolder'), t('prompt.newFolderDefault'));
         if (name === null) return;
 
         const newId = crypto.randomUUID();
         folders.value = [...folders.value, {
             id: newId,
-            name: name || "New Folder",
+            name: name || t('prompt.newFolderDefault'),
             parentId: menu.itemId,
             collectionId: menu.collectionId,
             collapsed: false
@@ -266,7 +267,7 @@ export function SidebarContextMenu() {
                 openTabs.value = [...openTabs.value, {
                     id: tabId,
                     type: 'collection',
-                    name: `Mock: ${collection.name}`
+                    name: t('sidebar.mockManagerTitle', { name: collection.name })
                 }];
             }
             activeTabId.value = tabId;
@@ -275,7 +276,7 @@ export function SidebarContextMenu() {
     };
 
     const handleAddExecution = async () => {
-        const name = await showPrompt("Enter execution name:", "New Execution");
+        const name = await showPrompt(t('prompt.newExecution'), t('prompt.newExecutionDefault'));
         if (name === null) return;
 
         const parentRequest = requests.value.find(r => r.id === menu.itemId);
@@ -287,7 +288,7 @@ export function SidebarContextMenu() {
             id: newId,
             requestId: parentRequest.id,
             collectionId: parentRequest.collectionId,
-            name: name || "New Execution",
+            name: name || t('prompt.newExecutionDefault'),
             sortIndex: siblingsCount
             // All other fields undefined = inherit from parent request
         }];
@@ -296,7 +297,7 @@ export function SidebarContextMenu() {
         openTabs.value = [...openTabs.value, {
             id: newId,
             type: 'execution',
-            name: name || "New Execution"
+            name: name || t('prompt.newExecutionDefault')
         }];
         activeTabId.value = newId;
         activeExecutionId.value = newId;
@@ -369,12 +370,12 @@ export function SidebarContextMenu() {
                         }}
                         style={itemStyle}
                     >
-                        <SaveIcon size={14} /> Save
+                        <SaveIcon size={14} /> {t('contextMenu.save')}
                     </div>
                     <div
                         className="context-menu-item"
                         onClick={async () => {
-                            const name = await showPrompt("Enter request name:", "New Request");
+                            const name = await showPrompt(t('prompt.newRequest'), t('prompt.newRequestDefault'));
                             if (name) {
                                 const newReq = createNewRequest(name, menu.collectionId, null);
                                 requests.value = [...requests.value, newReq];
@@ -389,21 +390,21 @@ export function SidebarContextMenu() {
                         }}
                         style={itemStyle}
                     >
-                        <FilePlus size={14} /> New Request
+                        <FilePlus size={14} /> {t('contextMenu.newRequest')}
                     </div>
                     <div
                         className="context-menu-item"
                         onClick={() => handleImport('curl')}
                         style={itemStyle}
                     >
-                        <Download size={14} /> Import...
+                        <Download size={14} /> {t('contextMenu.import')}
                     </div>
                     <div
                         className="context-menu-item"
                         onClick={handleOpenMockManager}
                         style={itemStyle}
                     >
-                        <ServerCog size={14} /> Mock Manager
+                        <ServerCog size={14} /> {t('contextMenu.mockManager')}
                     </div>
                     <div
                         className="context-menu-item"
@@ -441,12 +442,12 @@ export function SidebarContextMenu() {
                         }}
                         style={itemStyle}
                     >
-                        <ExternalLink size={14} /> Export to Postman
+                        <ExternalLink size={14} /> {t('contextMenu.exportPostman')}
                     </div>
                     <div
                         className="context-menu-item"
                         onClick={async () => {
-                            const name = await showPrompt("Enter folder name:", "New Folder");
+                            const name = await showPrompt(t('prompt.newFolder'), t('prompt.newFolderDefault'));
                             if (name) {
                                 const newId = crypto.randomUUID();
                                 folders.value = [...folders.value, {
@@ -461,7 +462,7 @@ export function SidebarContextMenu() {
                         }}
                         style={itemStyle}
                     >
-                        <FolderPlus size={14} /> New Folder
+                        <FolderPlus size={14} /> {t('contextMenu.newFolder')}
                     </div>
                     <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
                     <div
@@ -479,15 +480,15 @@ export function SidebarContextMenu() {
 
                                 confirmationState.value = {
                                     isOpen: true,
-                                    title: `Remove collection "${collection.name}"?`,
-                                    message: `Are you sure you want to remove collection "${collection.name}" from the project? The file will not be deleted from disk.`,
+                                    title: t('sidebar.menu.removeCollectionTitle', { name: collection.name }),
+                                    message: t('sidebar.menu.removeCollectionMessage', { name: collection.name }),
                                     onConfirm: performRemove
                                 };
                             });
                         }}
                         style={{ ...itemStyle, color: 'var(--error)' }}
                     >
-                        <XIcon size={14} /> Remove
+                        <XIcon size={14} /> {t('contextMenu.remove')}
                     </div>
                 </>
             ) : (
@@ -505,7 +506,7 @@ export function SidebarContextMenu() {
                                         onClick={handleRename}
                                         style={itemStyle}
                                     >
-                                        <Edit2 size={14} /> Rename
+                                        <Edit2 size={14} /> {t('contextMenu.rename')}
                                     </div>
                                 )}
 
@@ -514,7 +515,7 @@ export function SidebarContextMenu() {
                                     onClick={handleDuplicate}
                                     style={itemStyle}
                                 >
-                                    <Copy size={14} /> Duplicate
+                                    <Copy size={14} /> {t('contextMenu.duplicate')}
                                 </div>
 
                                 {(!isExecution || !isDefault) && (
@@ -523,7 +524,7 @@ export function SidebarContextMenu() {
                                         onClick={handleDelete}
                                         style={{ ...itemStyle, color: 'var(--error)' }}
                                     >
-                                        <Trash2 size={14} /> Delete
+                                        <Trash2 size={14} /> {t('contextMenu.delete')}
                                     </div>
                                 )}
                             </>
@@ -538,21 +539,21 @@ export function SidebarContextMenu() {
                                 onClick={handleAddRequest}
                                 style={itemStyle}
                             >
-                                <FilePlus size={14} /> Add Request
+                                <FilePlus size={14} /> {t('contextMenu.addRequest')}
                             </div>
                             <div
                                 className="context-menu-item"
                                 onClick={handleAddFolder}
                                 style={itemStyle}
                             >
-                                <FolderPlus size={14} /> Add Folder
+                                <FolderPlus size={14} /> {t('contextMenu.addFolder')}
                             </div>
                             <div
                                 className="context-menu-item"
                                 onClick={() => handleImport('curl')}
                                 style={itemStyle}
                             >
-                                <Download size={14} /> Import...
+                                <Download size={14} /> {t('contextMenu.import')}
                             </div>
                         </>
                     )}
@@ -565,7 +566,7 @@ export function SidebarContextMenu() {
                                 onClick={handleAddExecution}
                                 style={itemStyle}
                             >
-                                <PlayIcon size={14} /> New Execution
+                                <PlayIcon size={14} /> {t('contextMenu.newExecution')}
                             </div>
                         </>
                     )}
@@ -577,14 +578,14 @@ export function SidebarContextMenu() {
                                 onClick={handleCloseOthersTabs}
                                 style={itemStyle}
                             >
-                                <XIcon size={14} /> Close Others
+                                <XIcon size={14} /> {t('contextMenu.closeOthers')}
                             </div>
                             <div
                                 className="context-menu-item"
                                 onClick={handleCloseAllTabs}
                                 style={{ ...itemStyle, color: 'var(--error)' }}
                             >
-                                <XIcon size={14} /> Close All
+                                <XIcon size={14} /> {t('contextMenu.closeAll')}
                             </div>
                         </>
                     )}

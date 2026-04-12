@@ -8,6 +8,7 @@ import { Play, XCircle, X } from "lucide-preact";
 import { runExecution, cancelExecution } from "../utils/execution";
 import { ExecutionProgress } from "./execution/ExecutionProgress";
 import { ResponsePanel } from "./response/ResponsePanel";
+import { t } from "../i18n";
 
 export function RequestEditor() {
     const currentRequest = requests.value.find(r => r.id === activeRequestId.value);
@@ -24,7 +25,7 @@ export function RequestEditor() {
         searchParams.forEach((_, key) => {
             if (processedKeys.has(key)) return;
             processedKeys.add(key);
-            params.push({ key, values: searchParams.getAll(key), enabled: boolean });
+            params.push({ key, values: searchParams.getAll(key), enabled: true });
         });
         return { base, params };
     };
@@ -37,7 +38,7 @@ export function RequestEditor() {
     const method = useSignal(currentRequest.method);
     // Convert headers object to array for easier editing
     const headers = useSignal<TableRow[]>(
-        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])], enabled: boolean }))
+        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])], enabled: true }))
     );
     const body = useSignal(currentRequest.body || '');
     const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
@@ -71,7 +72,7 @@ export function RequestEditor() {
     // Params State
     const queryParams = useSignal<TableRow[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>(currentRequest.pathParams || {});
-    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean }[]>(currentRequest.formData || []);
+    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean, contentTypes?: string[] }[]>(currentRequest.formData || []);
 
     // URL sync effect removed - handled by onInput and initial state
 
@@ -334,8 +335,8 @@ export function RequestEditor() {
         runExecution(dExec.id, {
             url: url.peek(),
             method: method.peek(),
-            headers: headers.peek().map(h => ({ ...h, enabled: boolean })), // RequestEditor headers are implied enabled
-            queryParams: queryParams.peek().map(p => ({ ...p, enabled: boolean })),
+            headers: headers.peek().map(h => ({ ...h, enabled: true })), // RequestEditor headers are implied enabled
+            queryParams: queryParams.peek().map(p => ({ ...p, enabled: true })),
             body: body.peek(),
             bodyType: bodyType.peek(),
             auth: auth.peek(),
@@ -357,7 +358,7 @@ export function RequestEditor() {
             <input
                 value={name.value}
                 onInput={(e) => name.value = e.currentTarget.value}
-                placeholder="Request Name"
+                placeholder={t('requestEditor.namePlaceholder')}
                 style={{
                     width: '100%',
                     fontSize: '1.2rem',
@@ -389,7 +390,7 @@ export function RequestEditor() {
                                         if (existing) {
                                             existing.values.push(v);
                                         } else {
-                                            nextParams.push({ key: k, values: [v], enabled: boolean });
+                                            nextParams.push({ key: k, values: [v], enabled: true });
                                         }
                                     });
                                     queryParams.value = nextParams;
@@ -414,8 +415,8 @@ export function RequestEditor() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap'
-                    }} title={finalUrlPreview.value}>
-                        Preview: {finalUrlPreview.value}
+                    }} title={t('requestEditor.previewUrl', { url: finalUrlPreview.value })}>
+                        {t('requestEditor.previewUrl', { url: finalUrlPreview.value })}
                     </div>
                 </div>
                 {progress.value.isLoading ? (
@@ -435,7 +436,7 @@ export function RequestEditor() {
                             fontSize: '0.9rem'
                         }}
                     >
-                        <XCircle size={16} /> Cancel
+                        <XCircle size={16} /> {t('requestEditor.cancelBtn')}
                     </button>
                 ) : (
                     <button
@@ -454,7 +455,7 @@ export function RequestEditor() {
                             fontSize: '0.9rem'
                         }}
                     >
-                        <Play size={16} fill="currentColor" /> Run Default
+                        <Play size={16} fill="currentColor" /> {t('requestEditor.runDefaultBtn')}
                     </button>
                 )}
             </div>
@@ -549,7 +550,7 @@ export function RequestEditor() {
                                         padding: '4px',
                                         display: 'flex'
                                     }}
-                                    title="Close Results"
+                                    title={t('requestEditor.closeResultsTitle')}
                                 >
                                     <X size={18} />
                                 </button>

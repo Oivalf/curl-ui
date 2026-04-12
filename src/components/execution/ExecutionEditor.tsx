@@ -8,6 +8,7 @@ import { ExecutionProgress } from "./ExecutionProgress";
 import { ResponsePanel } from "../response/ResponsePanel";
 import { MethodSelect } from "../MethodSelect";
 import { VariableInput } from "../VariableInput";
+import { t } from "../../i18n";
 
 export function ExecutionEditor() {
     const currentExecution = executions.value.find((e: any) => e.id === activeExecutionId.value);
@@ -20,7 +21,7 @@ export function ExecutionEditor() {
     if (!parentRequest) {
         return (
             <div style={{ padding: 'var(--spacing-lg)', color: 'var(--text-muted)' }}>
-                Parent request not found. The execution may be orphaned.
+                {t('executionEditor.orphanedExecution')}
             </div>
         );
     }
@@ -37,7 +38,7 @@ export function ExecutionEditor() {
         searchParams.forEach((_, key) => {
             if (processedKeys.has(key)) return;
             processedKeys.add(key);
-            params.push({ key, values: searchParams.getAll(key), enabled: boolean });
+            params.push({ key, values: searchParams.getAll(key), enabled: true });
         });
         return { base, params };
     };
@@ -87,7 +88,7 @@ export function ExecutionEditor() {
     const headers = useSignal<TableRow[]>(getMergedHeaders());
     const queryParams = useSignal<TableRow[]>(getMergedQueryParams(parentRequest.url, currentExecution.queryParams));
     const pathParams = useSignal<Record<string, string>>(currentExecution.pathParams || {});
-    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentExecution.formData ?? parentRequest.formData ?? []);
+    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean, contentTypes?: string[] }[]>(currentExecution.formData ?? parentRequest.formData ?? []);
     const detectedPathKeys = useSignal<string[]>([]);
     const lastLoadedId = useRef<string | null>(null);
 
@@ -343,7 +344,7 @@ export function ExecutionEditor() {
                     style={{ flex: 1, fontSize: '1.25rem', fontWeight: 'bold', border: 'none', background: 'transparent', outline: 'none', color: isReadOnly.value ? 'var(--text-muted)' : 'var(--text-primary)' }}
                 />
                 <div onClick={navigateToParent} style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}>
-                    <ArrowLeft size={14} /> based on: <strong style={{ color: 'var(--text-secondary)' }}>{parentRequest.name}</strong>
+                    <ArrowLeft size={14} /> {t('executionEditor.basedOn')} <strong style={{ color: 'var(--text-secondary)' }}>{parentRequest.name}</strong>
                 </div>
             </div>
 
@@ -352,10 +353,10 @@ export function ExecutionEditor() {
                 <MethodSelect value={method.value} onChange={() => {}} disabled={true} />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <VariableInput value={url.value} readOnly={true} onInput={() => {}} placeholder="URL" style={{ border: 'none', background: 'transparent' }} />
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', paddingLeft: '8px', opacity: 0.8 }}>Preview: {finalUrlPreview.value}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', paddingLeft: '8px', opacity: 0.8 }}>{t('requestEditor.previewUrl', { url: finalUrlPreview.value })}</div>
                 </div>
                 <button onClick={progress.value.isLoading ? handleCancel : handleSend} style={{ padding: '8px 24px', backgroundColor: progress.value.isLoading ? 'var(--error)' : 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-                    {progress.value.isLoading ? <XCircle size={18} /> : <Play size={18} fill="white" />} {progress.value.isLoading ? 'Cancel' : 'Run'}
+                    {progress.value.isLoading ? <XCircle size={18} /> : <Play size={18} fill="white" />} {progress.value.isLoading ? t('executionEditor.cancelBtn') : t('executionEditor.runBtn')}
                 </button>
             </div>
 

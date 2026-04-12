@@ -2,6 +2,7 @@ import { Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown } from 'luc
 import { activeFolderId, activeRequestId, activeExecutionId, folders, requests, Folder, openTabs, activeTabId, expandedFolderIds } from '../../store';
 import { BaseSidebarItem } from './BaseSidebarItem';
 import { RequestSidebarItem } from './RequestSidebarItem';
+import { t } from '../../i18n';
 
 interface FolderSidebarItemProps {
     folder: Folder;
@@ -91,8 +92,8 @@ export function FolderSidebarItem({ folder, depth = 0 }: FolderSidebarItemProps)
         import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
-                title: 'Delete folder?',
-                message: `Are you sure you want to delete "${folder.name}"? This will delete all contents.`,
+                title: t('common.delete'),
+                message: t('alert.deleteFolder', { name: folder.name }),
                 onConfirm: performDelete
             };
         });

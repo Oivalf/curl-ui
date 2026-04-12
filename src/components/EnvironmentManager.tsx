@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { exportEnvironmentToPostman } from '../utils/postmanUtils';
 import { save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { t } from '../i18n';
 
 
 interface EnvironmentManagerProps {
@@ -20,7 +21,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
     const selectedEnvName = selectedEnvironmentInManager;
 
     const createEnvironment = () => {
-        const baseName = 'New Environment';
+        const baseName = t('environmentManager.newEnvironmentBaseName');
         let newName = baseName;
         let counter = 1;
         while (environments.value.some(e => e.name === newName)) {
@@ -39,15 +40,15 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
         e.stopPropagation();
         confirmationState.value = {
             isOpen: true,
-            title: 'Delete Environment',
-            message: `Are you sure you want to delete the environment "${name}"?`,
+            title: t('environmentManager.deleteTitle'),
+            message: t('environmentManager.deleteMessage', { name }),
             onConfirm: () => {
                 environments.value = environments.value.filter(e => e.name !== name);
                 if (selectedEnvName.value === name) {
                     selectedEnvName.value = environments.value[0]?.name || null;
                 }
                 if (activeEnvName.value === name) {
-                    activeEnvName.value = null;
+                    activeEnvName.value = 'Global';
                 }
             }
         };
@@ -56,7 +57,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
     const updateEnvName = (oldName: string, newName: string) => {
         if (!newName || newName === oldName) return;
         if (environments.value.some(e => e.name === newName)) {
-            alert('Environment name must be unique.');
+            alert(t('environmentManager.nameNotUnique'));
             return;
         }
 
@@ -209,7 +210,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
     const globalEnv = environments.value.find(e => e.name === 'Global');
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Manage Environments">
+        <Modal isOpen={isOpen} onClose={onClose} title={t('environmentManager.title')}>
             <div style={{ display: 'flex', height: '400px', gap: 'var(--spacing-md)' }}>
                 {/* Sidebar List */}
                 <div style={{ width: '150px', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
@@ -257,7 +258,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                             borderRadius: 'var(--radius-sm)'
                         }}
                     >
-                        <Plus size={14} /> New Env
+                        <Plus size={14} /> {t('environmentManager.newEnvBtn')}
                     </button>
                 </div>
 
@@ -266,7 +267,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                     {currentEnv ? (
                         <>
                             <div style={{ marginBottom: '16px' }}>
-                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Environment Name</label>
+                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('environmentManager.envNameLabel')}</label>
                                 <input
                                     value={currentEnv.name}
                                     onChange={(e) => updateEnvName(currentEnv.name, e.currentTarget.value)}
@@ -285,7 +286,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
 
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <h4 style={{ margin: 0 }}>Variables</h4>
+                                    <h4 style={{ margin: 0 }}>{t('environmentManager.variablesLabel')}</h4>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button
                                             onClick={async () => {
@@ -301,7 +302,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                                 if (path) {
                                                     const postmanEnv = exportEnvironmentToPostman(currentEnv);
                                                     await invoke('save_workspace', { path, data: JSON.stringify(postmanEnv, null, 2) });
-                                                    alert(`Environment exported to ${path}`);
+                                                    alert(t('environmentManager.exportSuccess', { path }));
                                                 }
                                             }}
                                             style={{
@@ -316,9 +317,9 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                                 borderRadius: 'var(--radius-sm)',
                                                 fontSize: '0.75rem'
                                             }}
-                                            title="Export to Postman"
+                                            title={t('environmentManager.exportTitle')}
                                         >
-                                            <Download size={12} /> Export
+                                            <Download size={12} /> {t('environmentManager.exportBtn')}
                                         </button>
                                     </div>
                                 </div>
@@ -328,17 +329,17 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                     {currentEnv.name !== 'Global' && globalEnv && globalEnv.variables.length > 0 && (
                                         <div style={{ marginBottom: '16px', padding: '8px', backgroundColor: 'var(--bg-base)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', opacity: 0.8 }}>
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>
-                                                Inherited from Global
+                                                {t('environmentManager.inheritedFromGlobal')}
                                             </div>
                                             {globalEnv.variables
                                                 .filter(gv => !currentEnv.variables.some(lv => lv.key === gv.key))
                                                 .map((v, idx) => (
                                                     <div key={`global-${idx}`} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
                                                         <div style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.6 }}>
-                                                            {v.key || <span style={{ fontStyle: 'italic' }}>(empty key)</span>}
+                                                            {v.key || <span style={{ fontStyle: 'italic' }}>{t('environmentManager.emptyKey')}</span>}
                                                         </div>
                                                         <input
-                                                            placeholder="Override Value"
+                                                            placeholder={t('environmentManager.overrideValue')}
                                                             value={v.value}
                                                             onInput={(e) => overrideGlobalVariable(v.key, e.currentTarget.value)}
                                                             style={{ flex: 1, padding: '4px 8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '0.9rem' }}
@@ -355,7 +356,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                             onClick={() => addVariable(currentEnv.name)}
                                             style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
                                         >
-                                            <Plus size={14} /> Add Variable
+                                            <Plus size={14} /> {t('environmentManager.addVariableBtn')}
                                         </button>
                                     </div>
 
@@ -366,7 +367,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                             <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
                                                 <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
                                                     <input
-                                                        placeholder="Key"
+                                                        placeholder={t('environmentManager.keyPlaceholder')}
                                                         value={v.key}
                                                         onInput={(e) => updateVariable(currentEnv.name, idx, 'key', e.currentTarget.value)}
                                                         disabled={isOverride}
@@ -374,7 +375,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                                     />
                                                     {isOverride && (
                                                         <div
-                                                            title="Overrides Global variable"
+                                                            title={t('environmentManager.overridesGlobal')}
                                                             style={{
                                                                 position: 'absolute',
                                                                 right: '6px',
@@ -397,7 +398,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                                                     )}
                                                 </div>
                                                 <input
-                                                    placeholder="Value"
+                                                    placeholder={t('environmentManager.valuePlaceholder')}
                                                     value={v.value}
                                                     onInput={(e) => updateVariable(currentEnv.name, idx, 'value', e.currentTarget.value)}
                                                     style={{ flex: 1, padding: '4px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
@@ -416,7 +417,7 @@ export function EnvironmentManager({ isOpen, onClose }: EnvironmentManagerProps)
                         </>
                     ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                            Select an environment
+                            {t('environmentManager.selectEnvironment')}
                         </div>
                     )}
                 </div>

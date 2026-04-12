@@ -18,6 +18,7 @@ interface LayoutProps {
 
 import { openUserGuideWindow } from '../utils/window';
 import { TitleBar } from './TitleBar';
+import { t } from '../i18n';
 
 
 
@@ -155,7 +156,7 @@ export function MainLayout({ children }: LayoutProps) {
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span>🚀</span>
-                            <span>A new version ({updateInfo.value.latest_version}) is available!</span>
+                            <span>{t('mainLayout.updatesAvailable', { version: updateInfo.value.latest_version })}</span>
                         </div>
                         <a
                             href={updateInfo.value.release_url}
@@ -166,7 +167,7 @@ export function MainLayout({ children }: LayoutProps) {
                                 openUrl(updateInfo.value!.release_url);
                             }}
                         >
-                            Download from GitHub
+                            {t('mainLayout.download')}
                         </a>
                         <button
                             onClick={() => updateInfo.value = { ...updateInfo.value!, is_available: false }}
@@ -181,7 +182,7 @@ export function MainLayout({ children }: LayoutProps) {
                                 marginLeft: '8px'
                             }}
                         >
-                            Dismiss
+                            {t('mainLayout.dismiss')}
                         </button>
                     </div>
                 )}
@@ -196,7 +197,7 @@ export function MainLayout({ children }: LayoutProps) {
                 }}>
                     {/* Environment Selector */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Env:</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('mainLayout.env')}</div>
                         <select
                             value={activeEnvName.value || ''}
                             onChange={(e) => activeEnvName.value = e.currentTarget.value}
@@ -211,7 +212,7 @@ export function MainLayout({ children }: LayoutProps) {
                             }}
                         >
                             {environments.value.filter(env => env.name !== 'Global').length === 0
-                                ? <option value="">No Environment</option>
+                                ? <option value="">{t('mainLayout.noEnv')}</option>
                                 : environments.value
                                     .filter(env => env.name !== 'Global')
                                     .map(env => (
@@ -228,7 +229,7 @@ export function MainLayout({ children }: LayoutProps) {
                                 display: 'flex',
                                 alignItems: 'center'
                             }}
-                            title="Manage Environments"
+                            title={t('mainLayout.manageEnv')}
                         >
                             <Settings size={14} />
                         </button>
@@ -264,7 +265,7 @@ export function MainLayout({ children }: LayoutProps) {
                             fontSize: '0.8rem'
                         }}
                     >
-                        <Terminal size={14} /> Console
+                        <Terminal size={14} /> {t('mainLayout.console')}
                     </button>
                 </div>
             </main>
@@ -297,7 +298,7 @@ export function MainLayout({ children }: LayoutProps) {
                                 cursor: 'pointer'
                             }}
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </button>
                         <button
                             onClick={() => {
@@ -314,7 +315,7 @@ export function MainLayout({ children }: LayoutProps) {
                                 cursor: 'pointer'
                             }}
                         >
-                            Delete
+                            {t('common.delete')}
                         </button>
                     </div>
                 </div>

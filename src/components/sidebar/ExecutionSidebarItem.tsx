@@ -1,6 +1,7 @@
 import { Play } from 'lucide-preact';
 import { activeExecutionId, activeRequestId, activeFolderId, executions, requests, ExecutionItem, openTabs, activeTabId } from '../../store';
 import { BaseSidebarItem } from './BaseSidebarItem';
+import { t } from '../../i18n';
 
 interface ExecutionSidebarItemProps {
     execution: ExecutionItem;
@@ -67,8 +68,8 @@ export function ExecutionSidebarItem({ execution, depth }: ExecutionSidebarItemP
         import('../../store').then(({ confirmationState }) => {
             confirmationState.value = {
                 isOpen: true,
-                title: 'Delete execution?',
-                message: `Are you sure you want to delete "${execution.name}"?`,
+                title: t('alert.deleteExecutionTitle'),
+                message: t('alert.deleteExecutionMessage', { name: execution.name }),
                 onConfirm: performDelete
             };
         });

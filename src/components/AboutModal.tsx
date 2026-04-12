@@ -3,6 +3,7 @@ import { isAboutOpen, updateInfo } from '../store';
 import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
 import { useSignal, useSignalEffect } from '@preact/signals';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { t } from '../i18n';
 
 export function AboutModal() {
     const appVersion = useSignal('Loading...');
@@ -19,24 +20,24 @@ export function AboutModal() {
         <Modal
             isOpen={isAboutOpen.value}
             onClose={() => isAboutOpen.value = false}
-            title="About cURL-UI"
+            title={t('aboutModal.title')}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', padding: '16px' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
                     cURL-UI
                 </div>
                 <div style={{ color: 'var(--text-secondary)' }}>
-                    A modern HTTP client built with Tauri.
+                    {t('aboutModal.subtitle')}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 16px', marginTop: '16px', fontSize: '0.9rem' }}>
-                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>App Version:</div>
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>{t('aboutModal.appVersion')}</div>
                     <div>{appVersion}</div>
 
-                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>Tauri Version:</div>
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>{t('aboutModal.tauriVersion')}</div>
                     <div>{tauriVersion}</div>
 
-                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>License:</div>
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-muted)' }}>{t('aboutModal.license')}</div>
                     <div>MIT</div>
                 </div>
 
@@ -53,7 +54,7 @@ export function AboutModal() {
                         border: '1px solid var(--accent-primary)'
                     }}>
                         <div style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>
-                            New version available: {updateInfo.value.latest_version}
+                            {t('aboutModal.newVersionAvailable', { version: updateInfo.value.latest_version })}
                         </div>
                         <button
                             onClick={() => openUrl(updateInfo.value!.release_url)}
@@ -67,7 +68,7 @@ export function AboutModal() {
                                 fontWeight: 'bold'
                             }}
                         >
-                            View on GitHub
+                            {t('aboutModal.viewOnGitHub')}
                         </button>
                     </div>
                 )}

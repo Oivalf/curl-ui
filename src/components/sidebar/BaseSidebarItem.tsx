@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { Trash2 } from 'lucide-preact';
 import { unsavedItemIds, contextMenu } from '../../store';
 import { ComponentChildren } from 'preact';
+import { t } from '../../i18n';
 
 export interface BaseSidebarItemProps {
     /** Unique ID of this item */
@@ -197,7 +198,7 @@ export function BaseSidebarItem({
                     <div
                         onClick={onDelete}
                         style={{ opacity: 0.6, padding: '2px', cursor: 'pointer' }}
-                        title="Delete"
+                        title={t('common.delete')}
                     >
                         <Trash2 size={14} />
                     </div>
