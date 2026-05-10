@@ -5,7 +5,7 @@ All notable changes to cURL-UI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 0.1.10
+## [0.1.10] - 2026-05-10
 
 ### Added
 - **Logging**: Implemented global error and unhandled rejection capture, ensuring all frontend crashes are visible in the in-app console
@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UI Localization**: Fully internationalized remaining core editor components (`RequestEditor`, `ResponsePanel`, `FolderEditor`, `ExecutionEditor` and their subcomponents), removing hardcoded strings and centralizing them in the `i18n` dictionary
 ---
 
-## [Unreleased] - 0.1.9
+## [0.1.10] - 2026-05-10
 
 ### Added
 - **Use Case Manager**: Premium, searchable execution selector with HTTP method badges and pop-in animations
