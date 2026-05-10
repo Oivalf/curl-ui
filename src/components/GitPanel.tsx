@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { UploadCloud, RefreshCw, Download } from 'lucide-preact';
 import { collections } from '../store';
 import { MergeEditor } from './MergeEditor';
+import { t } from '../i18n';
 
 interface FileStatus {
     path: string;
@@ -258,7 +259,7 @@ export function GitPanel() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)', height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>Git Changes</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{t('gitPanel.title')}</span>
                 <button onClick={loadStatus} disabled={globalLoading} style={{ background: 'none', color: 'var(--accent-primary)', cursor: 'pointer', border: 'none' }}>
                     <RefreshCw size={16} class={globalLoading ? "spin" : ""} />
                 </button>
@@ -266,10 +267,12 @@ export function GitPanel() {
 
             {collectionStates.length > 1 && (
                 <div style={{ padding: '8px', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(var(--accent-primary-rgb), 0.1)', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px', color: 'var(--accent-primary)' }}>Global Commit & Push ({collectionStates.length} modified)</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px', color: 'var(--accent-primary)' }}>
+                        {t('gitPanel.globalCommitPush', { count: collectionStates.length })}
+                    </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <input
-                            placeholder="Global commit message..."
+                            placeholder={t('gitPanel.globalCommitPlaceholder')}
                             value={globalCommitMsg}
                             onInput={(e) => setGlobalCommitMsg(e.currentTarget.value)}
                             style={{ flex: 1, padding: '6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.85rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
@@ -291,7 +294,7 @@ export function GitPanel() {
                                 opacity: (!globalCommitMsg || globalLoading) ? 0.6 : 1
                             }}
                         >
-                            <UploadCloud size={16} /> All
+                            <UploadCloud size={16} /> {t('gitPanel.commitPushAllBtn')}
                         </button>
                     </div>
                 </div>
@@ -300,7 +303,7 @@ export function GitPanel() {
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {collectionStates.length === 0 && !globalLoading && (
                     <div style={{ padding: '8px', color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.9rem' }}>
-                        No modified collections found.
+                        {t('gitPanel.noModifiedCollections')}
                     </div>
                 )}
 
@@ -317,7 +320,7 @@ export function GitPanel() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                             {!state.hasConflict && (
                                 <input
-                                    placeholder="Commit message..."
+                                    placeholder={t('gitPanel.commitPlaceholder')}
                                     value={state.commitMsg}
                                     onInput={(e) => {
                                         setCollectionStates(prev => prev.map(s => s.id === state.id ? { ...s, commitMsg: e.currentTarget.value } : s));
@@ -360,7 +363,7 @@ export function GitPanel() {
                                         flex: 1
                                     }}
                                 >
-                                    RESOLVE CONFLICT
+                                    {t('gitPanel.resolveConflictBtn')}
                                 </button>
                             ) : (
                                 <button

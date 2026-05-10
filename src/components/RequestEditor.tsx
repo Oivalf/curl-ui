@@ -1,6 +1,6 @@
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
 import { useRef, useCallback, useEffect } from "preact/hooks";
-import { activeRequestId, requests, folders, environments, activeEnvironmentName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, executionProgressMap } from "../store";
+import { activeRequestId, requests, folders, environments, activeEnvName, unsavedItemIds, AuthConfig, resolveAuth, resolveHeaders, ScriptItem, executions, executionProgressMap, TableRow } from "../store";
 import { RequestPanel } from "./RequestPanel";
 import { MethodSelect } from "./MethodSelect";
 import { VariableInput } from "./VariableInput";
@@ -8,6 +8,7 @@ import { Play, XCircle, X } from "lucide-preact";
 import { runExecution, cancelExecution } from "../utils/execution";
 import { ExecutionProgress } from "./execution/ExecutionProgress";
 import { ResponsePanel } from "./response/ResponsePanel";
+import { t } from "../i18n";
 
 export function RequestEditor() {
     const currentRequest = requests.value.find(r => r.id === activeRequestId.value);
@@ -19,12 +20,12 @@ export function RequestEditor() {
         if (!fullUrl || !fullUrl.includes('?')) return { base: fullUrl || '', params: [] };
         const [base, query] = fullUrl.split('?', 2);
         const searchParams = new URLSearchParams(query);
-        const params: { key: string, values: string[] }[] = [];
+        const params: TableRow[] = [];
         const processedKeys = new Set<string>();
         searchParams.forEach((_, key) => {
             if (processedKeys.has(key)) return;
             processedKeys.add(key);
-            params.push({ key, values: searchParams.getAll(key) });
+            params.push({ key, values: searchParams.getAll(key), enabled: true });
         });
         return { base, params };
     };
@@ -36,8 +37,8 @@ export function RequestEditor() {
     const url = useSignal(initialBase);
     const method = useSignal(currentRequest.method);
     // Convert headers object to array for easier editing
-    const headers = useSignal<{ key: string, values: string[] }[]>(
-        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])] }))
+    const headers = useSignal<TableRow[]>(
+        (currentRequest.headers || []).map(h => ({ key: h.key, values: [...(h.values || [])], enabled: true }))
     );
     const body = useSignal(currentRequest.body || '');
     const bodyType = useSignal<'none' | 'json' | 'xml' | 'html' | 'form_urlencoded' | 'multipart' | 'text' | 'javascript' | 'yaml'>(
@@ -69,14 +70,14 @@ export function RequestEditor() {
     });
 
     // Params State
-    const queryParams = useSignal<{ key: string, values: string[] }[]>(initialParams);
+    const queryParams = useSignal<TableRow[]>(initialParams);
     const pathParams = useSignal<Record<string, string>>(currentRequest.pathParams || {});
-    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[] }[]>(currentRequest.formData || []);
+    const formData = useSignal<{ key: string, type: 'text' | 'file', values: string[], enabled: boolean, contentTypes?: string[] }[]>(currentRequest.formData || []);
 
     // URL sync effect removed - handled by onInput and initial state
 
     // Reactive helper to update URL when Query Params change
-    const updateUrlFromParams = (newParams: { key: string, values: string[] }[]) => {
+    const updateUrlFromParams = (newParams: TableRow[]) => {
         queryParams.value = newParams;
     };
 
@@ -200,7 +201,7 @@ export function RequestEditor() {
         const placeholders = Array.from(new Set(text.match(/{{([\s\S]+?)}}/g) || []));
         if (placeholders.length === 0) return text;
 
-        const env = environments.value.find(e => e.name === activeEnvironmentName.value);
+        const env = environments.value.find(e => e.name === activeEnvName.value);
 
         // Build Scope Chain: [Leaf Folder, ..., Root Folder]
         const folderScopes: typeof folders.value[0][] = [];
@@ -357,7 +358,7 @@ export function RequestEditor() {
             <input
                 value={name.value}
                 onInput={(e) => name.value = e.currentTarget.value}
-                placeholder="Request Name"
+                placeholder={t('requestEditor.namePlaceholder')}
                 style={{
                     width: '100%',
                     fontSize: '1.2rem',
@@ -389,7 +390,7 @@ export function RequestEditor() {
                                         if (existing) {
                                             existing.values.push(v);
                                         } else {
-                                            nextParams.push({ key: k, values: [v] });
+                                            nextParams.push({ key: k, values: [v], enabled: true });
                                         }
                                     });
                                     queryParams.value = nextParams;
@@ -414,8 +415,8 @@ export function RequestEditor() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap'
-                    }} title={finalUrlPreview.value}>
-                        Preview: {finalUrlPreview.value}
+                    }} title={t('requestEditor.previewUrl', { url: finalUrlPreview.value })}>
+                        {t('requestEditor.previewUrl', { url: finalUrlPreview.value })}
                     </div>
                 </div>
                 {progress.value.isLoading ? (
@@ -435,7 +436,7 @@ export function RequestEditor() {
                             fontSize: '0.9rem'
                         }}
                     >
-                        <XCircle size={16} /> Cancel
+                        <XCircle size={16} /> {t('requestEditor.cancelBtn')}
                     </button>
                 ) : (
                     <button
@@ -454,7 +455,7 @@ export function RequestEditor() {
                             fontSize: '0.9rem'
                         }}
                     >
-                        <Play size={16} fill="currentColor" /> Run Default
+                        <Play size={16} fill="currentColor" /> {t('requestEditor.runDefaultBtn')}
                     </button>
                 )}
             </div>
@@ -549,7 +550,7 @@ export function RequestEditor() {
                                         padding: '4px',
                                         display: 'flex'
                                     }}
-                                    title="Close Results"
+                                    title={t('requestEditor.closeResultsTitle')}
                                 >
                                     <X size={18} />
                                 </button>

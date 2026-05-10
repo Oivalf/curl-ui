@@ -2,6 +2,7 @@ import { Signal, useSignal } from "@preact/signals";
 import { Plus, Trash2, CheckSquare, Square, ChevronRight, ChevronDown, ArrowUp, ArrowDown } from 'lucide-preact';
 import { ScriptItem } from "../../store";
 import { CodeEditor } from "../CodeEditor";
+import { t } from "../../i18n";
 
 interface ScriptListEditorProps {
     scripts: Signal<ScriptItem[]>;
@@ -17,8 +18,8 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
     const addScript = () => {
         const newScript: ScriptItem = {
             id: crypto.randomUUID(),
-            name: "New Script",
-            content: "console.log('Script');",
+            name: t('requestEditor.scripts.newScriptDefName'),
+            content: t('requestEditor.scripts.newScriptDefCode'),
             enabled: true,
             executeOnStatusCodes: ""
         };
@@ -68,7 +69,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
                             cursor: 'pointer', fontSize: '0.8rem'
                         }}
                     >
-                        <Plus size={14} /> Add Script
+                        <Plus size={14} /> {t('requestEditor.scripts.addScript')}
                     </button>
                 )}
             </div>
@@ -76,7 +77,7 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {scripts.value.length === 0 && (
                     <div style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '8px' }}>
-                        No scripts defined.
+                        {t('requestEditor.scripts.noScripts')}
                     </div>
                 )}
                 {scripts.value.map((script, index) => (
@@ -138,11 +139,11 @@ export function ScriptListEditor({ scripts, title, showStatusFilter = false, par
                             <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)', height: '220px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
                                 {showStatusFilter && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
-                                        <label style={{ color: 'var(--text-muted)' }}>Run on Status:</label>
+                                        <label style={{ color: 'var(--text-muted)' }}>{t('requestEditor.scripts.runOnStatus')}</label>
                                         <input
                                             value={script.executeOnStatusCodes || ''}
                                             onInput={(e) => updateScript(script.id, { executeOnStatusCodes: e.currentTarget.value })}
-                                            placeholder="e.g. 200, 201, 2xx, 4xx (Empty = Always)"
+                                            placeholder={t('requestEditor.scripts.runOnStatusPlaceholder')}
                                             style={{
                                                 flex: 1,
                                                 padding: '4px 8px',

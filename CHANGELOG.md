@@ -5,7 +5,24 @@ All notable changes to cURL-UI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.9] - 2026-04-05
+## [0.1.10] - 2026-05-10
+
+### Added
+- **Logging**: Implemented global error and unhandled rejection capture, ensuring all frontend crashes are visible in the in-app console
+- **Logging**: Integrated backend error reporting using `rust_error!` across all core commands (HTTP requests, Git, Project/Workspace management)
+- **Testing**: Introduced automated testing infrastructure with **Vitest** for store logic and **Playwright** for E2E interactions
+- **Testing**: Added integration tests for header and auth inheritance logic
+
+### Fixed
+- **App**: Fixed application hang on the "Loading cURL-UI..." screen by implementing a proper startup initialization sequence
+- **Logging**: Ensured all request execution and script errors are explicitly logged to the console
+
+### Changed
+- **Store Architecture**: Completed Phase 4 of architectural refactoring, modularizing the monolithic store into domain-specific modules for improved maintainability and type safety
+- **UI Localization**: Fully internationalized remaining core editor components (`RequestEditor`, `ResponsePanel`, `FolderEditor`, `ExecutionEditor` and their subcomponents), removing hardcoded strings and centralizing them in the `i18n` dictionary
+---
+
+## [0.1.9] - 2026-04-27
 
 ### Added
 - **Use Case Manager**: Premium, searchable execution selector with HTTP method badges and pop-in animations

@@ -5,6 +5,7 @@ import { ResponseHeadersTab } from "./ResponseHeadersTab";
 import { ResponseRawTab } from "./ResponseRawTab";
 import { ResponseRawRequestTab } from "./ResponseRawRequestTab";
 import { ResponseCurlTab } from "./ResponseCurlTab";
+import { t } from "../../i18n";
 
 interface ResponsePanelProps {
     id: string;
@@ -25,21 +26,21 @@ export function ResponsePanel({ id, response }: ResponsePanelProps) {
     const renderTabContent = () => {
         if (activeResponseTab === 'body') {
             if (!response || response.status === 0) {
-                return noDataMessage(response?.status === 0 ? 'Requesting...' : 'No response');
+                return noDataMessage(response?.status === 0 ? t('responsePanel.noData.requesting') : t('responsePanel.noData.noResponse'));
             }
             return <ResponseBodyTab response={response} />;
         }
 
         if (activeResponseTab === 'headers') {
             if (!response || response.status === 0) {
-                return noDataMessage(response?.status === 0 ? 'Requesting...' : 'No response');
+                return noDataMessage(response?.status === 0 ? t('responsePanel.noData.requesting') : t('responsePanel.noData.noResponse'));
             }
             return <ResponseHeadersTab headers={response.headers as string[][]} />;
         }
 
         if (activeResponseTab === 'raw_response') {
             if (!response || response.status === 0) {
-                return noDataMessage(response?.status === 0 ? 'Requesting...' : 'No response');
+                return noDataMessage(response?.status === 0 ? t('responsePanel.noData.requesting') : t('responsePanel.noData.noResponse'));
             }
             return <ResponseRawTab response={response} />;
         }
@@ -48,14 +49,14 @@ export function ResponsePanel({ id, response }: ResponsePanelProps) {
             if (response?.requestRaw) {
                 return <ResponseRawRequestTab requestRaw={response.requestRaw} />;
             }
-            return noDataMessage('No request data');
+            return noDataMessage(t('responsePanel.noData.noRequestData'));
         }
 
         if (activeResponseTab === 'curl') {
             if (response?.requestCurl) {
                 return <ResponseCurlTab requestCurl={response.requestCurl} />;
             }
-            return noDataMessage('No curl data');
+            return noDataMessage(t('responsePanel.noData.noCurlData'));
         }
 
         return null;
@@ -72,12 +73,12 @@ export function ResponsePanel({ id, response }: ResponsePanelProps) {
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, minHeight: 0 }}>
             <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--text-muted)' }}>RESPONSE</span>
-                <h3 style={tabStyle('body')} onClick={() => setActiveResponseTab('body')}>Body</h3>
-                <h3 style={tabStyle('headers')} onClick={() => setActiveResponseTab('headers')}>Headers</h3>
-                <h3 style={tabStyle('raw_response')} onClick={() => setActiveResponseTab('raw_response')}>Raw Response</h3>
-                <h3 style={tabStyle('raw_request')} onClick={() => setActiveResponseTab('raw_request')}>Raw Request</h3>
-                <h3 style={tabStyle('curl')} onClick={() => setActiveResponseTab('curl')}>cURL</h3>
+                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('responsePanel.title')}</span>
+                <h3 style={tabStyle('body')} onClick={() => setActiveResponseTab('body')}>{t('responsePanel.tabs.body')}</h3>
+                <h3 style={tabStyle('headers')} onClick={() => setActiveResponseTab('headers')}>{t('responsePanel.tabs.headers')}</h3>
+                <h3 style={tabStyle('raw_response')} onClick={() => setActiveResponseTab('raw_response')}>{t('responsePanel.tabs.rawResponse')}</h3>
+                <h3 style={tabStyle('raw_request')} onClick={() => setActiveResponseTab('raw_request')}>{t('responsePanel.tabs.rawRequest')}</h3>
+                <h3 style={tabStyle('curl')} onClick={() => setActiveResponseTab('curl')}>{t('responsePanel.tabs.curl')}</h3>
                 {response && (
                     <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', maxWidth: '50%' }}>
                         <span style={{

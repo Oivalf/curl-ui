@@ -1,31 +1,32 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { Modal } from './Modal';
-import { importModalState, requests, folders, activeRequestId, environments, ensureDefaultExecutions, externalMocks, saveExternalMockToDisk } from '../store';
+import { importModal, requests, folders, activeRequestId, environments, ensureDefaultExecutions, externalMocks, saveExternalMockToDisk, createNewRequest, createNewFolder } from '../store';
 import { parseCurl } from '../utils/curlParser';
 import { parseSwagger } from '../utils/swaggerParser';
 import { parsePostmanCollection, parsePostmanEnvironment, ParsedFolder, ParsedRequest } from '../utils/postmanUtils';
 import { FileUp } from 'lucide-preact';
+import { t } from '../i18n';
 
 export function ImportModal() {
-    const state = importModalState.value;
-    const [importType, setImportType] = useState<'curl' | 'swagger' | 'postman-collection' | 'postman-environment'>(state.type as any);
+    const state = importModal.value;
+    const [importType, setImportType] = useState<'curl' | 'swagger' | 'postman-collection' | 'postman-environment'>(state?.type as any);
     const [content, setContent] = useState('');
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Reset content and sync type when opening
     useEffect(() => {
-        if (state.isOpen) {
+        if (state?.isOpen) {
             setContent('');
             setError(null);
             setImportType(state.type);
         }
-    }, [state.isOpen, state.type]);
+    }, [state?.isOpen, state?.type]);
 
-    if (!state.isOpen) return null;
+    if (!state || !state.isOpen) return null;
 
     const handleClose = () => {
-        importModalState.value = { ...state, isOpen: false };
+        importModal.value = { ...state, isOpen: false };
     };
 
     const handleFileChange = (e: any) => {
@@ -64,16 +65,15 @@ export function ImportModal() {
                     if (name.length > 30) name = name.substring(0, 27) + "...";
                 } catch { /* ignore */ }
 
-                requests.value = [...requests.value, {
-                    id: newId,
-                    name: name,
-                    method: parsed.method,
-                    url: parsed.url,
-                    headers: parsed.headers.map(h => ({ key: h.key, values: [...h.values] })),
-                    body: parsed.body,
-                    parentId: state.folderId || null,
-                    collectionId: state.collectionId
-                }];
+                const newRequest = createNewRequest(name, state.collectionId, state.folderId || null);
+                newRequest.id = newId;
+                newRequest.method = parsed.method;
+                newRequest.url = parsed.url;
+                newRequest.headers = parsed.headers.map(h => ({ key: h.key, values: [...h.values], enabled: true }));
+                newRequest.body = parsed.body;
+                newRequest.bodyType = parsed.body ? 'json' : 'none';
+
+                requests.value = [...requests.value, newRequest];
                 activeRequestId.value = newId;
 
                 // Auto-create sample execution
@@ -93,7 +93,7 @@ export function ImportModal() {
                             name: parsed.title || "Imported Mock",
                             port: 4000,
                             endpoints: [],
-                            serverStatus: 'stopped'
+                            serverStatus: 'stopped' as const
                         };
                         externalMocks.value = [...externalMocks.value, mock];
                     } else {
@@ -109,7 +109,7 @@ export function ImportModal() {
                             path: pr.path,
                             response: {
                                 statusCode: pr.responseStatus || 200,
-                                headers: [...pr.headers, { key: 'Content-Type', values: ['application/json'] }],
+                                headers: [...pr.headers, { key: 'Content-Type', values: ['application/json'], enabled: true }],
                                 body: pr.body || '{}',
                                 enabled: true
                             }
@@ -132,35 +132,24 @@ export function ImportModal() {
                     const uniqueTags = Array.from(new Set(parsed.requests.flatMap(r => r.tags)));
 
                     uniqueTags.forEach(tag => {
-                        const folderId = crypto.randomUUID();
-                        tagFolders[tag] = folderId;
-                        newFolders.push({
-                            id: folderId,
-                            name: tag,
-                            collectionId,
-                            parentId: state.folderId || null,
-                            collapsed: false
-                        });
+                        const newFolder = createNewFolder(tag, collectionId, state.folderId || null);
+                        tagFolders[tag] = newFolder.id;
+                        newFolders.push(newFolder);
                     });
 
                     const newRequestIds: string[] = [];
                     parsed.requests.forEach(pr => {
-                        const newId = crypto.randomUUID();
-                        newRequestIds.push(newId);
-
                         const parentId = pr.tags.length > 0 ? tagFolders[pr.tags[0]] : (state.folderId || null);
+                        const newReq = createNewRequest(pr.name, collectionId, parentId);
+                        newRequestIds.push(newReq.id);
 
-                        allRequests.push({
-                            id: newId,
-                            collectionId,
-                            name: pr.name,
-                            method: pr.method,
-                            url: pr.url,
-                            headers: pr.headers.map(h => ({ key: h.key, values: [...h.values] })),
-                            body: pr.requestBody || '',
-                            bodyType: pr.requestBody ? 'json' : undefined,
-                            parentId
-                        });
+                        newReq.method = pr.method;
+                        newReq.url = pr.url;
+                        newReq.headers = pr.headers.map(h => ({ key: h.key, values: [...h.values], enabled: true }));
+                        newReq.body = pr.requestBody || '';
+                        newReq.bodyType = pr.requestBody ? 'json' : 'none';
+                        
+                        allRequests.push(newReq);
                     });
 
                     folders.value = newFolders;
@@ -179,33 +168,23 @@ export function ImportModal() {
                 const processItems = (items: (ParsedFolder | ParsedRequest)[], parentId: string | null) => {
                     for (const item of items) {
                         if ('items' in item) {
-                            // Folder
-                            const folderId = crypto.randomUUID();
-                            newFolders.push({
-                                id: folderId,
-                                name: item.name,
-                                collectionId,
-                                parentId,
-                                collapsed: false
-                            });
-                            processItems(item.items, folderId);
+                            const newFolder = createNewFolder(item.name, collectionId, parentId);
+                            newFolders.push(newFolder);
+                            processItems(item.items, newFolder.id);
                         } else {
                             // Request
-                            const reqId = crypto.randomUUID();
-                            newRequestIds.push(reqId);
-                            allRequests.push({
-                                id: reqId,
-                                collectionId,
-                                name: item.name,
-                                method: item.method,
-                                url: item.url,
-                                headers: item.headers,
-                                bodyType: item.bodyType,
-                                body: item.body,
-                                formData: item.formData,
-                                auth: item.auth,
-                                parentId
-                            });
+                            const newReq = createNewRequest(item.name, collectionId, parentId);
+                            newRequestIds.push(newReq.id);
+                            
+                            newReq.method = item.method;
+                            newReq.url = item.url;
+                            newReq.headers = item.headers.map(h => ({ ...h, enabled: true }));
+                            newReq.bodyType = item.bodyType;
+                            newReq.body = item.body;
+                            newReq.formData = item.formData;
+                            newReq.auth = item.auth;
+
+                            allRequests.push(newReq);
                         }
                     }
                 };
@@ -252,17 +231,17 @@ export function ImportModal() {
         <Modal
             isOpen={state.isOpen}
             onClose={handleClose}
-            title="Import Requests"
+            title={t('importModal.title')}
             zIndex={1200}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
                 {/* Type Selector */}
                 <div style={{ display: 'flex', backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '2px', alignSelf: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: '2px' }}>
                     {[
-                        { id: 'curl', label: 'cURL' },
-                        { id: 'swagger', label: 'Swagger / OpenAPI' },
-                        { id: 'postman-collection', label: 'Postman Collection' },
-                        { id: 'postman-environment', label: 'Postman Environment' }
+                        { id: 'curl', label: t('importModal.types.curl') },
+                        { id: 'swagger', label: t('importModal.types.swagger') },
+                        { id: 'postman-collection', label: t('importModal.types.postmanCollection') },
+                        { id: 'postman-environment', label: t('importModal.types.postmanEnvironment') }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -284,10 +263,10 @@ export function ImportModal() {
                 </div>
 
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {importType === 'curl' && 'Paste a bash-formatted cURL command below or load from a file.'}
-                    {importType === 'swagger' && 'Paste your Swagger 2.0 or OpenAPI 3.x specification (JSON or YAML) below or load from a file.'}
-                    {importType === 'postman-collection' && 'Paste your Postman Collection v2.1 JSON below or load from a file.'}
-                    {importType === 'postman-environment' && 'Paste your Postman Environment JSON below or load from a file.'}
+                    {importType === 'curl' && t('importModal.hints.curl')}
+                    {importType === 'swagger' && t('importModal.hints.swagger')}
+                    {importType === 'postman-collection' && t('importModal.hints.postmanCollection')}
+                    {importType === 'postman-environment' && t('importModal.hints.postmanEnvironment')}
                 </p>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -313,7 +292,7 @@ export function ImportModal() {
                             fontSize: '0.85rem'
                         }}
                     >
-                        <FileUp size={14} /> Load from File
+                        <FileUp size={14} /> {t('importModal.loadFromFile')}
                     </button>
                     {content.trim() && (
                         <button
@@ -327,7 +306,7 @@ export function ImportModal() {
                                 fontSize: '0.85rem'
                             }}
                         >
-                            Clear
+                            {t('importModal.clear')}
                         </button>
                     )}
                 </div>
@@ -377,7 +356,7 @@ export function ImportModal() {
                             cursor: 'pointer'
                         }}
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleImport}
@@ -393,7 +372,7 @@ export function ImportModal() {
                             fontWeight: 'bold'
                         }}
                     >
-                        Import
+                        {t('importModal.importBtn')}
                     </button>
                 </div>
             </div>

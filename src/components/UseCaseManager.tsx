@@ -5,6 +5,7 @@ import { runExecution } from '../utils/execution';
 import { CodeEditor } from './CodeEditor';
 import { ResponseData } from '../store';
 import { ResponsePanel } from './response/ResponsePanel';
+import { t } from '../i18n';
 
 const WOW_STYLES = `
     @keyframes breathing {
@@ -56,7 +57,7 @@ function UseCaseManagerContent() {
 
 
     const handleCreate = async () => {
-        const name = prompt("Enter Use Case Name:", "New Use Case");
+        const name = prompt(t('useCaseManager.promptName'), t('useCaseManager.defaultName'));
         if (!name) return;
 
         const newUseCase: UseCase = {
@@ -71,7 +72,7 @@ function UseCaseManagerContent() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this Use Case?")) return;
+        if (!confirm(t('useCaseManager.deleteConfirm'))) return;
         useCases.value = useCases.value.filter(u => u.id !== id);
         if (activeUseCaseId.value === id) activeUseCaseId.value = null;
         await syncProjectManifest(activeProjectName.peek());
@@ -183,7 +184,7 @@ function UseCaseManagerContent() {
                 });
 
                 if (!isSuccess) {
-                    throw new Error(`Step failed with status ${res.status}. Expected: ${successCodes}`);
+                    throw new Error(t('useCaseManager.stepFailed', { status: res.status.toString(), expected: successCodes }));
                 }
 
                 // Save response to blackboard (automatic variable)
@@ -199,7 +200,7 @@ function UseCaseManagerContent() {
                 setRunLogs([...logs]);
                 handleUpdateBlackboard(useCase.id, { ...sessionVars });
             }
-            alert("Use Case completed successfully!");
+            alert(t('useCaseManager.completedSuccess'));
         } catch (err: any) {
             if (activeIdx >= 0) {
                 logs[activeIdx] = { stepIdx: activeIdx, status: 'error', message: err.message, response: lastResponse };
@@ -208,7 +209,7 @@ function UseCaseManagerContent() {
             }
             setRunLogs([...logs]);
             const stepInfo = activeIdx >= 0 ? ` at step ${activeIdx + 1}` : "";
-            alert(`Use Case failed${stepInfo}: ${err.message}`);
+            alert(t('useCaseManager.failed', { stepInfo, message: err.message }));
         } finally {
             setIsRunning(null);
             setCurrentStepIdx(-1);
@@ -227,7 +228,7 @@ function UseCaseManagerContent() {
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ListTree size={20} color="var(--accent-primary)" />
-                    <h2 style={{ margin: 0 }}>Use Case Manager</h2>
+                    <h2 style={{ margin: 0 }}>{t('useCaseManager.title')}</h2>
                 </div>
                 <button
                     onClick={handleCreate}
@@ -244,7 +245,7 @@ function UseCaseManagerContent() {
                         fontWeight: 'bold'
                     }}
                 >
-                    <Plus size={16} /> New Use Case
+                    <Plus size={16} /> {t('useCaseManager.newUseCaseBtn')}
                 </button>
             </div>
 
@@ -323,7 +324,7 @@ function UseCaseManagerContent() {
                                     onClick={() => handleAddStep(activeUseCase.id)}
                                     style={{ background: 'none', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.85rem' }}
                                 >
-                                    Add Step
+                                    {t('useCaseManager.addStepBtn')}
                                 </button>
                             </div>
 
@@ -342,11 +343,11 @@ function UseCaseManagerContent() {
                                         <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(var(--accent-primary-rgb), 0.1)', display: 'flex' }}>
                                             <Database size={20} color="var(--accent-primary)" />
                                         </div>
-                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Blackboard Control Center</h4>
+                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t('useCaseManager.blackboardTitle')}</h4>
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const key = prompt("Variable name:");
+                                            const key = prompt(t('useCaseManager.variableNamePrompt'));
                                             if (key && activeUseCase) {
                                                 handleUpdateManualVariables(activeUseCase.id, { ...manualVariables, [key]: "" });
                                                 handleUpdateBlackboard(activeUseCase.id, { ...blackboard, [key]: "" });
@@ -356,13 +357,13 @@ function UseCaseManagerContent() {
                                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(var(--accent-primary-rgb), 0.2)'}
                                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(var(--accent-primary-rgb), 0.1)'}
                                     >
-                                        <Plus size={16} /> Add Initial Variable
+                                        <Plus size={16} /> {t('useCaseManager.addInitialVarBtn')}
                                     </button>
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                                     {Object.entries(blackboard).length === 0 && (
                                         <div style={{ width: '100%', textAlign: 'center', padding: '24px', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
-                                            <span style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>No variables defined. Initial variables and step responses will populate this.</span>
+                                            <span style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>{t('useCaseManager.noVariablesDefined')}</span>
                                         </div>
                                     )}
                                     {Object.entries(blackboard).map(([key, value]) => {
@@ -417,7 +418,7 @@ function UseCaseManagerContent() {
                                                 )}
                                                 {!isManual && (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '3px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-base)', padding: '2px 6px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 'bold', marginLeft: '4px' }}>
-                                                        VOLATILE
+                                                        {t('useCaseManager.volatileBadge')}
                                                     </div>
                                                 )}
                                             </div>
@@ -518,9 +519,9 @@ function UseCaseManagerContent() {
                                                                 <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                                     {(() => {
                                                                         const ex = executions.value.find(e => e.id === step.executionId);
-                                                                        if (!ex) return "Select Execution...";
+                                                                        if (!ex) return t('useCaseManager.selectExecutionPlaceholder');
                                                                         const req = requests.value.find(r => r.id === ex.requestId);
-                                                                        return `${req?.name || 'Unknown'} > ${ex.name === 'default' ? 'Default' : ex.name}`;
+                                                                        return `${req?.name || 'Unknown'} > ${ex.name === 'default' ? t('useCaseManager.defaultExecution') : ex.name}`;
                                                                     })()}
                                                                 </div>
                                                                 <ChevronDown size={16} />
@@ -539,17 +540,17 @@ function UseCaseManagerContent() {
                                                         </div>
                                                         
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '12px', padding: '4px 10px', background: 'rgba(0,0,0,0.1)', borderRadius: 'var(--radius-sm)' }}>
-                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>Success:</span>
+                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('useCaseManager.successLabel')}</span>
                                                             <input
                                                                 value={step.successCodes}
                                                                 onInput={(e) => handleUpdateStep(activeUseCase.id, step.id, { successCodes: e.currentTarget.value })}
-                                                                placeholder="200,2xx"
+                                                                placeholder={t('useCaseManager.successPlaceholder')}
                                                                 style={{ width: '60px', padding: '0', fontSize: '0.85rem', border: 'none', background: 'none', fontWeight: 'bold', color: 'var(--accent-primary)' }}
                                                             />
                                                         </div>
 
-                                                        {isSuccess && <div style={{ animation: 'fadeIn 0.5s', color: 'var(--success)', fontSize: '0.85rem', fontWeight: 'bold' }}>COMPLETED</div>}
-                                                        {isError && <div style={{ animation: 'fadeIn 0.5s', color: 'var(--error)', fontSize: '0.85rem', fontWeight: 'bold' }}>FAILED</div>}
+                                                        {isSuccess && <div style={{ animation: 'fadeIn 0.5s', color: 'var(--success)', fontSize: '0.85rem', fontWeight: 'bold' }}>{t('useCaseManager.completedBadge')}</div>}
+                                                        {isError && <div style={{ animation: 'fadeIn 0.5s', color: 'var(--error)', fontSize: '0.85rem', fontWeight: 'bold' }}>{t('useCaseManager.failedBadge')}</div>}
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '10px' }}>
                                                         {log?.response && (
@@ -580,13 +581,13 @@ function UseCaseManagerContent() {
                                                 <div style={{ borderTop: '1px solid rgba(var(--border-color-rgb), 0.3)', pt: '16px', marginTop: '4px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                                         <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <Code size={16} /> Optional Step Script
+                                                            <Code size={16} /> {t('useCaseManager.scriptTitle')}
                                                         </div>
                                                         <button
                                                             onClick={() => setOpenScripts((prev: any) => ({ ...prev, [step.id]: !prev[step.id] }))}
                                                             style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}
                                                         >
-                                                            {openScripts[step.id] ? 'Minimize Editor' : 'Edit Script'}
+                                                            {openScripts[step.id] ? t('useCaseManager.minimizeEditorBtn') : t('useCaseManager.editScriptBtn')}
                                                         </button>
                                                     </div>
 
@@ -610,7 +611,7 @@ function UseCaseManagerContent() {
                     ) : (
                         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <ListTree size={48} opacity={0.3} style={{ marginBottom: '16px' }} />
-                            <p>Select a Use Case from the list or create a new one.</p>
+                            <p>{t('useCaseManager.selectUseCaseHint')}</p>
                         </div>
                     )}
                 </div>
@@ -638,7 +639,7 @@ function UseCaseManagerContent() {
                     }}
                 >
                     {isSaving && <CheckCircle size={14} />}
-                    {isSaving ? 'Saved!' : 'Save Changes'}
+                    {isSaving ? t('useCaseManager.savedBtn') : t('useCaseManager.saveChangesBtn')}
                 </button>
             </div>
         </div>
@@ -699,7 +700,7 @@ function ExecutionSelector({ onSelect, onClose, currentId }: { onSelect: (id: st
                 <Search size={16} color="var(--text-muted)" />
                 <input 
                     autoFocus
-                    placeholder="Search executions..."
+                    placeholder={t('useCaseManager.searchPlaceholder')}
                     value={search}
                     onInput={(e) => setSearch(e.currentTarget.value)}
                     style={{ background: 'none', border: 'none', width: '100%', outline: 'none', fontSize: '0.9rem' }}
@@ -759,7 +760,7 @@ function ExecutionSelector({ onSelect, onClose, currentId }: { onSelect: (id: st
                                         if (currentId !== ex.id) e.currentTarget.style.backgroundColor = 'transparent';
                                     }}
                                 >
-                                    {ex.name === 'default' ? 'Default Execution' : ex.name}
+                                    {ex.name === 'default' ? t('useCaseManager.defaultExecution') : ex.name}
                                 </button>
                             ))}
                         </div>
@@ -767,13 +768,13 @@ function ExecutionSelector({ onSelect, onClose, currentId }: { onSelect: (id: st
                 ))}
                 {filtered.length === 0 && (
                     <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                        No results found
+                        {t('useCaseManager.noResults')}
                     </div>
                 )}
             </div>
             <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border-color)', fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                <span>{filtered.length} requests matched</span>
-                <span>ESC to close</span>
+                <span>{t('useCaseManager.requestsMatched', { count: filtered.length })}</span>
+                <span>{t('useCaseManager.escToClose')}</span>
             </div>
         </div>
     );

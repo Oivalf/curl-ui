@@ -19,6 +19,7 @@ import * as parserEstree from "prettier/plugins/estree";
 import * as parserXml from "@prettier/plugin-xml";
 import * as yamlParser from "js-yaml";
 import { getScopedVariables } from '../store';
+import { t } from '../i18n';
 
 interface CodeEditorProps {
     value: string;
@@ -357,10 +358,10 @@ export function CodeEditor({ value, onChange, language = 'text', readOnly = fals
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                     onMouseLeave={(e) => (e.currentTarget.style.opacity = isFormatting.value ? '0.6' : '0.8')}
-                    title="Format Code"
+                    title={t('codeEditor.formatTooltip')}
                 >
                     <Wand2 size={12} className={isFormatting.value ? 'animate-spin' : ''} />
-                    {isFormatting.value ? 'Formatting...' : 'Format'}
+                    {isFormatting.value ? t('codeEditor.formatting') : t('codeEditor.format')}
                 </button>
             )}
             <CodeMirror
