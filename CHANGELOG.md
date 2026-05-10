@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UI Localization**: Fully internationalized remaining core editor components (`RequestEditor`, `ResponsePanel`, `FolderEditor`, `ExecutionEditor` and their subcomponents), removing hardcoded strings and centralizing them in the `i18n` dictionary
 ---
 
-## [0.1.10] - 2026-05-10
+## [0.1.9] - 2026-04-27
 
 ### Added
 - **Use Case Manager**: Premium, searchable execution selector with HTTP method badges and pop-in animations
